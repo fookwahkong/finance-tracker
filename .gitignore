@@ -1,0 +1,32 @@
+# Claude Code
+.claude/
+
+# Environment
+.env
+.env.local
+
+# Vercel
+.vercel
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

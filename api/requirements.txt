@@ -1,0 +1,7 @@
+fastapi
+mangum
+supabase
+anthropic
+httpx
+python-dotenv
+uvicorn[standard]
