@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.routers import transactions, categories, reports
+from backend.routers import transactions, categories, reports, telegram
 from core.validation import ValidationError
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -22,14 +22,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.exception_handler(ValidationError)
 async def _validation_error_handler(request: Request, exc: ValidationError):
     return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 
-app.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
-app.include_router(categories.router, prefix="/categories", tags=["categories"])
-app.include_router(reports.router, prefix="/reports", tags=["reports"])
+app.include_router(transactions.router, prefix="/api/transactions", tags=["transactions"])
+app.include_router(categories.router, prefix="/api/categories", tags=["categories"])
+app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
+app.include_router(telegram.router, prefix="/api", tags=["telegram"])
 
 
 @app.get("/")
