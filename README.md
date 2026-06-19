@@ -144,12 +144,12 @@ Returns: `total_income`, `total_expenses`, `net`, `breakdown` (category → amou
 
 ### Telegram Bot
 
-In local development the bot runs in polling mode (`python bot/bot.py`). On Vercel, Telegram is configured to POST updates to `/api/webhook`. Either way:
+The webhook handler lives at `backend/routers/telegram.py` and is served at `/api/webhook`. Telegram is configured to POST updates there (the previous polling bot has been removed). For each update:
 
 1. User sends any text message to the bot
-2. Bot calls `llm_parser` with the message text
-3. Parsed transaction is inserted into Supabase
-4. Bot replies with a confirmation showing the parsed fields
+2. The handler validates the text, calls `core.parsing.parse_transaction`, then `core.validation.validate_transaction`
+3. The validated transaction is inserted into Supabase
+4. The handler replies with a confirmation showing the parsed fields
 
 ### Database Schema
 
@@ -198,10 +198,6 @@ finance-tracker/
 │   ├── index.py                # Consolidated FastAPI app (all routers + webhook)
 │   └── requirements.txt
 │
-├── bot/                        # Telegram bot (polling mode)
-│   ├── bot.py
-│   └── requirements.txt
-│
 └── frontend/                   # React web app
     ├── index.html
     ├── package.json
@@ -245,10 +241,21 @@ Copy `.env.example` to `.env` inside `finance-tracker/` and fill in the values:
 | `ANTHROPIC_API_KEY` | Anthropic API key for Claude |
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token from BotFather |
 | `TELEGRAM_WEBHOOK_SECRET` | Random string used to authenticate Telegram webhook requests (see below) |
-| `BACKEND_URL` | Base URL of the backend (e.g. `http://localhost:8000`) |
 | `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins (e.g. `https://your-app.vercel.app`) |
 
 The frontend reads `VITE_BACKEND_URL` from `frontend/.env` (optional; defaults to relative `/api` which Vite proxies to the backend in development).
+
+#### LLM provider
+
+Parsing sits behind a pluggable provider seam selected by `LLM_PROVIDER`:
+
+| Variable | Description |
+|---|---|
+| `LLM_PROVIDER` | `ollama` for local dev, `claude` for production. Defaults to `claude`. If the selected provider is unreachable the request **hard-fails** — there is no fallback to Claude. |
+| `OLLAMA_HOST` | Ollama base URL (default `http://localhost:11434`) |
+| `OLLAMA_MODEL` | Ollama model name (default `llama3.1`) |
+
+For local development with `LLM_PROVIDER=ollama`, Ollama must be running: `ollama serve` and `ollama pull llama3.1`. Production uses `LLM_PROVIDER=claude` and needs `ANTHROPIC_API_KEY`.
 
 ### Running Locally
 
@@ -269,12 +276,9 @@ npm run dev
 # /api requests are proxied to localhost:8000
 ```
 
-**Telegram Bot** (optional)
-```bash
-cd finance-tracker
-pip install -r bot/requirements.txt
-python bot/bot.py
-```
+**Telegram (local testing)**
+
+In production Telegram is wired to the `/api/webhook` endpoint. To test it locally, expose your backend with a tunnel (e.g. `ngrok http 8000`) and register the webhook against the tunnel URL. The previous polling bot has been removed.
 
 ### Deploying to Vercel
 
