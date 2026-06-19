@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from database import supabase
-from models import CategoryCreate
+from core.db import supabase
+from core.models import CategoryCreate
 
 router = APIRouter()
 
