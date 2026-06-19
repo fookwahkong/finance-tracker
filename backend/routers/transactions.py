@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException
-from database import supabase
-from models import TransactionCreate, TransactionUpdate
+from core.db import supabase
+from core.models import TransactionCreate, TransactionUpdate
 
 router = APIRouter()
 

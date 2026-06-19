@@ -1,6 +1,6 @@
 from datetime import date
 from fastapi import APIRouter, Query
-from database import supabase
+from core.db import supabase
 
 router = APIRouter()
 
