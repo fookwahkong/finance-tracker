@@ -1,10 +1,12 @@
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from backend.routers import transactions, categories, reports
+from core.validation import ValidationError
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
@@ -19,6 +21,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(ValidationError)
+async def _validation_error_handler(request: Request, exc: ValidationError):
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
 
 app.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
 app.include_router(categories.router, prefix="/categories", tags=["categories"])

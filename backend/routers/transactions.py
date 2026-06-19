@@ -2,8 +2,13 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from core.db import supabase
 from core.models import TransactionCreate, TransactionUpdate
+from core.validation import validate_transaction
 
 router = APIRouter()
+
+
+def _known_categories() -> list[str]:
+    return [c["name"] for c in supabase.table("categories").select("name").execute().data]
 
 
 @router.get("")
@@ -22,7 +27,8 @@ def list_transactions(month: Optional[str] = None):
 
 @router.post("", status_code=201)
 def create_transaction(tx: TransactionCreate):
-    payload = tx.model_dump()
+    validated = validate_transaction(tx.model_dump(), _known_categories())
+    payload = validated.model_dump()
     payload["date"] = payload["date"].isoformat()
     result = supabase.table("transactions").insert(payload).execute()
     return result.data[0]
@@ -30,7 +36,13 @@ def create_transaction(tx: TransactionCreate):
 
 @router.put("/{tx_id}")
 def update_transaction(tx_id: str, tx: TransactionUpdate):
-    payload = {k: v for k, v in tx.model_dump().items() if v is not None}
+    existing = supabase.table("transactions").select("*").eq("id", tx_id).execute().data
+    if not existing:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    provided = {k: v for k, v in tx.model_dump().items() if v is not None}
+    merged = {**existing[0], **provided}
+    validated = validate_transaction(merged, _known_categories())
+    payload = {k: getattr(validated, k) for k in provided}
     if "date" in payload:
         payload["date"] = payload["date"].isoformat()
     result = supabase.table("transactions").update(payload).eq("id", tx_id).execute()
