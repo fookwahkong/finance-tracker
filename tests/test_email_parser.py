@@ -1,38 +1,62 @@
+from datetime import datetime
+
 import pytest
+
 from core.email_parser import parse
 
-# Matches DBS/POSB card alert format — adjust if your bank differs.
-_DBS_SAMPLE = (
+# Real DBS PayNow confirmation format (label/value), year omitted by the bank.
+_PAYNOW_SAMPLE = (
     "Dear Customer,\n\n"
-    "Your DBS/POSB Debit Card ending in 1234 was charged SGD 25.90 "
-    "at GRABFOOD on 23 Jun 2026.\n\n"
-    "If you did not authorise this transaction, please call 1800 111 1111."
+    "We refer to your PAYNOW dated 20 Jun. We are pleased to confirm that "
+    "the transaction was completed.\n\n"
+    "Date & Time:    20 Jun 22:11 (SGT)\n"
+    "Amount:    SGD47.00\n"
+    "From:    ePOSBkids Account A/C ending 6391\n"
+    "To:    CHXX WEX LX DAXX (MOBILE ending 3348)\n\n"
+    "If unauthorised, please call our DBS hotline."
 )
 
-_DBS_SAMPLE_WITH_COMMA = (
-    "Your DBS/POSB Debit Card ending in 1234 was charged SGD 1,025.00 "
-    "at APPLE.COM/BILL on 23 Jun 2026."
+# Real PayLah! Scan & Pay confirmation: merchant payee with periods, no paren.
+_PAYLAH_SAMPLE = (
+    "We refer to your PayLah! Scan & Pay Transfer dated 22 Jun.\n\n"
+    "Date & Time:    22 Jun 15:21 (SGT)\n"
+    "Amount:    SGD4.80\n"
+    "From:    PayLah! Wallet (Mobile ending 0992)\n"
+    "To:    FOMO PAY PTE. LTD.\n"
+)
+
+# Synthetic comma-amount variant to cover thousands separators.
+_SCANPAY_SAMPLE = (
+    "Date & Time:    23 Jun 07:22 (SGT)\n"
+    "Amount:    SGD1,025.00\n"
+    "To:    CHXX CHXX HEXX REGINXXX\n"
 )
 
 
 def test_parse_extracts_amount():
-    result = parse(_DBS_SAMPLE)
-    assert result["amount"] == 25.90
+    assert parse(_PAYNOW_SAMPLE)["amount"] == 47.00
 
 
 def test_parse_extracts_large_amount_with_comma():
-    result = parse(_DBS_SAMPLE_WITH_COMMA)
-    assert result["amount"] == 1025.00
+    assert parse(_SCANPAY_SAMPLE)["amount"] == 1025.00
 
 
-def test_parse_extracts_merchant():
-    result = parse(_DBS_SAMPLE)
-    assert result["merchant"] == "GRABFOOD"
+def test_parse_drops_masked_payee_detail():
+    assert parse(_PAYNOW_SAMPLE)["merchant"] == "CHXX WEX LX DAXX"
 
 
-def test_parse_extracts_date():
-    result = parse(_DBS_SAMPLE)
-    assert result["date"] == "2026-06-23"
+def test_parse_keeps_plain_payee():
+    assert parse(_SCANPAY_SAMPLE)["merchant"] == "CHXX CHXX HEXX REGINXXX"
+
+
+def test_parse_keeps_merchant_with_periods():
+    result = parse(_PAYLAH_SAMPLE)
+    assert result["merchant"] == "FOMO PAY PTE. LTD."
+    assert result["amount"] == 4.80
+
+
+def test_parse_assumes_current_year_for_date():
+    assert parse(_PAYNOW_SAMPLE)["date"] == f"{datetime.now().year}-06-20"
 
 
 def test_parse_raises_on_unrecognised_body():
