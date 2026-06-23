@@ -4,6 +4,7 @@
 # Environment
 .env
 .env.local
+credentials.json
 
 # Vercel
 .vercel
