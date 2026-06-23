@@ -6,3 +6,6 @@ httpx
 python-dotenv
 uvicorn[standard]
 pydantic
+google-api-python-client
+google-auth
+google-auth-httplib2
