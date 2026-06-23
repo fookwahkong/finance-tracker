@@ -26,10 +26,9 @@ def _verify_cron_secret(authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-def _insert(item: str, category: str, amount: float, tx_date: str, source: str, tx_time=None) -> dict:
+def _insert(item: str, category: str, amount: float, tx_date: str, source: str) -> dict:
     payload = {
         "date": tx_date,
-        "time": tx_time,
         "item": item,
         "category": category,
         "amount": amount,
@@ -56,7 +55,6 @@ def ingest_shortcut(payload: ShortcutPayload, _=Depends(_verify_shortcut_key)):
         amount=parsed.get("amount", -abs(payload.amount)),
         tx_date=parsed.get("date") or date.today().isoformat(),
         source="shortcut",
-        tx_time=parsed.get("time"),
     )
 
 
@@ -90,7 +88,6 @@ def ingest_email(_=Depends(_verify_cron_secret)):
             amount=parsed.get("amount", -abs(parsed_email["amount"])),
             tx_date=parsed_email.get("date") or date.today().isoformat(),
             source="email",
-            tx_time=parsed.get("time"),
         )
         gmail.mark_read(msg["id"])
         count += 1

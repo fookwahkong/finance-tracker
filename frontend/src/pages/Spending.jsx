@@ -6,16 +6,11 @@ import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from
 
 const EMPTY_FORM = {
   date: new Date().toISOString().slice(0, 10),
-  time: "",
   item: "",
   amount: "",
   category: "",
   source: "",
 };
-
-function hhmm(t) {
-  return t ? String(t).slice(0, 5) : "";
-}
 
 export default function Spending() {
   const [month, setMonth] = useState(currentMonth());
@@ -73,7 +68,6 @@ export default function Spending() {
     try {
       await createTransaction({
         date: form.date,
-        time: form.time || null,
         item: form.item,
         amount: Number(form.amount),
         category: form.category || null,
@@ -95,9 +89,9 @@ export default function Spending() {
   }
 
   function downloadCsv() {
-    const head = ["date", "time", "item", "category", "amount", "source"];
+    const head = ["date", "item", "category", "amount", "source"];
     const rows = filtered.map((t) =>
-      [t.date, hhmm(t.time), t.item, t.category || "", t.amount, t.source || ""]
+      [t.date, t.item, t.category || "", t.amount, t.source || ""]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")
     );
     const blob = new Blob([[head.join(","), ...rows].join("\n")], { type: "text/csv" });
@@ -164,10 +158,6 @@ export default function Spending() {
               <div className="field">
                 <label className="field-label">Date</label>
                 <input className="input" type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-              </div>
-              <div className="field">
-                <label className="field-label">Time</label>
-                <input className="input" type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
               </div>
               <div className="field">
                 <label className="field-label">Item</label>
@@ -260,7 +250,6 @@ export default function Spending() {
                       <div className="row-name">{t.item}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
                         {t.category && <span className="chip">{t.category}</span>}
-                        {hhmm(t.time) && <span className="row-sub">{hhmm(t.time)}</span>}
                         {t.source && <span className="row-sub">· {t.source}</span>}
                       </div>
                     </div>

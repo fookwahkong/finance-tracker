@@ -42,10 +42,6 @@ def validate_transaction(data, known_categories: list[str]) -> TransactionCreate
         raise ValidationError(f"Item too long (max {MAX_ITEM_LEN} characters).")
     tx.item = item
 
-    # An empty time string would break a Postgres `time` column; treat it as unset.
-    if tx.time is not None and not tx.time.strip():
-        tx.time = None
-
     if tx.category is not None and tx.category not in known_categories:
         tx.category = None
 

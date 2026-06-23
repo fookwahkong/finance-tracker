@@ -11,7 +11,7 @@ def fake_supabase():
     ]
     svc.table.return_value.insert.return_value.execute.return_value.data = [{
         "id": "abc", "item": "Grab", "category": "Transport",
-        "amount": -12.5, "date": "2026-06-23", "source": "shortcut", "time": None,
+        "amount": -12.5, "date": "2026-06-23", "source": "shortcut",
     }]
     return svc
 
@@ -45,7 +45,7 @@ def test_shortcut_wrong_api_key_returns_401(client):
 def test_shortcut_saves_parsed_transaction(client, monkeypatch, fake_supabase):
     monkeypatch.setattr(
         "backend.routers.ingest.parse_transaction",
-        lambda text, cats: {"item": "Grab", "category": "Transport", "amount": -12.5, "date": "2026-06-23", "time": None},
+        lambda text, cats: {"item": "Grab", "category": "Transport", "amount": -12.5, "date": "2026-06-23"},
     )
     resp = client.post(
         "/api/ingest/shortcut",
@@ -94,7 +94,7 @@ def test_email_processes_one_message(client, monkeypatch, fake_supabase):
     )
     monkeypatch.setattr(
         "backend.routers.ingest.parse_transaction",
-        lambda text, cats: {"item": "Coffee", "category": "Food", "amount": -10.0, "date": "2026-06-23", "time": None},
+        lambda text, cats: {"item": "Coffee", "category": "Food", "amount": -10.0, "date": "2026-06-23"},
     )
     monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
 
