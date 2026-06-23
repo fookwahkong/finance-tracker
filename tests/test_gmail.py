@@ -76,6 +76,51 @@ def test_fetch_unread_handles_multipart_email(mock_creds, mock_build, monkeypatc
     assert "SGD 5.00" in result[0]["body"]
 
 
+def _full_message_html_only(msg_id: str, html: str) -> dict:
+    # DBS PayLah!/PayNow alerts arrive as multipart/mixed with ONLY a text/html
+    # part (no text/plain), wrapping the transaction details in markup.
+    return {
+        "id": msg_id,
+        "payload": {
+            "mimeType": "multipart/mixed",
+            "body": {},
+            "parts": [
+                {"mimeType": "text/html", "body": {"data": _encoded(html)}},
+            ],
+        },
+    }
+
+
+@patch("core.gmail.build")
+@patch("core.gmail.Credentials.from_authorized_user_info")
+def test_fetch_unread_extracts_html_only_email(mock_creds, mock_build, monkeypatch):
+    monkeypatch.setenv("GMAIL_CREDENTIALS", _FAKE_CREDS_JSON)
+    html = (
+        "<html><head><style>.x{color:#fff}</style></head><body>"
+        "<table><tr><td>Date &amp; Time:</td><td>23 Jun 09:15 (SGT)</td></tr>"
+        "<tr><td>Amount:</td><td>SGD4.30</td></tr>"
+        "<tr><td>To:</td><td>ECON FOOD DELIGHTS</td></tr></table>"
+        "</body></html>"
+    )
+    svc = MagicMock()
+    mock_build.return_value = svc
+    svc.users.return_value.messages.return_value.list.return_value.execute.return_value = {
+        "messages": [{"id": "msg3"}]
+    }
+    svc.users.return_value.messages.return_value.get.return_value.execute.return_value = (
+        _full_message_html_only("msg3", html)
+    )
+
+    body = gmail_module.fetch_unread("is:unread")[0]["body"]
+
+    # Tags stripped, CSS dropped, and &amp; decoded so the parser's labels match.
+    assert "Date & Time:" in body
+    assert "SGD4.30" in body
+    assert "ECON FOOD DELIGHTS" in body
+    assert ".x{color" not in body
+    assert "<td>" not in body
+
+
 @patch("core.gmail.build")
 @patch("core.gmail.Credentials.from_authorized_user_info")
 def test_fetch_unread_returns_empty_when_no_messages(mock_creds, mock_build, monkeypatch):
