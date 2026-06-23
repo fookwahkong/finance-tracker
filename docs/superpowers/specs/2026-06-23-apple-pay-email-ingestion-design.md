@@ -59,27 +59,28 @@ No deduplication is needed between the two paths — they cover mutually exclusi
 **Request body:**
 ```json
 {
-  "name": "Ivan Kong",
   "merchant": "McDonald's",
   "amount": 12.50
 }
 ```
 
+`merchant` maps to the `item` field in `TransactionCreate`. `name` (cardholder name) is not stored — it's not a field in the transaction model.
+
 **Flow:**
 1. Verify API key via FastAPI dependency
-2. Build `TransactionCreate` payload with today's date, source fields
-3. Run through `core.parsing` categorizer → assign category
-4. If categorization fails, fall back to `"Uncategorized"` (never drop the transaction)
+2. Pass `"<merchant> $<amount>"` to `core.parsing.parse_transaction()` → returns `{ item, category, ... }`
+3. If categorization fails, fall back to `category: "Uncategorized"` (never drop the transaction)
+4. Build `TransactionCreate` with today's date, parsed fields, and `source: "shortcut"`
 5. Insert into Supabase
 
 **iOS Shortcut configuration (one-time setup):**
 - Trigger: "When Apple Pay transaction completes"
-- Action: "Get details of Apple Pay transaction" → save `name`, `merchant`, `amount` as variables
+- Action: "Get details of Apple Pay transaction" → save `merchant`, `amount` as variables
 - Action: "Get Contents of URL"
   - Method: POST
   - URL: `https://<your-vercel-domain>/api/ingest/shortcut`
   - Headers: `X-API-Key: <SHORTCUT_API_KEY>`, `Content-Type: application/json`
-  - Body: JSON with the three variables
+  - Body: JSON with the two variables
 
 **Generating the API key:**
 ```bash
@@ -98,10 +99,11 @@ Store the output in `.env` as `SHORTCUT_API_KEY` and in the Vercel dashboard env
 2. Call `core.gmail.fetch_unread(query)` with bank sender + subject filter
 3. For each email:
    a. Call `core.email_parser.parse(body)` → `{ merchant, amount, date }`
-   b. Run through `core.parsing` categorizer
-   c. Fall back to `"Uncategorized"` if categorization fails
-   d. Insert into Supabase
-   e. Call `core.gmail.mark_read(message_id)`
+   b. Pass `"<merchant> $<amount>"` to `core.parsing.parse_transaction()` → returns `{ item, category, ... }`
+   c. Fall back to `category: "Uncategorized"` if categorization fails
+   d. Build `TransactionCreate` with extracted date (fall back to today if not found), parsed fields, and `source: "email"`
+   e. Insert into Supabase
+   f. Call `core.gmail.mark_read(message_id)`
 4. Return count of transactions processed
 
 ---
