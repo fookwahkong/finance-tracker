@@ -4,5 +4,8 @@
   "outputDirectory": "frontend/dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" }
+  ],
+  "crons": [
+    { "path": "/api/ingest/email", "schedule": "*/10 * * * *" }
   ]
 }

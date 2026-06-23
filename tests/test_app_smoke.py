@@ -16,6 +16,8 @@ def test_api_routes_are_mounted():
     assert "/api/categories" in paths
     assert "/api/reports/monthly" in paths
     assert "/api/webhook" in paths
+    assert "/api/ingest/shortcut" in paths
+    assert "/api/ingest/email" in paths
 
 
 def test_vercel_handler_imports():
