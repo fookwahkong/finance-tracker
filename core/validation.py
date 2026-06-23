@@ -6,7 +6,6 @@ from core.models import TransactionCreate
 
 MAX_TEXT_LEN = 500
 MAX_ITEM_LEN = 200
-MAX_REMARKS_LEN = 500
 MIN_DATE = date(2000, 1, 1)
 
 
@@ -43,8 +42,9 @@ def validate_transaction(data, known_categories: list[str]) -> TransactionCreate
         raise ValidationError(f"Item too long (max {MAX_ITEM_LEN} characters).")
     tx.item = item
 
-    if tx.remarks is not None and len(tx.remarks) > MAX_REMARKS_LEN:
-        raise ValidationError(f"Remarks too long (max {MAX_REMARKS_LEN} characters).")
+    # An empty time string would break a Postgres `time` column; treat it as unset.
+    if tx.time is not None and not tx.time.strip():
+        tx.time = None
 
     if tx.category is not None and tx.category not in known_categories:
         tx.category = None

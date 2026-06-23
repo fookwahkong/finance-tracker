@@ -8,3 +8,12 @@ alter table transactions
 
 alter table transactions
   add constraint transactions_amount_nonzero check (amount <> 0);
+
+-- Drop the unused remarks column and add an optional time-of-day column.
+-- (Postgres has no "add column after X"; column order is cosmetic — the UI
+-- renders time directly after date regardless of physical column order.)
+alter table transactions
+  drop column if exists remarks;
+
+alter table transactions
+  add column if not exists time time;

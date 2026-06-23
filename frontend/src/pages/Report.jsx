@@ -1,30 +1,18 @@
 import { useEffect, useState } from "react";
 import { getMonthlyReport } from "../api/client";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
-
-function currentMonth() {
-  return new Date().toISOString().slice(0, 7);
-}
-
-function formatMonth(ym) {
-  const [y, m] = ym.split("-");
-  return new Date(Number(y), Number(m) - 1).toLocaleString("en", { month: "long", year: "numeric" });
-}
-
-function fmt(n) {
-  return Math.abs(n).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+import { money, signed, currentMonth, monthLabel } from "../lib/format";
 
 const tooltipStyle = {
   contentStyle: {
-    background: "#0D1428",
-    border: "1px solid rgba(148,163,184,0.12)",
-    borderRadius: "8px",
-    color: "#F1F5F9",
+    background: "#fff",
+    border: "1px solid #e6eaea",
+    borderRadius: "10px",
+    color: "#16302f",
     fontSize: "0.8125rem",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
   },
 };
 
@@ -39,7 +27,7 @@ export default function Report() {
   const chartData = report
     ? Object.entries(report.breakdown).map(([name, value]) => ({
         name,
-        Income:   value > 0 ? value : 0,
+        Income: value > 0 ? value : 0,
         Expenses: value < 0 ? Math.abs(value) : 0,
       }))
     : [];
@@ -53,124 +41,88 @@ export default function Report() {
     : null;
 
   return (
-    <div className="fade-in">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Monthly Report</h1>
-          <p className="page-subtitle">{formatMonth(month)}</p>
+    <>
+      <div className="card" style={{ padding: "16px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div className="card-title">Monthly Report</div>
+            <div className="row-sub">{monthLabel(month)}</div>
+          </div>
+          <input
+            className="input"
+            type="month"
+            style={{ width: "auto", marginLeft: "auto" }}
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            aria-label="Select month"
+          />
         </div>
-        <input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="form-input"
-          style={{ width: "auto", marginLeft: "auto" }}
-          aria-label="Select month"
-        />
       </div>
 
       {report ? (
         <>
-          <div className="stat-grid" style={{ marginBottom: "1.5rem" }}>
-            <div className="stat-card income">
+          <div className="grid-4">
+            <div className="stat">
               <div className="stat-label">Total Income</div>
-              <div className="stat-value positive">+{fmt(report.total_income)}</div>
+              <div className="stat-value pos">{money(report.total_income)}</div>
             </div>
-            <div className="stat-card expense">
+            <div className="stat">
               <div className="stat-label">Total Expenses</div>
-              <div className="stat-value negative">−{fmt(Math.abs(report.total_expenses))}</div>
+              <div className="stat-value neg">{money(report.total_expenses)}</div>
             </div>
-            <div className="stat-card net">
+            <div className="stat">
               <div className="stat-label">Net / Savings</div>
-              <div className={`stat-value ${report.net >= 0 ? "positive" : "negative"}`}>
-                {report.net >= 0 ? "+" : "−"}{fmt(Math.abs(report.net))}
-              </div>
+              <div className={`stat-value ${report.net >= 0 ? "pos" : "neg"}`}>{signed(report.net)}</div>
+            </div>
+            <div className="stat accent">
+              <div className="stat-label">Savings Rate</div>
+              <div className="stat-value">{savingsRate !== null ? `${savingsRate}%` : "—"}</div>
             </div>
           </div>
 
-          <div className="card" style={{ marginBottom: "1.5rem" }}>
-            <p className="section-title">Summary</p>
-            <p style={{ color: "var(--text-2)", fontSize: "0.9rem", lineHeight: 1.7 }}>
-              In {formatMonth(month)}, you earned{" "}
-              <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                +{fmt(report.total_income)}
-              </span>{" "}
-              and spent{" "}
-              <span style={{ color: "var(--red)", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                {fmt(Math.abs(report.total_expenses))}
-              </span>.
-              {topCategory && (
-                <>
-                  {" "}Largest spending category:{" "}
-                  <span className="chip">{topCategory}</span>.
-                </>
-              )}
+          <section className="card">
+            <div className="card-head"><div className="card-title">Summary</div></div>
+            <p style={{ color: "var(--ink-2)", fontSize: 14, lineHeight: 1.7 }}>
+              In {monthLabel(month)}, you earned{" "}
+              <b style={{ color: "var(--green)" }}>{money(report.total_income)}</b> and spent{" "}
+              <b style={{ color: "var(--red)" }}>{money(report.total_expenses)}</b>.
+              {topCategory && <> Largest spending category: <span className="chip">{topCategory}</span>.</>}
               {savingsRate !== null && (
-                <>
-                  {" "}Savings rate:{" "}
-                  <span style={{ color: Number(savingsRate) >= 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
-                    {savingsRate}%
-                  </span>.
+                <> Savings rate:{" "}
+                  <b style={{ color: Number(savingsRate) >= 0 ? "var(--green)" : "var(--red)" }}>{savingsRate}%</b>.
                 </>
               )}
             </p>
-          </div>
+          </section>
 
-          <div className="card" style={{ marginBottom: "1.5rem" }}>
-            <p className="section-title">Breakdown by Category</p>
+          <section className="card">
+            <div className="card-head"><div className="card-title">Breakdown by Category</div></div>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.08)" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: "var(--text-3)", fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "var(--text-3)", fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={55}
-                  tickFormatter={(v) => `$${v}`}
-                />
-                <Tooltip
-                  {...tooltipStyle}
-                  formatter={(v) => [`$${Number(v).toFixed(2)}`, ""]}
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                />
-                <Legend
-                  iconType="circle"
-                  iconSize={8}
-                  formatter={(value) => (
-                    <span style={{ color: "var(--text-2)", fontSize: "0.8rem" }}>{value}</span>
-                  )}
-                />
-                <Bar dataKey="Income" fill="var(--green)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="Expenses" fill="var(--red)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef1f1" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: "#708584", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#708584", fontSize: 12 }} axisLine={false} tickLine={false} width={55} tickFormatter={(v) => `$${v}`} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [`$${Number(v).toFixed(2)}`, ""]} cursor={{ fill: "rgba(19,138,134,0.06)" }} />
+                <Legend iconType="circle" iconSize={8} formatter={(value) => <span style={{ color: "#566664", fontSize: "0.8rem" }}>{value}</span>} />
+                <Bar dataKey="Income" fill="#138a4a" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="Expenses" fill="#e0533d" radius={[4, 4, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </section>
 
-          <div className="card" style={{ borderStyle: "dashed" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
-              </svg>
+          <section className="card" style={{ borderStyle: "dashed" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div className="row-ico" style={{ background: "var(--teal-soft)", color: "var(--teal)" }}>✦</div>
               <div>
-                <p style={{ color: "var(--text-2)", fontSize: "0.875rem", fontWeight: 500 }}>AI Analysis</p>
-                <p style={{ color: "var(--text-3)", fontSize: "0.8rem", marginTop: "0.125rem" }}>
-                  Coming soon — personalized spending insights powered by GPT-4o.
-                </p>
+                <div className="row-name">AI Analysis <span className="demo-tag">SOON</span></div>
+                <div className="row-sub">Personalized spending insights, coming soon.</div>
               </div>
             </div>
-          </div>
+          </section>
         </>
       ) : (
-        <div className="card" style={{ textAlign: "center", padding: "3rem 1.5rem" }}>
-          <p style={{ color: "var(--text-3)", fontSize: "0.9rem" }}>No data for {formatMonth(month)}.</p>
-        </div>
+        <div className="card"><div className="empty">No data for {monthLabel(month)}.</div></div>
       )}
-    </div>
+    </>
   );
 }
