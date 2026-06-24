@@ -1,15 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  getTransactions, createTransaction, deleteTransaction, getCategories,
+  getTransactions, createTransaction, updateTransaction, deleteTransaction, getCategories,
 } from "../api/client";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../lib/format";
+
+// Payment methods stored lowercase in the transaction `source` column.
+const METHODS = [
+  { value: "cash", label: "Cash" },
+  { value: "paynow", label: "PayNow" },
+  { value: "paylah", label: "PayLah" },
+  { value: "card", label: "Card" },
+  { value: "giro", label: "GIRO" },
+];
+const METHOD_LABELS = Object.fromEntries(METHODS.map((m) => [m.value, m.label]));
+const methodLabel = (s) => METHOD_LABELS[s] || s;
 
 const EMPTY_FORM = {
   date: new Date().toISOString().slice(0, 10),
   item: "",
   amount: "",
   category: "",
-  source: "",
+  source: "cash",
 };
 
 export default function Spending() {
@@ -19,13 +30,23 @@ export default function Spending() {
   const [catFilter, setCatFilter] = useState("all");
   const [form, setForm] = useState(EMPTY_FORM);
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [menuFor, setMenuFor] = useState(null);
 
   function load() {
     getTransactions(month).then(setTransactions).catch(() => setTransactions([]));
   }
   useEffect(() => { load(); }, [month]);
   useEffect(() => { getCategories().then(setCategories).catch(() => {}); }, []);
+
+  // Close the per-row action menu on any outside click.
+  useEffect(() => {
+    if (!menuFor) return;
+    const close = () => setMenuFor(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [menuFor]);
 
   const filtered = useMemo(() => (
     catFilter === "all"
@@ -62,19 +83,47 @@ export default function Spending() {
     return order.map((date) => ({ date, items: map[date] }));
   }, [filtered]);
 
-  async function handleAdd(e) {
+  function resetForm() {
+    setForm({ ...EMPTY_FORM, date: new Date().toISOString().slice(0, 10) });
+    setAdding(false);
+    setEditingId(null);
+  }
+
+  function openAdd() {
+    setForm({ ...EMPTY_FORM, date: new Date().toISOString().slice(0, 10) });
+    setEditingId(null);
+    setAdding(true);
+  }
+
+  function startEdit(t) {
+    setForm({
+      date: t.date,
+      item: t.item || "",
+      amount: String(t.amount),
+      category: t.category || "",
+      source: t.source || "cash",
+    });
+    setEditingId(t.id);
+    setAdding(true);
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
     try {
-      await createTransaction({
+      const payload = {
         date: form.date,
         item: form.item,
         amount: Number(form.amount),
         category: form.category || null,
         source: form.source || null,
-      });
-      setForm({ ...EMPTY_FORM, date: new Date().toISOString().slice(0, 10) });
-      setAdding(false);
+      };
+      if (editingId) {
+        await updateTransaction(editingId, payload);
+      } else {
+        await createTransaction(payload);
+      }
+      resetForm();
       load();
     } finally {
       setSaving(false);
@@ -146,14 +195,14 @@ export default function Spending() {
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
             <button className="btn btn-outline" onClick={downloadCsv}>⤓ Download CSV</button>
-            <button className={`btn ${adding ? "btn-outline" : "btn-primary"}`} onClick={() => setAdding(!adding)}>
+            <button className={`btn ${adding ? "btn-outline" : "btn-primary"}`} onClick={() => (adding ? resetForm() : openAdd())}>
               {adding ? "Cancel" : "+ New transaction"}
             </button>
           </div>
         </div>
 
         {adding && (
-          <form onSubmit={handleAdd} style={{ marginTop: 16 }}>
+          <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
             <div className="form-grid">
               <div className="field">
                 <label className="field-label">Date</label>
@@ -175,12 +224,14 @@ export default function Spending() {
                 </select>
               </div>
               <div className="field">
-                <label className="field-label">Source</label>
-                <input className="input" type="text" placeholder="Bank, Cash…" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} />
+                <label className="field-label">Method</label>
+                <select className="select" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })}>
+                  {METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
               </div>
               <div className="field">
                 <button type="submit" className="btn btn-primary" disabled={saving} style={{ width: "100%" }}>
-                  {saving ? "Saving…" : "Save transaction"}
+                  {saving ? "Saving…" : editingId ? "Save changes" : "Save transaction"}
                 </button>
               </div>
             </div>
@@ -250,13 +301,27 @@ export default function Spending() {
                       <div className="row-name">{t.item}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
                         {t.category && <span className="chip">{t.category}</span>}
-                        {t.source && <span className="row-sub">· {t.source}</span>}
+                        {t.source && <span className="row-sub">· {methodLabel(t.source)}</span>}
                       </div>
                     </div>
                     <div className="row-name" style={{ width: 110, textAlign: "right", color: income ? "var(--green)" : "var(--ink)" }}>
                       {signed(t.amount)}
                     </div>
-                    <button className="btn btn-danger btn-icon" onClick={() => handleDelete(t.id)} aria-label="Delete transaction">✕</button>
+                    <div className="dd" style={{ flex: "none" }}>
+                      <button
+                        className="btn btn-ghost btn-icon"
+                        aria-label="Transaction actions"
+                        onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === t.id ? null : t.id); }}
+                      >
+                        ⋯
+                      </button>
+                      {menuFor === t.id && (
+                        <div className="dd-menu" style={{ top: 38, minWidth: 140 }}>
+                          <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); startEdit(t); }}>✎ Edit</div>
+                          <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); handleDelete(t.id); }}>✕ Delete</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}

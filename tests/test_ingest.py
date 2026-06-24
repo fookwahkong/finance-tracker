@@ -43,9 +43,11 @@ def test_shortcut_wrong_api_key_returns_401(client):
 
 
 def test_shortcut_saves_parsed_transaction(client, monkeypatch, fake_supabase):
+    # LLM returns a positive amount; Apple Pay is always a spend, so it must
+    # be stored negative regardless.
     monkeypatch.setattr(
         "backend.routers.ingest.parse_transaction",
-        lambda text, cats: {"item": "Grab", "category": "Transport", "amount": -12.5, "date": "2026-06-23"},
+        lambda text, cats: {"item": "Grab", "category": "Transport", "amount": 12.5, "date": "2026-06-23"},
     )
     resp = client.post(
         "/api/ingest/shortcut",
@@ -54,9 +56,10 @@ def test_shortcut_saves_parsed_transaction(client, monkeypatch, fake_supabase):
     )
     assert resp.status_code == 201
     assert resp.json()["item"] == "Grab"
-    # Verify source was set
+    # Apple Pay shortcut transactions are tagged as card payments, stored negative.
     inserted = fake_supabase.table.return_value.insert.call_args[0][0]
-    assert inserted["source"] == "shortcut"
+    assert inserted["source"] == "card"
+    assert inserted["amount"] == -12.5
 
 
 def test_shortcut_falls_back_on_parse_failure(client, monkeypatch):
@@ -86,23 +89,83 @@ def test_email_missing_auth_returns_422(client):
 def test_email_processes_one_message(client, monkeypatch, fake_supabase):
     monkeypatch.setattr(
         "backend.routers.ingest.gmail.fetch_unread",
-        lambda q: [{"id": "m1", "body": "SGD 10.00 at COFFEE on 23 Jun 2026"}],
+        lambda q: [{
+            "id": "m1",
+            "body": "SGD 10.00 at COFFEE on 23 Jun 2026",
+            "sender": "ibanking.alert@dbs.com",
+        }],
     )
     monkeypatch.setattr(
         "backend.routers.ingest.email_parser.parse",
-        lambda body: {"merchant": "COFFEE", "amount": 10.0, "date": "2026-06-23"},
+        lambda body: {"merchant": "COFFEE", "amount": 10.0, "date": "2026-06-23", "format": "transfer", "direction": "out"},
     )
+    # LLM returns a positive amount; the email direction must override it.
     monkeypatch.setattr(
         "backend.routers.ingest.parse_transaction",
-        lambda text, cats: {"item": "Coffee", "category": "Food", "amount": -10.0, "date": "2026-06-23"},
+        lambda text, cats: {"item": "Coffee", "category": "Food", "amount": 10.0, "date": "2026-06-23"},
     )
     monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
 
     resp = client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
     assert resp.status_code == 200
     assert resp.json() == {"processed": 1}
+    # ibanking.alert + transfer format -> PayNow, and outgoing -> negative.
     inserted = fake_supabase.table.return_value.insert.call_args[0][0]
-    assert inserted["source"] == "email"
+    assert inserted["source"] == "paynow"
+    assert inserted["amount"] == -10.0
+
+
+def test_email_received_is_positive_income(client, monkeypatch, fake_supabase):
+    monkeypatch.setattr(
+        "backend.routers.ingest.gmail.fetch_unread",
+        lambda q: [{"id": "m1", "body": "body", "sender": "ibanking.alert@dbs.com"}],
+    )
+    monkeypatch.setattr(
+        "backend.routers.ingest.email_parser.parse",
+        lambda body: {"merchant": "CHUA WEN LI DANA", "amount": 116.15, "date": "2026-06-06", "format": "received", "direction": "in"},
+    )
+    monkeypatch.setattr("backend.routers.ingest.parse_transaction", lambda text, cats: {})
+    monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
+
+    client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    inserted = fake_supabase.table.return_value.insert.call_args[0][0]
+    assert inserted["amount"] == 116.15
+    assert inserted["source"] == "paynow"
+
+
+def test_email_paylah_sender_tagged_paylah(client, monkeypatch, fake_supabase):
+    monkeypatch.setattr(
+        "backend.routers.ingest.gmail.fetch_unread",
+        lambda q: [{"id": "m1", "body": "body", "sender": "paylah.alert@dbs.com"}],
+    )
+    monkeypatch.setattr(
+        "backend.routers.ingest.email_parser.parse",
+        lambda body: {"merchant": "FOMO PAY", "amount": 4.80, "date": "2026-06-22", "format": "transfer"},
+    )
+    monkeypatch.setattr("backend.routers.ingest.parse_transaction", lambda text, cats: {})
+    monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
+
+    client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    inserted = fake_supabase.table.return_value.insert.call_args[0][0]
+    assert inserted["source"] == "paylah"
+
+
+def test_email_giro_format_tagged_giro(client, monkeypatch, fake_supabase):
+    # GIRO shares the ibanking.alert sender with PayNow, so the format decides.
+    monkeypatch.setattr(
+        "backend.routers.ingest.gmail.fetch_unread",
+        lambda q: [{"id": "m1", "body": "body", "sender": "ibanking.alert@dbs.com"}],
+    )
+    monkeypatch.setattr(
+        "backend.routers.ingest.email_parser.parse",
+        lambda body: {"merchant": "SYFE PTE. LTD.", "amount": 133.73, "date": "2026-06-23", "format": "giro"},
+    )
+    monkeypatch.setattr("backend.routers.ingest.parse_transaction", lambda text, cats: {})
+    monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
+
+    client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    inserted = fake_supabase.table.return_value.insert.call_args[0][0]
+    assert inserted["source"] == "giro"
 
 
 def test_email_skips_unparseable_messages(client, monkeypatch):

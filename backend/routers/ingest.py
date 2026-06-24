@@ -26,6 +26,14 @@ def _verify_cron_secret(authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
+def _email_source(sender: str, fmt: str) -> str:
+    if fmt == "giro":
+        return "giro"
+    if "paylah.alert" in sender.lower():
+        return "paylah"
+    return "paynow"
+
+
 def _insert(item: str, category: str, amount: float, tx_date: str, source: str) -> dict:
     payload = {
         "date": tx_date,
@@ -52,9 +60,9 @@ def ingest_shortcut(payload: ShortcutPayload, _=Depends(_verify_shortcut_key)):
     return _insert(
         item=parsed.get("item") or payload.merchant,
         category=parsed.get("category") or "Uncategorized",
-        amount=parsed.get("amount", -abs(payload.amount)),
+        amount=-abs(payload.amount),
         tx_date=parsed.get("date") or date.today().isoformat(),
-        source="shortcut",
+        source="card",
     )
 
 
@@ -82,12 +90,17 @@ def ingest_email(_=Depends(_verify_cron_secret)):
         except Exception:
             parsed = {}
 
+        # The email direction is authoritative for the sign; the LLM only
+        # supplies the item/category (it can't tell in/out from "NAME $amount").
+        magnitude = abs(parsed_email["amount"])
+        amount = magnitude if parsed_email.get("direction") == "in" else -magnitude
+
         _insert(
             item=parsed.get("item") or parsed_email["merchant"],
             category=parsed.get("category") or "Uncategorized",
-            amount=parsed.get("amount", -abs(parsed_email["amount"])),
+            amount=amount,
             tx_date=parsed_email.get("date") or date.today().isoformat(),
-            source="email",
+            source=_email_source(msg.get("sender", ""), parsed_email.get("format")),
         )
         gmail.mark_read(msg["id"])
         count += 1

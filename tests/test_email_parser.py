@@ -32,6 +32,32 @@ _SCANPAY_SAMPLE = (
     "To:    CHXX CHXX HEXX REGINXXX\n"
 )
 
+# Real DBS GIRO deduction format: distinct labels ("Payment amount", "Paying to",
+# "Date and Time" with no "&") and a full payee name + address on one line.
+_GIRO_SAMPLE = (
+    "Our GIRO payment is successful\n"
+    "Transaction Ref: SGA23066JKFY55OG\n\n"
+    "Dear Customer,\n\n"
+    "Your GIRO deduction is successful.\n\n"
+    "Details\n"
+    "Date and Time:    23 Jun 17:30 (SGT)\n"
+    "From:    DBS/POSB A/C ending 6391\n"
+    "Paying to:    SYFE PTE. LTD. 8 CROSS STREET #21-01 MANULIFE TOWER SINGAPORE 048424\n"
+    "Payment amount:    SGD 133.73\n"
+    "Bill Reference number:    17600215125274-vAGvGW7Xo_oq2_XRZc_1\n"
+)
+
+# Real DBS "received via PayNow" credit notice: narrative form, full date with
+# year, and the counterparty in "From:" (incoming money, positive).
+_RECEIVED_SAMPLE = (
+    "Transaction Ref: 1780675527388700563400C100000000000\n\n"
+    "Dear Customer,\n\n"
+    "You have received SGD 116.15 via PayNow on 06 Jun 2026 00:05 SGT.\n\n"
+    "From: CHUA WEN LI DANA\n"
+    "To: Your DBS/ POSB account ending 6391\n\n"
+    "Thank you for banking with us.\n"
+)
+
 
 def test_parse_extracts_amount():
     assert parse(_PAYNOW_SAMPLE)["amount"] == 47.00
@@ -57,6 +83,55 @@ def test_parse_keeps_merchant_with_periods():
 
 def test_parse_assumes_current_year_for_date():
     assert parse(_PAYNOW_SAMPLE)["date"] == f"{datetime.now().year}-06-20"
+
+
+def test_parse_tags_transfer_format():
+    assert parse(_PAYNOW_SAMPLE)["format"] == "transfer"
+
+
+def test_parse_transfer_direction_is_out():
+    assert parse(_PAYNOW_SAMPLE)["direction"] == "out"
+
+
+def test_parse_giro_amount():
+    assert parse(_GIRO_SAMPLE)["amount"] == 133.73
+
+
+def test_parse_giro_keeps_full_payee():
+    result = parse(_GIRO_SAMPLE)
+    assert result["merchant"] == (
+        "SYFE PTE. LTD. 8 CROSS STREET #21-01 MANULIFE TOWER SINGAPORE 048424"
+    )
+
+
+def test_parse_giro_date():
+    assert parse(_GIRO_SAMPLE)["date"] == f"{datetime.now().year}-06-23"
+
+
+def test_parse_tags_giro_format():
+    assert parse(_GIRO_SAMPLE)["format"] == "giro"
+
+
+def test_parse_giro_direction_is_out():
+    assert parse(_GIRO_SAMPLE)["direction"] == "out"
+
+
+def test_parse_received_amount():
+    assert parse(_RECEIVED_SAMPLE)["amount"] == 116.15
+
+
+def test_parse_received_payer_is_merchant():
+    assert parse(_RECEIVED_SAMPLE)["merchant"] == "CHUA WEN LI DANA"
+
+
+def test_parse_received_date_with_year():
+    assert parse(_RECEIVED_SAMPLE)["date"] == "2026-06-06"
+
+
+def test_parse_received_format_and_direction():
+    result = parse(_RECEIVED_SAMPLE)
+    assert result["format"] == "received"
+    assert result["direction"] == "in"
 
 
 def test_parse_raises_on_unrecognised_body():

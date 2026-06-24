@@ -25,7 +25,11 @@ def fetch_unread(query: str) -> list[dict]:
     out = []
     for msg in messages:
         full = svc.users().messages().get(userId="me", id=msg["id"], format="full").execute()
-        out.append({"id": msg["id"], "body": _extract_body(full)})
+        out.append({
+            "id": msg["id"],
+            "body": _extract_body(full),
+            "sender": _extract_sender(full),
+        })
     return out
 
 
@@ -49,6 +53,13 @@ def _html_to_text(raw: str) -> str:
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r" *\n *", "\n", text)
     return re.sub(r"\n{2,}", "\n", text).strip()
+
+
+def _extract_sender(message: dict) -> str:
+    for header in message.get("payload", {}).get("headers", []):
+        if header.get("name", "").lower() == "from":
+            return header.get("value", "")
+    return ""
 
 
 def _find_part(payload: dict, mime: str) -> Optional[str]:
