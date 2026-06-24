@@ -503,6 +503,17 @@ a { color: inherit; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
+.form-error {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid #f3c7bf;
+  border-radius: var(--radius-sm);
+  background: var(--red-soft);
+  color: #9f2f20;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* Modal */
 .modal-backdrop {
   position: fixed;

@@ -32,6 +32,7 @@ export default function Spending() {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [menuFor, setMenuFor] = useState(null);
 
   function load() {
@@ -87,11 +88,13 @@ export default function Spending() {
     setForm({ ...EMPTY_FORM, date: new Date().toISOString().slice(0, 10) });
     setAdding(false);
     setEditingId(null);
+    setSubmitError("");
   }
 
   function openAdd() {
     setForm({ ...EMPTY_FORM, date: new Date().toISOString().slice(0, 10) });
     setEditingId(null);
+    setSubmitError("");
     setAdding(true);
   }
 
@@ -102,19 +105,21 @@ export default function Spending() {
 
   function startEdit(t) {
     setForm({
-      date: t.date,
+      date: String(t.date || "").slice(0, 10),
       item: t.item || "",
-      amount: String(t.amount),
+      amount: t.amount == null ? "" : String(t.amount),
       category: t.category || "",
       source: t.source || "cash",
     });
     setEditingId(t.id);
+    setSubmitError("");
     setAdding(true);
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
+    setSubmitError("");
     try {
       const payload = {
         date: form.date,
@@ -123,13 +128,16 @@ export default function Spending() {
         category: form.category || null,
         source: form.source || null,
       };
-      if (editingId) {
+      if (editingId !== null) {
         await updateTransaction(editingId, payload);
       } else {
         await createTransaction(payload);
       }
       resetForm();
       load();
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setSubmitError(typeof detail === "string" ? detail : "Unable to save transaction. Check the API connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -199,8 +207,8 @@ export default function Spending() {
             </select>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
-            <button className="btn btn-outline" onClick={downloadCsv}>⤓ Download CSV</button>
-            <button className="btn btn-primary" onClick={openAdd}>
+            <button type="button" className="btn btn-outline" onClick={downloadCsv}>⤓ Download CSV</button>
+            <button type="button" className="btn btn-primary" onClick={openAdd}>
               + New transaction
             </button>
           </div>
@@ -230,6 +238,7 @@ export default function Spending() {
               </button>
             </div>
             <form onSubmit={handleSubmit}>
+              {submitError && <div className="form-error" role="alert">{submitError}</div>}
               <div className="form-grid modal-form-grid">
                 <div className="field">
                   <label className="field-label">Date</label>
