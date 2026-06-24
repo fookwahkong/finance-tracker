@@ -4,7 +4,7 @@ import pytest
 
 from core.validation import ValidationError, validate_raw_text, validate_transaction
 
-CATS = ["Food", "Income"]
+CATS = ["Food", "Income", "Others"]
 
 
 def _base(**overrides):
@@ -60,9 +60,14 @@ def test_validate_transaction_rejects_long_item():
         validate_transaction(_base(item="x" * 201), CATS)
 
 
-def test_validate_transaction_coerces_unknown_category_to_none():
+def test_validate_transaction_coerces_unknown_category_to_others():
     tx = validate_transaction(_base(category="Crypto"), CATS)
-    assert tx.category is None
+    assert tx.category == "Others"
+
+
+def test_validate_transaction_coerces_missing_category_to_others():
+    tx = validate_transaction(_base(category=None), CATS)
+    assert tx.category == "Others"
 
 
 def test_validate_transaction_rejects_non_numeric_amount():

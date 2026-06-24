@@ -1,10 +1,10 @@
-from datetime import date
+from datetime import date as Date
 from typing import Optional
 from pydantic import BaseModel
 
 
 class TransactionCreate(BaseModel):
-    date: date
+    date: Date
     item: str
     category: Optional[str] = None
     amount: float
@@ -12,7 +12,7 @@ class TransactionCreate(BaseModel):
 
 
 class TransactionUpdate(BaseModel):
-    date: Optional[date] = None
+    date: Optional[Date] = None
     item: Optional[str] = None
     category: Optional[str] = None
     amount: Optional[float] = None
@@ -30,3 +30,4 @@ class CategoryCreate(BaseModel):
 class Category(BaseModel):
     id: str
     name: str
+

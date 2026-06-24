@@ -280,6 +280,60 @@ npm run dev
 
 In production Telegram is wired to the `/api/webhook` endpoint. To test it locally, expose your backend with a tunnel (e.g. `ngrok http 8000`) and register the webhook against the tunnel URL. The previous polling bot has been removed.
 
+### Testing Production Locally
+
+Use this when you want to test the website like production without deploying. The script builds the production frontend, starts the FastAPI backend locally, and serves the built site from one same-origin URL while proxying `/api/*` to the backend. This catches the same frontend/API path behavior used in production without requiring a Vercel deploy.
+
+This project can also be run with `vercel dev`, but on Windows the local Vercel Python runtime can fail on compiled dependencies such as `pydantic_core`. The script below avoids that local-runtime issue while still testing the production frontend bundle against the real API and database.
+
+Prerequisites:
+- `.env` exists at the repo root
+- `SUPABASE_URL` and `SUPABASE_KEY` are filled in
+- Python backend dependencies and frontend dependencies are installed, or let the script install frontend dependencies when `node_modules` is missing
+
+Run from the repo root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test-production-local.ps1
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+To use a different site port:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test-production-local.ps1 -Port 3001
+```
+
+If you already have `uvicorn backend.main:app` running on port `8000`, the script will reuse it. To point at a different backend port:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test-production-local.ps1 -ApiPort 8001
+```
+
+Quick API smoke test while the local production site is running:
+
+```powershell
+$base = "http://localhost:3000"
+Invoke-RestMethod "$base/api/transactions"
+
+$body = @{
+  date = "2026-06-24"
+  item = "Local production test"
+  amount = -1.23
+  category = $null
+  source = "cash"
+} | ConvertTo-Json
+
+Invoke-RestMethod "$base/api/transactions" -Method Post -ContentType "application/json" -Body $body
+```
+
+If the API smoke test fails, inspect `local-backend.err.log` first. Most failures are missing env vars, invalid Supabase credentials, or backend import errors.
+
 ### Deploying to Vercel
 
 ```bash

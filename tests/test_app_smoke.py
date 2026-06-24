@@ -24,3 +24,10 @@ def test_vercel_handler_imports():
     import api.index
 
     assert api.index.handler is not None
+
+
+def test_transaction_update_accepts_date_string():
+    from core.models import TransactionUpdate
+
+    tx = TransactionUpdate.model_validate({"date": "2026-06-24"})
+    assert tx.date.isoformat() == "2026-06-24"

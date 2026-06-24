@@ -7,6 +7,7 @@ from core.models import TransactionCreate
 MAX_TEXT_LEN = 500
 MAX_ITEM_LEN = 200
 MIN_DATE = date(2000, 1, 1)
+DEFAULT_CATEGORY = "Others"
 
 
 class ValidationError(Exception):
@@ -42,7 +43,7 @@ def validate_transaction(data, known_categories: list[str]) -> TransactionCreate
         raise ValidationError(f"Item too long (max {MAX_ITEM_LEN} characters).")
     tx.item = item
 
-    if tx.category is not None and tx.category not in known_categories:
-        tx.category = None
+    if not tx.category or tx.category not in known_categories:
+        tx.category = DEFAULT_CATEGORY
 
     return tx
