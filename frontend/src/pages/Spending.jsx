@@ -95,6 +95,11 @@ export default function Spending() {
     setAdding(true);
   }
 
+  function closeTransactionModal() {
+    if (saving) return;
+    resetForm();
+  }
+
   function startEdit(t) {
     setForm({
       date: t.date,
@@ -195,49 +200,75 @@ export default function Spending() {
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
             <button className="btn btn-outline" onClick={downloadCsv}>⤓ Download CSV</button>
-            <button className={`btn ${adding ? "btn-outline" : "btn-primary"}`} onClick={() => (adding ? resetForm() : openAdd())}>
-              {adding ? "Cancel" : "+ New transaction"}
+            <button className="btn btn-primary" onClick={openAdd}>
+              + New transaction
             </button>
           </div>
         </div>
+      </div>
 
-        {adding && (
-          <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
-            <div className="form-grid">
-              <div className="field">
-                <label className="field-label">Date</label>
-                <input className="input" type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+      {adding && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={closeTransactionModal}>
+          <div
+            className="modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="transaction-modal-title"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <div>
+                <div id="transaction-modal-title" className="modal-title">
+                  {editingId ? "Edit transaction" : "New transaction"}
+                </div>
+                <div className="modal-sub">
+                  {editingId ? "Update the transaction details and save your changes." : "Enter the transaction details and save it."}
+                </div>
               </div>
-              <div className="field">
-                <label className="field-label">Item</label>
-                <input className="input" type="text" required placeholder="Coffee, Salary…" value={form.item} onChange={(e) => setForm({ ...form, item: e.target.value })} />
+              <button type="button" className="btn btn-ghost btn-icon" aria-label="Close" onClick={closeTransactionModal} disabled={saving}>
+                x
+              </button>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <div className="form-grid modal-form-grid">
+                <div className="field">
+                  <label className="field-label">Date</label>
+                  <input className="input" type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Item</label>
+                  <input className="input" type="text" required placeholder="Coffee, Salary..." value={form.item} onChange={(e) => setForm({ ...form, item: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Amount</label>
+                  <input className="input" type="number" step="0.01" required placeholder="-50 or +1000" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Category</label>
+                  <select className="select" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                    <option value="">None</option>
+                    {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label className="field-label">Method</label>
+                  <select className="select" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })}>
+                    {METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </div>
               </div>
-              <div className="field">
-                <label className="field-label">Amount</label>
-                <input className="input" type="number" step="0.01" required placeholder="−50 or +1000" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-              </div>
-              <div className="field">
-                <label className="field-label">Category</label>
-                <select className="select" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                  <option value="">— none —</option>
-                  {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="field">
-                <label className="field-label">Method</label>
-                <select className="select" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })}>
-                  {METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </select>
-              </div>
-              <div className="field">
-                <button type="submit" className="btn btn-primary" disabled={saving} style={{ width: "100%" }}>
-                  {saving ? "Saving…" : editingId ? "Save changes" : "Save transaction"}
+              <div className="modal-actions">
+                <button type="button" className="btn btn-outline" onClick={closeTransactionModal} disabled={saving}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? "Saving..." : editingId ? "Save changes" : "Save transaction"}
                 </button>
               </div>
-            </div>
-          </form>
-        )}
-      </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Spending by category */}
       <section className="card">
