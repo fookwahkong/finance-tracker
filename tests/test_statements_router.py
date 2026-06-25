@@ -26,14 +26,14 @@ def client(monkeypatch, fake_supabase):
 
 def test_parse_applies_sign_and_merges(client, monkeypatch):
     monkeypatch.setattr(statements, "extract_rows", lambda data: [
-        {"date": "2026-05-02", "description": "Debit Card transaction\nOTTIE",
+        {"date": "2026-05-02", "item": "OTTIE PANCAKES SINGAPORE",
          "amount": 2.40, "direction": "out", "source": "card"},
-        {"date": "2026-05-01", "description": "FAST Payment / Receipt\nPAYNOW",
+        {"date": "2026-05-01", "item": "KYM CONSTRUCTION",
          "amount": 350.00, "direction": "in", "source": "paynow"},
     ])
-    monkeypatch.setattr(statements, "categorize_rows", lambda descs, cats: [
-        {"item": "Ottie Pancakes", "category": "Food", "is_new": False},
-        {"item": "Salary", "category": "Income", "is_new": True},
+    monkeypatch.setattr(statements, "categorize_rows", lambda items, cats: [
+        {"category": "Food", "is_new": False},
+        {"category": "Income", "is_new": True},
     ])
 
     resp = client.post(
@@ -42,10 +42,11 @@ def test_parse_applies_sign_and_merges(client, monkeypatch):
     )
     assert resp.status_code == 200
     rows = resp.json()["rows"]
-    assert rows[0]["amount"] == -2.40          # 'out' -> negative
-    assert rows[0]["item"] == "Ottie Pancakes"
+    assert rows[0]["amount"] == -2.40                  # 'out' -> negative
+    assert rows[0]["item"] == "OTTIE PANCAKES SINGAPORE"  # merchant from extract
     assert rows[0]["source"] == "card"
-    assert rows[1]["amount"] == 350.00         # 'in' -> positive
+    assert rows[0]["suggested_category"] == "Food"
+    assert rows[1]["amount"] == 350.00                 # 'in' -> positive
     assert rows[1]["is_new"] is True
 
 

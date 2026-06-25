@@ -12,6 +12,13 @@ _TXN_LINE = re.compile(rf"^(\d{{2}}/\d{{2}}/\d{{4}})\s+(.*?)\s+({_MONEY})\s+({_M
 _BROUGHT_FORWARD = re.compile(rf"^Balance Brought Forward\s+({_MONEY})\s*$")
 _CARRIED_FORWARD = re.compile(r"^Balance Carried Forward")
 
+# A detail line that is a single unbroken alphanumeric token (>=10 chars) is a
+# reference/hash, not a merchant — skip it when looking for the merchant name.
+_REF_LIKE = re.compile(r"^[A-Z0-9]{10,}$")
+# Debit-card merchant lines end with a country code + posting date, e.g.
+# "OTTIE PANCAKES SINGAPORE SGP 29APR" — strip that trailing noise.
+_TRAILING_LOC_DATE = re.compile(r"\s+[A-Z]{2,3}\s+\d{2}[A-Z]{3}$")
+
 
 def _money(text: str) -> float:
     return float(text.replace(",", ""))
@@ -31,6 +38,29 @@ def _source(dtype: str, blob: str) -> str | None:
     return None
 
 
+def _merchant(dtype: str, detail_lines: list[str]) -> str:
+    # A "FROM:"/"TO:" party (PayNow / transfers) is the truest merchant name.
+    for line in detail_lines:
+        upper = line.upper()
+        if upper.startswith("FROM:") or upper.startswith("TO:"):
+            return line.split(":", 1)[1].strip()
+
+    # Otherwise the first "wordy" detail line — skipping reference/hash/number
+    # tokens — is the merchant or activity.
+    for line in detail_lines:
+        candidate = line.strip().rstrip(":").strip()
+        if not candidate:
+            continue
+        if " " not in candidate and (
+            _REF_LIKE.match(candidate) or candidate.isdigit() or candidate.upper().startswith("REF")
+        ):
+            continue
+        return _TRAILING_LOC_DATE.sub("", candidate).strip()
+
+    # No usable detail (e.g. "Interest Earned") — fall back to the type.
+    return dtype
+
+
 def _build(date_str, dtype, detail_lines, amt, bal, prev_balance):
     amount = _money(amt)
     balance = _money(bal)
@@ -41,11 +71,10 @@ def _build(date_str, dtype, detail_lines, amt, bal, prev_balance):
             f"balance delta {delta} != stated amount {amount}"
         )
     iso = datetime.strptime(date_str, "%d/%m/%Y").date().isoformat()
-    description = "\n".join([dtype, *detail_lines]).strip()
     blob = " ".join([dtype, *detail_lines])
     row = {
         "date": iso,
-        "description": description,
+        "item": _merchant(dtype, detail_lines),
         "amount": amount,
         "direction": "in" if delta > 0 else "out",
         "source": _source(dtype, blob),

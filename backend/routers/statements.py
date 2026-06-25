@@ -27,7 +27,7 @@ async def parse_statement(file: UploadFile = File(...)):
         )
 
     categories = _known_categories()
-    cats = categorize_rows([r["description"] for r in rows], categories)
+    cats = categorize_rows([r["item"] for r in rows], categories)
 
     out = []
     for row, cat in zip(rows, cats):
@@ -35,7 +35,7 @@ async def parse_statement(file: UploadFile = File(...)):
         amount = magnitude if row["direction"] == "in" else -magnitude
         out.append({
             "date": row["date"],
-            "item": cat["item"],
+            "item": row["item"],
             "amount": amount,
             "source": row["source"],
             "suggested_category": cat["category"],

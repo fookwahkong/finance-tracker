@@ -14,29 +14,33 @@ def test_incoming_paynow_row():
     assert r["amount"] == 350.00
     assert r["direction"] == "in"
     assert r["source"] == "paynow"
-    assert r["description"].startswith("FAST Payment / Receipt")
-    assert "CHUA WEN LI DANA" in r["description"]
+    # item is the sender (FROM party), not the transaction type.
+    assert r["item"] == "CHUA WEN LI DANA"
 
 
-def test_debit_card_row_is_out_and_card():
+def test_debit_card_item_is_merchant_not_type():
     rows = _parse_lines(SAMPLE_LINES)
     r = rows[1]
     assert r["date"] == "2026-05-02"
     assert r["amount"] == 2.40
     assert r["direction"] == "out"
     assert r["source"] == "card"
+    # trailing country code + posting date are stripped off the merchant.
+    assert r["item"] == "OTTIE PANCAKES SINGAPORE"
 
 
-def test_paylah_topup_source():
+def test_paylah_topup_source_and_item():
     rows = _parse_lines(SAMPLE_LINES)
     assert rows[2]["source"] == "paylah"
     assert rows[2]["direction"] == "out"
+    assert rows[2]["item"] == "TOP-UP TO PAYLAH!"
 
 
-def test_giro_collection_source():
+def test_giro_collection_skips_reference_hashes():
     rows = _parse_lines(SAMPLE_LINES)
     assert rows[3]["source"] == "giro"
     assert rows[3]["amount"] == 129.34
+    assert rows[3]["item"] == "COLLECTION PAYMENT"
 
 
 def test_inline_interest_earned():
@@ -46,7 +50,7 @@ def test_inline_interest_earned():
     assert r["amount"] == 1.01
     assert r["direction"] == "in"
     assert r["source"] is None
-    assert r["description"] == "Interest Earned"
+    assert r["item"] == "Interest Earned"
 
 
 def test_checksum_failure_raises():
