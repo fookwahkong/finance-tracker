@@ -23,6 +23,18 @@ class Transaction(TransactionCreate):
     id: str
 
 
+class ParsedRow(BaseModel):
+    date: Date
+    item: str
+    amount: float
+    source: Optional[str] = None
+    category: Optional[str] = None
+
+
+class ImportRequest(BaseModel):
+    rows: list[ParsedRow]
+
+
 class CategoryCreate(BaseModel):
     name: str
 
