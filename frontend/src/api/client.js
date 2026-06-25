@@ -30,3 +30,13 @@ export const deleteCategory = (id) =>
 // Reports
 export const getMonthlyReport = (month) =>
   api.get("/api/reports/monthly", { params: { month } }).then((r) => r.data);
+
+// Statement import
+export const parseStatement = (file) => {
+  const form = new FormData();
+  form.append("file", file);
+  return api.post("/api/statements/parse", form).then((r) => r.data);
+};
+
+export const importStatement = (rows) =>
+  api.post("/api/statements/import", { rows }).then((r) => r.data);
