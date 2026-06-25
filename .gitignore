@@ -6,6 +6,10 @@
 .env.local
 credentials.json
 
+# Bank statements (sensitive — never commit)
+*.pdf
+*.stackdump
+
 # Vercel
 .vercel
 
