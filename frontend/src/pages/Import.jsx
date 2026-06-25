@@ -20,6 +20,14 @@ export default function Import() {
 
   const knownNames = useMemo(() => new Set(categories.map((c) => c.name)), [categories]);
 
+  // Full dropdown list: existing categories plus any new ones the LLM proposed
+  // (or the user typed) across the parsed rows.
+  const categoryOptions = useMemo(() => {
+    const names = new Set(categories.map((c) => c.name));
+    rows.forEach((r) => { if (r.category) names.add(r.category); });
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [categories, rows]);
+
   async function onFile(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -174,13 +182,16 @@ export default function Import() {
                       <td>{r.source ? <span className="chip">{sourceLabel(r.source)}</span> : <span className="row-sub">—</span>}</td>
                       <td>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                          <input
-                            className="input"
-                            list="cat-options"
+                          <select
+                            className="select"
                             value={r.category}
-                            placeholder="Uncategorized"
                             onChange={(e) => update(i, "category", e.target.value)}
-                          />
+                          >
+                            <option value="">Uncategorized</option>
+                            {categoryOptions.map((name) => (
+                              <option key={name} value={name}>{name}</option>
+                            ))}
+                          </select>
                           {isNew && <span className="chip">NEW</span>}
                         </span>
                       </td>
@@ -192,9 +203,6 @@ export default function Import() {
                 })}
               </tbody>
             </table>
-            <datalist id="cat-options">
-              {categories.map((c) => <option key={c.id} value={c.name} />)}
-            </datalist>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={clearAll} disabled={busy}>
                 Cancel

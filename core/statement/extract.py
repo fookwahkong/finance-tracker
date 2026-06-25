@@ -10,7 +10,9 @@ from datetime import datetime
 _MONEY = r"[\d,]+\.\d{2}"
 _TXN_LINE = re.compile(rf"^(\d{{2}}/\d{{2}}/\d{{4}})\s+(.*?)\s+({_MONEY})\s+({_MONEY})\s*$")
 _BROUGHT_FORWARD = re.compile(rf"^Balance Brought Forward\s+({_MONEY})\s*$")
-_CARRIED_FORWARD = re.compile(r"^Balance Carried Forward")
+# A block ends at a page's "Balance Carried Forward" or, on the final page
+# (which has no carried-forward line), the "Total Balance Carried Forward".
+_CARRIED_FORWARD = re.compile(r"^(Total )?Balance Carried Forward")
 
 # A detail line that is a single unbroken alphanumeric token (>=10 chars) is a
 # reference/hash, not a merchant — skip it when looking for the merchant name.
@@ -82,6 +84,12 @@ def _build(date_str, dtype, detail_lines, amt, bal, prev_balance):
     return row, balance
 
 
+def _is_noise(line: str) -> bool:
+    # Page-trailer artifact like "4 4 4 4 4" — every token is a single char.
+    tokens = line.split()
+    return bool(tokens) and all(len(t) == 1 for t in tokens)
+
+
 def _parse_lines(lines: list[str]) -> list[dict]:
     rows: list[dict] = []
     prev_balance: float | None = None
@@ -119,7 +127,7 @@ def _parse_lines(lines: list[str]) -> list[dict]:
             cur = {"date": date_str, "type": dtype.strip(), "amt": amt, "bal": bal, "detail": []}
             continue
 
-        if cur is not None:
+        if cur is not None and not _is_noise(line):
             cur["detail"].append(line)
 
     flush()

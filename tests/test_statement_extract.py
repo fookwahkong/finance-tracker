@@ -53,6 +53,20 @@ def test_inline_interest_earned():
     assert r["item"] == "Interest Earned"
 
 
+def test_carried_forward_flushes_across_page_break():
+    lines = [
+        "Balance Brought Forward 100.00",
+        "01/05/2026 Debit Card transaction 10.00 90.00",
+        "SHOP ALPHA SGP 01MAY",
+        "Balance Carried Forward 90.00",
+        "Balance Brought Forward 90.00",
+        "02/05/2026 Debit Card transaction 5.00 85.00",
+        "SHOP BETA SGP 02MAY",
+    ]
+    rows = _parse_lines(lines)
+    assert [r["item"] for r in rows] == ["SHOP ALPHA", "SHOP BETA"]
+
+
 def test_checksum_failure_raises():
     bad = [
         "Balance Brought Forward 100.00",

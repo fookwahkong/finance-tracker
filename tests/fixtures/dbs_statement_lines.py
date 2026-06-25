@@ -23,6 +23,6 @@ SAMPLE_LINES = [
     "SGA12056JKC3VE9S",
     "COLLECTION PAYMENT",
     "31/05/2026 Interest Earned 1.01 28,297.99",
-    "Balance Carried Forward 28,297.99",
+    "4 4 4 4 4",
     "Total Balance Carried Forward: 140.64 351.01 28,297.99",
 ]
