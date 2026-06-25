@@ -514,6 +514,17 @@ a { color: inherit; }
   font-weight: 600;
 }
 
+.form-ok {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid #bfe3c9;
+  border-radius: var(--radius-sm);
+  background: var(--green-soft);
+  color: #1f7a3d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* Modal */
 .modal-backdrop {
   position: fixed;

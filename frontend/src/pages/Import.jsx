@@ -1,18 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { parseStatement, importStatement, getCategories } from "../api/client";
+import { signed } from "../lib/format";
+
+const SOURCE_LABELS = {
+  cash: "Cash", paynow: "PayNow", paylah: "PayLah", card: "Card", giro: "GIRO",
+};
+const sourceLabel = (s) => SOURCE_LABELS[s] || s;
 
 export default function Import() {
   const [categories, setCategories] = useState([]);
   const [rows, setRows] = useState([]);
+  const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
+  const fileRef = useRef(null);
 
   useEffect(() => { getCategories().then(setCategories).catch(() => {}); }, []);
+
+  const knownNames = useMemo(() => new Set(categories.map((c) => c.name)), [categories]);
 
   async function onFile(e) {
     const file = e.target.files[0];
     if (!file) return;
+    setFileName(file.name);
     setBusy(true); setError(""); setDone("");
     try {
       const data = await parseStatement(file);
@@ -33,6 +44,11 @@ export default function Import() {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
   }
 
+  function clearAll() {
+    setRows([]); setFileName(""); setError(""); setDone("");
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
   async function onImport() {
     setBusy(true); setError(""); setDone("");
     const payload = rows
@@ -43,7 +59,7 @@ export default function Import() {
     try {
       const res = await importStatement(payload);
       setDone(`Imported ${res.inserted} transactions.`);
-      setRows([]);
+      clearAll();
     } catch (err) {
       setError(err.response?.data?.detail || "Import failed.");
     } finally {
@@ -51,62 +67,145 @@ export default function Import() {
     }
   }
 
-  const knownNames = new Set(categories.map((c) => c.name));
-  const selectedCount = rows.filter((r) => r.include).length;
+  const included = rows.filter((r) => r.include);
+  const selectedCount = included.length;
+  const newCatCount = new Set(
+    included.map((r) => r.category).filter((c) => c && !knownNames.has(c))
+  ).size;
+  const net = included.reduce((s, r) => s + r.amount, 0);
 
   return (
-    <div className="page">
-      <h1>Import Statement</h1>
-      <p>Upload a digital DBS/POSB PDF statement to extract transactions.</p>
-
-      <input type="file" accept="application/pdf" onChange={onFile} disabled={busy} />
-      {busy && <p>Working…</p>}
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      {done && <p style={{ color: "green" }}>{done}</p>}
+    <>
+      {/* Upload */}
+      <section className="card">
+        <div className="card-head">
+          <div className="card-title">Import Statement</div>
+        </div>
+        <p style={{ margin: "0 0 14px", color: "var(--muted)", fontSize: 14 }}>
+          Upload a digital DBS/POSB PDF statement to extract transactions, review them, and import.
+        </p>
+        {error && <div className="form-error" role="alert">{error}</div>}
+        {done && <div className="form-ok" role="status">{done}</div>}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <label className="btn btn-outline" style={{ cursor: busy ? "default" : "pointer" }}>
+            {busy ? "Working…" : "Choose PDF"}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/pdf"
+              onChange={onFile}
+              disabled={busy}
+              style={{ display: "none" }}
+            />
+          </label>
+          {fileName && <span className="row-sub">{fileName}</span>}
+          {rows.length > 0 && (
+            <button type="button" className="btn btn-ghost" style={{ marginLeft: "auto" }} onClick={clearAll} disabled={busy}>
+              Clear
+            </button>
+          )}
+        </div>
+      </section>
 
       {rows.length > 0 && (
         <>
-          <table className="import-table">
-            <thead>
-              <tr>
-                <th>Include</th><th>Date</th><th>Item</th>
-                <th>Amount</th><th>Source</th><th>Category</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={i}>
-                  <td>
-                    <input type="checkbox" checked={r.include}
-                      onChange={(e) => update(i, "include", e.target.checked)} />
-                  </td>
-                  <td>{r.date}</td>
-                  <td>
-                    <input value={r.item} onChange={(e) => update(i, "item", e.target.value)} />
-                  </td>
-                  <td style={{ color: r.amount < 0 ? "crimson" : "green" }}>
-                    {r.amount.toFixed(2)}
-                  </td>
-                  <td>{r.source || "—"}</td>
-                  <td>
-                    <input list="cat-options" value={r.category}
-                      onChange={(e) => update(i, "category", e.target.value)} />
-                    {r.category && !knownNames.has(r.category) && (
-                      <span className="new-cat-tag"> NEW</span>
-                    )}
-                  </td>
+          {/* Summary */}
+          <div className="grid-4">
+            <div className="stat">
+              <div className="stat-label">Rows Found</div>
+              <div className="stat-value">{rows.length}</div>
+              <div className="stat-note">Parsed from statement</div>
+            </div>
+            <div className="stat accent">
+              <div className="stat-label">Selected</div>
+              <div className="stat-value">{selectedCount}</div>
+              <div className="stat-note">Will be imported</div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">New Categories</div>
+              <div className="stat-value">{newCatCount}</div>
+              <div className="stat-note">Created on import</div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">Net</div>
+              <div className="stat-value">{signed(net)}</div>
+              <div className="stat-note">Selected rows</div>
+            </div>
+          </div>
+
+          {/* Review table */}
+          <section className="card">
+            <div className="card-head">
+              <div className="card-title">Review Transactions</div>
+              <span className="pill" style={{ marginLeft: "auto" }}>{selectedCount} of {rows.length} selected</span>
+            </div>
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}></th>
+                  <th>Date</th>
+                  <th>Item</th>
+                  <th>Source</th>
+                  <th>Category</th>
+                  <th className="num">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <datalist id="cat-options">
-            {categories.map((c) => <option key={c.id} value={c.name} />)}
-          </datalist>
-          <button onClick={onImport} disabled={busy}>
-            Import {selectedCount} selected
-          </button>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => {
+                  const income = r.amount > 0;
+                  const isNew = r.category && !knownNames.has(r.category);
+                  return (
+                    <tr key={i} style={{ opacity: r.include ? 1 : 0.45 }}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={r.include}
+                          onChange={(e) => update(i, "include", e.target.checked)}
+                        />
+                      </td>
+                      <td style={{ color: "var(--muted)" }}>{r.date}</td>
+                      <td>
+                        <input
+                          className="input"
+                          value={r.item}
+                          onChange={(e) => update(i, "item", e.target.value)}
+                        />
+                      </td>
+                      <td>{r.source ? <span className="chip">{sourceLabel(r.source)}</span> : <span className="row-sub">—</span>}</td>
+                      <td>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                          <input
+                            className="input"
+                            list="cat-options"
+                            value={r.category}
+                            placeholder="Uncategorized"
+                            onChange={(e) => update(i, "category", e.target.value)}
+                          />
+                          {isNew && <span className="chip">NEW</span>}
+                        </span>
+                      </td>
+                      <td className="num" style={{ fontWeight: 700, color: income ? "var(--green)" : "var(--ink)" }}>
+                        {signed(r.amount)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <datalist id="cat-options">
+              {categories.map((c) => <option key={c.id} value={c.name} />)}
+            </datalist>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-outline" onClick={clearAll} disabled={busy}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={onImport} disabled={busy || selectedCount === 0}>
+                {busy ? "Importing…" : `Import ${selectedCount} selected`}
+              </button>
+            </div>
+          </section>
         </>
       )}
-    </div>
+    </>
   );
 }
