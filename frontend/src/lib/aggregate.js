@@ -27,19 +27,25 @@ function nextMonth(ym) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-// Signed net flow (income - spending) for a single "YYYY-MM" month.
-export function netFlow(transactions, month) {
-  let net = 0;
+// Map of "YYYY-MM" -> signed net flow (income - spending) for that month,
+// built in a single pass so the trace can look up many months in O(1) each
+// (cheap even with years of transactions). Memoize this on the transaction
+// list and reuse it across month selections.
+export function netFlowMap(transactions) {
+  const map = {};
   for (const t of transactions) {
-    if (String(t.date || "").slice(0, 7) === month) net += Number(t.amount);
+    const key = String(t.date || "").slice(0, 7);
+    if (!key) continue;
+    map[key] = (map[key] || 0) + Number(t.amount);
   }
-  return net;
+  return map;
 }
 
 // Traced cash for targetMonth: take the nearest anchor whose month is <=
-// targetMonth, then add each later month's net flow up to and including
-// targetMonth. Returns null when no anchor applies (cash is unknown).
-export function cashForMonth(anchors, transactions, targetMonth) {
+// targetMonth, then add each later month's net flow (from a precomputed
+// netFlowMap) up to and including targetMonth. Returns null when no anchor
+// applies (cash is unknown).
+export function cashForMonth(anchors, flowMap, targetMonth) {
   const applicable = anchors
     .filter((a) => a.month <= targetMonth)
     .sort((a, b) => (a.month < b.month ? 1 : -1));
@@ -49,7 +55,7 @@ export function cashForMonth(anchors, transactions, targetMonth) {
   let cursor = anchor.month;
   while (cursor < targetMonth) {
     cursor = nextMonth(cursor);
-    cash += netFlow(transactions, cursor);
+    cash += flowMap[cursor] || 0;
   }
   return cash;
 }
