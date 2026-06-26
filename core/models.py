@@ -54,3 +54,16 @@ class Budget(BaseModel):
     category: str
     amount: float
 
+
+class SubscriptionCreate(BaseModel):
+    type: str
+    item: str
+    amount: float
+    category: str
+    source: str = "card"
+    day_of_month: int
+
+
+class Subscription(SubscriptionCreate):
+    id: str
+
