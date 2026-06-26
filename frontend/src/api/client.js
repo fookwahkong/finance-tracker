@@ -27,6 +27,16 @@ export const createCategory = (name) =>
 export const deleteCategory = (id) =>
   api.delete(`/api/categories/${id}`);
 
+// Budgets
+export const getBudgets = () =>
+  api.get("/api/budgets").then((r) => r.data);
+
+export const upsertBudget = (category, amount) =>
+  api.put("/api/budgets", { category, amount }).then((r) => r.data);
+
+export const deleteBudget = (category) =>
+  api.delete(`/api/budgets/${encodeURIComponent(category)}`);
+
 // Reports
 export const getMonthlyReport = (month) =>
   api.get("/api/reports/monthly", { params: { month } }).then((r) => r.data);
