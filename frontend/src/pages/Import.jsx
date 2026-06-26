@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { parseStatement, importStatement, getCategories } from "../api/client";
 import { signed } from "../lib/format";
 
@@ -12,6 +13,7 @@ export default function Import() {
   const [rows, setRows] = useState([]);
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
   const fileRef = useRef(null);
@@ -58,7 +60,7 @@ export default function Import() {
   }
 
   async function onImport() {
-    setBusy(true); setError(""); setDone("");
+    setBusy(true); setImporting(true); setError(""); setDone("");
     const payload = rows
       .filter((r) => r.include)
       .map(({ date, item, amount, source, category }) => ({
@@ -71,7 +73,7 @@ export default function Import() {
     } catch (err) {
       setError(err.response?.data?.detail || "Import failed.");
     } finally {
-      setBusy(false);
+      setBusy(false); setImporting(false);
     }
   }
 
@@ -213,6 +215,13 @@ export default function Import() {
             </div>
           </section>
         </>
+      )}
+
+      {importing && createPortal(
+        <div className="loading-overlay" role="alert" aria-busy="true">
+          <div className="spinner" />
+        </div>,
+        document.body
       )}
     </>
   );
