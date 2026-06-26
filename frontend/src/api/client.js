@@ -50,3 +50,23 @@ export const parseStatement = (file) => {
 
 export const importStatement = (rows) =>
   api.post("/api/statements/import", { rows }).then((r) => r.data);
+
+// Subscriptions (recurring bills & income)
+export const getSubscriptions = () =>
+  api.get("/api/subscriptions").then((r) => r.data);
+
+export const createSubscription = (data) =>
+  api.post("/api/subscriptions", data).then((r) => r.data);
+
+export const updateSubscription = (id, data) =>
+  api.put(`/api/subscriptions/${id}`, data).then((r) => r.data);
+
+export const deleteSubscription = (id) =>
+  api.delete(`/api/subscriptions/${id}`);
+
+// Net worth (cash anchors)
+export const getNetWorth = () =>
+  api.get("/api/networth").then((r) => r.data);
+
+export const upsertNetWorth = (month, cash) =>
+  api.put("/api/networth", { month, cash }).then((r) => r.data);
