@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getMonthlyReport, getTransactions } from "../api/client";
+import { getMonthlyReport, getTransactions, getBudgets } from "../api/client";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../lib/format";
+import { emojiFor } from "../lib/categories";
+import { lastSixMonths, monthlyTotals } from "../lib/aggregate";
 
 // Static sample data for widgets that have no backend yet.
 const DEMO_BARS_A = [40, 75, 55, 90, 50, 80, 45, 65];
@@ -23,7 +25,9 @@ function Demo() {
 }
 
 export default function Dashboard() {
-  const month = currentMonth();
+  const [month, setMonth] = useState(currentMonth());
+  const [budgets, setBudgets] = useState([]);
+  const [allTx, setAllTx] = useState([]);
   const [report, setReport] = useState(null);
   const [recent, setRecent] = useState([]);
 
@@ -31,6 +35,26 @@ export default function Dashboard() {
     getMonthlyReport(month).then(setReport).catch(() => setReport(null));
     getTransactions(month).then((txs) => setRecent(txs.slice(0, 5))).catch(() => setRecent([]));
   }, [month]);
+
+  useEffect(() => { getBudgets().then(setBudgets).catch(() => setBudgets([])); }, []);
+  useEffect(() => { getTransactions().then(setAllTx).catch(() => setAllTx([])); }, []);
+
+  const sixMonth = useMemo(() => monthlyTotals(allTx, lastSixMonths()), [allTx]);
+
+  // Real budget status for the selected month.
+  const spendByCatMonth = useMemo(() => {
+    const acc = {};
+    Object.entries(report?.breakdown || {}).forEach(([cat, v]) => {
+      if (v < 0) acc[cat] = -v;
+    });
+    return acc;
+  }, [report]);
+  const budgetRows = budgets
+    .map((b) => ({ category: b.category, amount: b.amount, spent: spendByCatMonth[b.category] || 0 }))
+    .sort((a, b) => b.spent - a.spent);
+  const totalBudget = budgetRows.reduce((s, b) => s + b.amount, 0);
+  const totalBudgetSpent = budgetRows.reduce((s, b) => s + b.spent, 0);
+  const budgetPct = totalBudget ? Math.round((totalBudgetSpent / totalBudget) * 100) : 0;
 
   const income = report?.total_income || 0;
   const expenses = Math.abs(report?.total_expenses || 0);
@@ -72,7 +96,13 @@ export default function Dashboard() {
         <section className="card">
           <div className="card-head">
             <div className="card-sub">Net Spending</div>
-            <span className="pill" style={{ marginLeft: "auto" }}>{monthLabel(month)}</span>
+            <input
+              className="input"
+              type="month"
+              style={{ width: "auto", marginLeft: "auto" }}
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+            />
           </div>
           {totalSpent === 0 ? (
             <div className="empty">No spending recorded this month.</div>
@@ -102,29 +132,60 @@ export default function Dashboard() {
       <div className="grid-2">
         <section className="card">
           <div className="card-head">
-            <div className="card-title">Cash Flow Overview <Demo /></div>
+            <div className="card-title">Cash Flow Overview</div>
+            <span className="pill" style={{ marginLeft: "auto" }}>Last 6 months</span>
           </div>
-          <svg viewBox="0 0 620 220" style={{ width: "100%", height: 200 }}>
-            <polyline points="20,170 95,150 170,158 245,120 320,110 395,135 470,95 545,108 600,70" fill="none" stroke="var(--teal)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-            <polyline points="20,190 95,182 170,176 245,180 320,150 395,165 470,150 545,135 600,140" fill="none" stroke="var(--teal-3)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          {(() => {
+            const max = Math.max(1, ...sixMonth.map((d) => Math.max(d.spending, d.income)));
+            const pts = (key) => sixMonth.map((d, i) => {
+              const x = 20 + (i * 580) / 5;
+              const y = 180 - (d[key] / max) * 150;
+              return `${x.toFixed(0)},${y.toFixed(0)}`;
+            }).join(" ");
+            return (
+              <svg viewBox="0 0 620 200" style={{ width: "100%", height: 200 }}>
+                <polyline points={pts("income")} fill="none" stroke="var(--teal-3)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                <polyline points={pts("spending")} fill="none" stroke="var(--teal)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            );
+          })()}
+          <div style={{ display: "flex", gap: 16, fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+            <span><span className="legend-dot" style={{ background: "var(--teal)" }} /> Spending</span>
+            <span><span className="legend-dot" style={{ background: "var(--teal-3)" }} /> Income</span>
+          </div>
         </section>
 
         <section className="card">
           <div className="card-head">
-            <div className="card-title">Budget Status <Demo /></div>
+            <div className="card-title">Budget Status</div>
+            <span className="pill" style={{ marginLeft: "auto" }}>{monthLabel(month)}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "8px 0 12px" }}>
-            <div style={{ fontSize: 34, fontWeight: 800 }}>71%</div>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>of $5,000 budget used</div>
-          </div>
-          <div className="progress" style={{ marginBottom: 18 }}><span style={{ width: "71%" }} /></div>
-          {[["Essentials", 89, "var(--teal)"], ["Groceries", 45, "var(--teal-2)"], ["Lifestyle", 36, "var(--teal-3)"]].map(([n, p, c]) => (
-            <div key={n} style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", fontSize: 13, marginBottom: 6 }}><span>{n}</span><b style={{ marginLeft: "auto" }}>{p}%</b></div>
-              <div className="progress sm"><span style={{ width: p + "%", background: c }} /></div>
-            </div>
-          ))}
+          {budgetRows.length === 0 ? (
+            <div className="empty">No budgets set. Add them on the Budget page.</div>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "8px 0 12px" }}>
+                <div style={{ fontSize: 34, fontWeight: 800 }}>{budgetPct}%</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>of {money(totalBudget)} budget used</div>
+              </div>
+              <div className="progress" style={{ marginBottom: 18 }}>
+                <span style={{ width: `${Math.min(100, budgetPct)}%`, background: budgetPct > 100 ? "var(--red)" : "var(--teal)" }} />
+              </div>
+              {budgetRows.slice(0, 3).map((b) => {
+                const pct = b.amount ? Math.min(100, Math.round((b.spent / b.amount) * 100)) : 0;
+                const over = b.amount > 0 && b.spent > b.amount;
+                return (
+                  <div key={b.category} style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", fontSize: 13, marginBottom: 6 }}>
+                      <span>{emojiFor(b.category)} {b.category}</span>
+                      <b style={{ marginLeft: "auto" }}>{pct}%</b>
+                    </div>
+                    <div className="progress sm"><span style={{ width: `${pct}%`, background: over ? "var(--red)" : "var(--teal-2)" }} /></div>
+                  </div>
+                );
+              })}
+            </>
+          )}
         </section>
       </div>
 
@@ -198,7 +259,7 @@ export default function Dashboard() {
               return (
                 <div className="row" key={t.id}>
                   <div className="row-ico" style={{ background: income ? "var(--green-soft)" : "var(--teal-soft)", color: "var(--ink)" }}>
-                    {(t.item || "?").charAt(0).toUpperCase()}
+                    {emojiFor(t.category)}
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div className="row-name">{t.item}</div>
