@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { getNetWorth, upsertNetWorth } from "../api/client";
+import { getNetWorth, upsertNetWorth, deleteNetWorth } from "../api/client";
 import { cashForMonth } from "../lib/aggregate";
 import { money, currentMonth, monthLabel } from "../lib/format";
 
@@ -13,6 +13,9 @@ export default function NetWorthCard({ transactions }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Whether the selected month already has a saved anchor (enables removal).
+  const hasAnchor = anchors.some((a) => a.month === month);
 
   function load() {
     getNetWorth().then(setAnchors).catch(() => setAnchors([]));
@@ -34,10 +37,21 @@ export default function NetWorthCard({ transactions }) {
   async function save(e) {
     e.preventDefault();
     const amount = Number(draft);
-    if (Number.isNaN(amount)) return;
+    if (draft.trim() === "" || Number.isNaN(amount)) return;
     setSaving(true);
     try {
       await upsertNetWorth(month, amount);
+      setOpen(false);
+      load();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove() {
+    setSaving(true);
+    try {
+      await deleteNetWorth(month);
       setOpen(false);
       load();
     } finally {
@@ -90,6 +104,11 @@ export default function NetWorthCard({ transactions }) {
                 <input className="input" type="number" step="0.01" required autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} />
               </div>
               <div className="modal-actions">
+                {hasAnchor && (
+                  <button type="button" className="btn btn-ghost" style={{ marginRight: "auto", color: "var(--red)" }} onClick={remove} disabled={saving}>
+                    Remove anchor
+                  </button>
+                )}
                 <button type="button" className="btn btn-outline" onClick={() => setOpen(false)} disabled={saving}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving…" : "Save"}</button>
               </div>

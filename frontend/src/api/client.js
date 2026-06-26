@@ -70,3 +70,6 @@ export const getNetWorth = () =>
 
 export const upsertNetWorth = (month, cash) =>
   api.put("/api/networth", { month, cash }).then((r) => r.data);
+
+export const deleteNetWorth = (month) =>
+  api.delete(`/api/networth/${month}`);

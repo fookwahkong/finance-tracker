@@ -12,6 +12,9 @@ def fake_supabase():
     svc.table.return_value.upsert.return_value.execute.return_value.data = [
         {"id": "n1", "month": "2026-03", "cash": 5200.0},
     ]
+    svc.table.return_value.delete.return_value.eq.return_value.execute.return_value.data = [
+        {"id": "n1", "month": "2026-03", "cash": 5200.0},
+    ]
     return svc
 
 
@@ -34,3 +37,10 @@ def test_upsert_net_worth_returns_row(client, fake_supabase):
     assert resp.json()["cash"] == 5200.0
     sent = fake_supabase.table.return_value.upsert.call_args[0][0]
     assert sent == {"month": "2026-03", "cash": 5200.0}
+
+
+def test_delete_net_worth(client, fake_supabase):
+    resp = client.delete("/api/networth/2026-03")
+    assert resp.status_code == 204
+    eq_args = fake_supabase.table.return_value.delete.return_value.eq.call_args[0]
+    assert eq_args == ("month", "2026-03")
