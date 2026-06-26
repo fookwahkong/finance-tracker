@@ -9,7 +9,7 @@ export const NAV = {
     { to: "/investment", label: "Investment", icon: "▲", soon: true },
   ],
   manage: [
-    { to: "/planning", label: "Financial Planning", icon: "◇", soon: true },
+    { to: "/budget", label: "Budget", icon: "◇" },
     { to: "/settings", label: "Settings", icon: "⚙" },
     { to: "/subscriptions", label: "Subscriptions", icon: "↻", soon: true },
   ],

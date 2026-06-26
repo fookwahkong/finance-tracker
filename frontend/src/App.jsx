@@ -5,6 +5,7 @@ import Spending from "./pages/Spending";
 import Report from "./pages/Report";
 import Settings from "./pages/Settings";
 import Import from "./pages/Import";
+import Budget from "./pages/Budget";
 import Placeholder from "./pages/Placeholder";
 
 export default function App() {
@@ -19,7 +20,7 @@ export default function App() {
           <Route path="/report" element={<Report />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/investment" element={<Placeholder title="Investment" icon="▲" />} />
-          <Route path="/planning" element={<Placeholder title="Financial Planning" icon="◇" />} />
+          <Route path="/budget" element={<Budget />} />
           <Route path="/subscriptions" element={<Placeholder title="Subscriptions" icon="↻" />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
