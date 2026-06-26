@@ -12,3 +12,4 @@ os.environ.setdefault(
     "GMAIL_CREDENTIALS",
     '{"token":"x","refresh_token":"y","client_id":"z","client_secret":"w","token_uri":"https://oauth2.googleapis.com/token","scopes":["https://www.googleapis.com/auth/gmail.modify"]}',
 )
+os.environ.setdefault("POLYGON_API_KEY", "test-polygon-key")
