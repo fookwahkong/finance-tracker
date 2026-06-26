@@ -586,3 +586,8 @@ a { color: inherit; }
   .modal-actions { flex-direction: column-reverse; }
   .modal-actions .btn { width: 100%; }
 }
+
+/* Clickable spending-by-category rows */
+.cat-row { cursor: pointer; }
+.cat-row:hover { background: var(--line); }
+.cat-row.is-active { background: var(--teal-soft); }

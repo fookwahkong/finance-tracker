@@ -73,16 +73,18 @@ export default function Spending() {
     ? filtered.reduce((s, t) => s + Math.abs(t.amount), 0) / filtered.length
     : 0;
 
-  // Spending-by-category breakdown (expenses only)
+  // Spending-by-category breakdown (expenses only) — derived from the full
+  // month so the breakdown stays complete even when a category is selected.
   const catRows = useMemo(() => {
     const by = {};
-    filtered.filter((t) => t.amount < 0).forEach((t) => {
+    transactions.filter((t) => t.amount < 0).forEach((t) => {
       const name = t.category || "Uncategorized";
       by[name] = (by[name] || 0) + (-t.amount);
     });
     const sorted = Object.entries(by).sort((a, b) => b[1] - a[1]);
     return sorted.map(([name, value], i) => ({ name, value, color: colorFor(i) }));
-  }, [filtered]);
+  }, [transactions]);
+  const breakdownSpend = catRows.reduce((s, c) => s + c.value, 0);
 
   // Group transactions by date (backend returns them date-desc)
   const groups = useMemo(() => {
@@ -312,18 +314,32 @@ export default function Spending() {
                 <tr><th>Category</th><th className="num">Spent</th><th className="num">Share</th></tr>
               </thead>
               <tbody>
-                {catRows.map((c) => (
-                  <tr key={c.name}>
-                    <td>
-                      <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span className="legend-dot" style={{ width: 10, height: 10, background: c.color }} />
-                        <b style={{ fontWeight: 600 }}>{c.name}</b>
-                      </span>
-                    </td>
-                    <td className="num" style={{ fontWeight: 700 }}>{money(c.value)}</td>
-                    <td className="num" style={{ color: "var(--muted)" }}>{Math.round((c.value / totalSpend) * 100)}%</td>
-                  </tr>
-                ))}
+                {catRows.map((c) => {
+                  const active = catFilter === c.name;
+                  const toggle = () => setCatFilter(active ? "all" : c.name);
+                  return (
+                    <tr
+                      key={c.name}
+                      className={`cat-row${active ? " is-active" : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={active}
+                      onClick={toggle}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+                      }}
+                    >
+                      <td>
+                        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span className="legend-dot" style={{ width: 10, height: 10, background: c.color }} />
+                          <b style={{ fontWeight: 600 }}>{c.name}</b>
+                        </span>
+                      </td>
+                      <td className="num" style={{ fontWeight: 700 }}>{money(c.value)}</td>
+                      <td className="num" style={{ color: "var(--muted)" }}>{breakdownSpend ? Math.round((c.value / breakdownSpend) * 100) : 0}%</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -331,7 +347,7 @@ export default function Spending() {
                 <div className="donut-ring" style={{ width: 200, height: 200, background: donutGradient(catRows) }} />
                 <div className="donut-hole" style={{ inset: 38 }}>
                   <div style={{ fontSize: 12, color: "var(--muted-2)" }}>Total spending</div>
-                  <div style={{ fontSize: 26, fontWeight: 800 }}>{money(totalSpend).replace(/\.\d+$/, "")}</div>
+                  <div style={{ fontSize: 26, fontWeight: 800 }}>{money(breakdownSpend).replace(/\.\d+$/, "")}</div>
                 </div>
               </div>
             </div>
