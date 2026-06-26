@@ -36,3 +36,24 @@ insert into categories (name) values
   ('Car'), ('Housing'), ('Gifts'), ('Work'),
   ('Sports & Hobby'), ('Beauty'), ('Others'), ('Travel')
 on conflict (name) do nothing;
+
+-- ── Subscriptions ────────────────────────────────────────────────────
+-- Recurring monthly bills and income shown on the dashboard.
+create table if not exists subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  type text not null check (type in ('bill', 'income')),
+  item text not null,
+  amount numeric not null check (amount >= 0),
+  category text not null,
+  source text not null default 'card' check (source in ('card', 'giro')),
+  day_of_month int not null check (day_of_month between 1 and 31)
+);
+
+-- ── Net worth (cash anchors) ─────────────────────────────────────────
+-- One user-entered cash balance per month; later months are traced
+-- client-side from the nearest preceding anchor + cumulative net flow.
+create table if not exists net_worth (
+  id uuid primary key default gen_random_uuid(),
+  month text not null unique,
+  cash numeric not null
+);
