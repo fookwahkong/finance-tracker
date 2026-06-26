@@ -82,7 +82,7 @@ export default function NetWorthCard({ transactions }) {
           style={{ textAlign: "left", background: "#f6f8f8", borderRadius: 14, padding: 16, border: "none", cursor: "pointer" }}
         >
           <div className="stat-label">Cash</div>
-          <div style={{ fontSize: 22, fontWeight: 800 }}>{cash === null ? "—" : money(cash)}</div>
+          <div style={{ fontSize: 22, fontWeight: 800 }}>{cash === null ? "—" : (cash < 0 ? "-": "") + money(cash)}</div>
           <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 4 }}>Tap to set this month</div>
         </button>
         <div style={{ background: "#f6f8f8", borderRadius: 14, padding: 16 }}>

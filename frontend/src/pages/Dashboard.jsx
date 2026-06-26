@@ -98,7 +98,7 @@ export default function Dashboard() {
         </section>
       </div>
 
-      {/* Cash flow (demo) + Budget (demo) */}
+      {/* Cash flow + Budget */}
       <div className="grid-2">
         <section className="card">
           <div className="card-head">

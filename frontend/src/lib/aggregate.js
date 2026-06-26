@@ -31,7 +31,7 @@ function nextMonth(ym) {
 export function netFlow(transactions, month) {
   let net = 0;
   for (const t of transactions) {
-    if (String(t.date || "").slice(0, 7) === month) net += t.amount;
+    if (String(t.date || "").slice(0, 7) === month) net += Number(t.amount);
   }
   return net;
 }
@@ -45,7 +45,7 @@ export function cashForMonth(anchors, transactions, targetMonth) {
     .sort((a, b) => (a.month < b.month ? 1 : -1));
   if (applicable.length === 0) return null;
   const anchor = applicable[0];
-  let cash = anchor.cash;
+  let cash = Number(anchor.cash);
   let cursor = anchor.month;
   while (cursor < targetMonth) {
     cursor = nextMonth(cursor);
