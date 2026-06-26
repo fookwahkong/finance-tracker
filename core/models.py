@@ -67,3 +67,14 @@ class SubscriptionCreate(BaseModel):
 class Subscription(SubscriptionCreate):
     id: str
 
+
+class NetWorthUpsert(BaseModel):
+    month: str
+    cash: float
+
+
+class NetWorth(BaseModel):
+    id: str
+    month: str
+    cash: float
+
