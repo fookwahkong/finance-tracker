@@ -43,3 +43,14 @@ class Category(BaseModel):
     id: str
     name: str
 
+
+class BudgetUpsert(BaseModel):
+    category: str
+    amount: float
+
+
+class Budget(BaseModel):
+    id: str
+    category: str
+    amount: float
+
