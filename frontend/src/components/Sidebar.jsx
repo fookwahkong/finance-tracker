@@ -4,12 +4,12 @@ export const NAV = {
   main: [
     { to: "/dashboard", label: "Dashboard", icon: "▦" },
     { to: "/spending", label: "Spending", icon: "◎" },
-    { to: "/import", label: "Import", icon: "↥" },
-    { to: "/report", label: "Report", icon: "▤" },
+    // { to: "/report", label: "Report", icon: "▤" },
     { to: "/investment", label: "Investment", icon: "▲", soon: true },
   ],
   manage: [
     { to: "/budget", label: "Budget", icon: "◇" },
+    { to: "/import", label: "Import Statement", icon: "↥" },
     { to: "/settings", label: "Settings", icon: "⚙" },
   ],
 };
@@ -36,13 +36,13 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <div className="brand-mark">f</div>
+        <div className="brand-mark">FT</div>
         <div className="brand-name">Finance Tracker</div>
       </div>
-      <div className="sidebar-search">
+      {/* <div className="sidebar-search">
         <span>⌕</span>
         <span>Search</span>
-      </div>
+      </div> */}
 
       <div className="sidebar-section">MAIN MENU</div>
       <Links items={NAV.main} />

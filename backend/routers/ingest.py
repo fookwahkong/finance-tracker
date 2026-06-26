@@ -66,7 +66,7 @@ def ingest_shortcut(payload: ShortcutPayload, _=Depends(_verify_shortcut_key)):
     )
 
 
-@router.post("/email", status_code=200)
+@router.get("/email", status_code=200)
 def ingest_email(_=Depends(_verify_cron_secret)):
     query = os.environ.get("GMAIL_QUERY", "")
     try:

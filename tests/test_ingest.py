@@ -77,12 +77,12 @@ def test_shortcut_falls_back_on_parse_failure(client, monkeypatch):
 # --- Email endpoint ---
 
 def test_email_wrong_cron_secret_returns_401(client):
-    resp = client.post("/api/ingest/email", headers={"Authorization": "Bearer wrong"})
+    resp = client.get("/api/ingest/email", headers={"Authorization": "Bearer wrong"})
     assert resp.status_code == 401
 
 
 def test_email_missing_auth_returns_422(client):
-    resp = client.post("/api/ingest/email")
+    resp = client.get("/api/ingest/email")
     assert resp.status_code == 422
 
 
@@ -106,7 +106,7 @@ def test_email_processes_one_message(client, monkeypatch, fake_supabase):
     )
     monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
 
-    resp = client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    resp = client.get("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
     assert resp.status_code == 200
     assert resp.json() == {"processed": 1}
     # ibanking.alert + transfer format -> PayNow, and outgoing -> negative.
@@ -127,7 +127,7 @@ def test_email_received_is_positive_income(client, monkeypatch, fake_supabase):
     monkeypatch.setattr("backend.routers.ingest.parse_transaction", lambda text, cats: {})
     monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
 
-    client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    client.get("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
     inserted = fake_supabase.table.return_value.insert.call_args[0][0]
     assert inserted["amount"] == 116.15
     assert inserted["source"] == "paynow"
@@ -145,7 +145,7 @@ def test_email_paylah_sender_tagged_paylah(client, monkeypatch, fake_supabase):
     monkeypatch.setattr("backend.routers.ingest.parse_transaction", lambda text, cats: {})
     monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
 
-    client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    client.get("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
     inserted = fake_supabase.table.return_value.insert.call_args[0][0]
     assert inserted["source"] == "paylah"
 
@@ -163,7 +163,7 @@ def test_email_giro_format_tagged_giro(client, monkeypatch, fake_supabase):
     monkeypatch.setattr("backend.routers.ingest.parse_transaction", lambda text, cats: {})
     monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
 
-    client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    client.get("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
     inserted = fake_supabase.table.return_value.insert.call_args[0][0]
     assert inserted["source"] == "giro"
 
@@ -178,7 +178,7 @@ def test_email_skips_unparseable_messages(client, monkeypatch):
     monkeypatch.setattr("backend.routers.ingest.email_parser.parse", _fail)
     monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
 
-    resp = client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    resp = client.get("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
     assert resp.status_code == 200
     assert resp.json() == {"processed": 0}
 
@@ -188,7 +188,7 @@ def test_email_returns_503_on_gmail_failure(client, monkeypatch):
         raise Exception("Gmail API down")
     monkeypatch.setattr("backend.routers.ingest.gmail.fetch_unread", _fail)
 
-    resp = client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    resp = client.get("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
     assert resp.status_code == 503
 
 
@@ -206,7 +206,7 @@ def test_email_falls_back_on_parse_transaction_failure(client, monkeypatch, fake
     monkeypatch.setattr("backend.routers.ingest.parse_transaction", _fail)
     monkeypatch.setattr("backend.routers.ingest.gmail.mark_read", lambda msg_id: None)
 
-    resp = client.post("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
+    resp = client.get("/api/ingest/email", headers={"Authorization": "Bearer test-cron-secret"})
     assert resp.status_code == 200
     assert resp.json() == {"processed": 1}
     inserted = fake_supabase.table.return_value.insert.call_args[0][0]
