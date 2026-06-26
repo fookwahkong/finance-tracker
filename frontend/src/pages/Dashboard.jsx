@@ -5,10 +5,9 @@ import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from
 import { emojiFor } from "../lib/categories";
 import { lastSixMonths, monthlyTotals } from "../lib/aggregate";
 import UpcomingBills from "../components/UpcomingBills";
+import NetWorthCard from "../components/NetWorthCard";
 
 // Static sample data for widgets that have no backend yet.
-const DEMO_BARS_A = [40, 75, 55, 90, 50, 80, 45, 65];
-const DEMO_BARS_B = [50, 65, 80, 55, 90, 60, 75, 85];
 const DEMO_GOALS = [
   { name: "Emergency Fund", icon: "🛟", saved: "$8,400", target: "$12,000", pct: 70 },
   { name: "Vacation 2026", icon: "✈️", saved: "$2,100", target: "$5,000", pct: 42 },
@@ -51,9 +50,6 @@ export default function Dashboard() {
   const totalBudgetSpent = budgetRows.reduce((s, b) => s + b.spent, 0);
   const budgetPct = totalBudget ? Math.round((totalBudgetSpent / totalBudget) * 100) : 0;
 
-  const income = report?.total_income || 0;
-  const expenses = Math.abs(report?.total_expenses || 0);
-
   const spendByCat = Object.entries(report?.breakdown || {})
     .filter(([, v]) => v < 0)
     .map(([name, v]) => ({ name, value: Math.abs(v) }))
@@ -63,30 +59,9 @@ export default function Dashboard() {
 
   return (
     <>
-      {/* Net worth (demo) + Net spending (real) */}
+      {/* Net worth (real) + Net spending (real) */}
       <div className="grid-2">
-        <section className="card">
-          <div className="card-head">
-            <div className="card-sub">Net Worth <Demo /></div>
-            <span className="pill" style={{ marginLeft: "auto" }}>This month ▾</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 18 }}>
-            <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-1px" }}>$342,847</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--green)", background: "var(--green-soft)", borderRadius: 7, padding: "3px 8px" }}>+5.2% ↗</div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <div style={{ background: "#f6f8f8", borderRadius: 14, padding: 16 }}>
-              <div className="stat-label">Expenses</div>
-              <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>{money(expenses)}</div>
-              <div className="bars">{DEMO_BARS_A.map((h, i) => <span key={i} className="bar" style={{ height: h + "%", background: "var(--teal)" }} />)}</div>
-            </div>
-            <div style={{ background: "#f6f8f8", borderRadius: 14, padding: 16 }}>
-              <div className="stat-label">Income</div>
-              <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>{money(income)}</div>
-              <div className="bars">{DEMO_BARS_B.map((h, i) => <span key={i} className="bar" style={{ height: h + "%", background: "var(--teal-3)" }} />)}</div>
-            </div>
-          </div>
-        </section>
+        <NetWorthCard transactions={allTx} />
 
         <section className="card">
           <div className="card-head">

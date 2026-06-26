@@ -1,0 +1,103 @@
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { getNetWorth, upsertNetWorth } from "../api/client";
+import { cashForMonth } from "../lib/aggregate";
+import { money, currentMonth, monthLabel } from "../lib/format";
+
+// Demo placeholder until the investment subsystem is built.
+const DEMO_INVESTMENT = 2450;
+
+export default function NetWorthCard({ transactions }) {
+  const [month, setMonth] = useState(currentMonth());
+  const [anchors, setAnchors] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  function load() {
+    getNetWorth().then(setAnchors).catch(() => setAnchors([]));
+  }
+  useEffect(() => { load(); }, []);
+
+  const cash = useMemo(
+    () => cashForMonth(anchors, transactions, month),
+    [anchors, transactions, month],
+  );
+  const netWorth = (cash || 0) + DEMO_INVESTMENT;
+
+  function openCash() {
+    const existing = anchors.find((a) => a.month === month);
+    setDraft(existing ? String(existing.cash) : "");
+    setOpen(true);
+  }
+
+  async function save(e) {
+    e.preventDefault();
+    const amount = Number(draft);
+    if (Number.isNaN(amount)) return;
+    setSaving(true);
+    try {
+      await upsertNetWorth(month, amount);
+      setOpen(false);
+      load();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <div className="card-head">
+        <div className="card-sub">Net Worth</div>
+        <input
+          className="input"
+          type="month"
+          style={{ width: "auto", marginLeft: "auto" }}
+          value={month}
+          onChange={(e) => setMonth(e.target.value)}
+        />
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 18 }}>
+        <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-1px" }}>{money(netWorth)}</div>
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>{monthLabel(month)}</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <button
+          type="button"
+          onClick={openCash}
+          style={{ textAlign: "left", background: "#f6f8f8", borderRadius: 14, padding: 16, border: "none", cursor: "pointer" }}
+        >
+          <div className="stat-label">Cash</div>
+          <div style={{ fontSize: 22, fontWeight: 800 }}>{cash === null ? "—" : money(cash)}</div>
+          <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 4 }}>Tap to set this month</div>
+        </button>
+        <div style={{ background: "#f6f8f8", borderRadius: 14, padding: 16 }}>
+          <div className="stat-label">Investment <span className="demo-tag" title="Sample data — not yet wired to a backend">DEMO</span></div>
+          <div style={{ fontSize: 22, fontWeight: 800 }}>{money(DEMO_INVESTMENT)}</div>
+        </div>
+      </div>
+
+      {open && createPortal(
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => !saving && setOpen(false)}>
+          <div className="modal-panel" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div className="modal-title">Cash for {monthLabel(month)}</div>
+              <button type="button" className="btn btn-ghost btn-icon" aria-label="Close" onClick={() => setOpen(false)} disabled={saving}>x</button>
+            </div>
+            <form onSubmit={save}>
+              <div className="field">
+                <label className="field-label">Cash balance</label>
+                <input className="input" type="number" step="0.01" required autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setOpen(false)} disabled={saving}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+    </section>
+  );
+}
