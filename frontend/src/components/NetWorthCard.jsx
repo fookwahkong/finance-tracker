@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { getNetWorth, upsertNetWorth, deleteNetWorth } from "../api/client";
-import { cashForMonth } from "../lib/aggregate";
+import { cashForMonth, netFlowMap } from "../lib/aggregate";
 import { money, currentMonth, monthLabel } from "../lib/format";
 
 // Demo placeholder until the investment subsystem is built.
@@ -22,9 +22,12 @@ export default function NetWorthCard({ transactions }) {
   }
   useEffect(() => { load(); }, []);
 
+  // Precompute the month->net-flow map once per transaction list, so changing
+  // the selected month is just O(1) lookups rather than a full rescan.
+  const flowMap = useMemo(() => netFlowMap(transactions), [transactions]);
   const cash = useMemo(
-    () => cashForMonth(anchors, transactions, month),
-    [anchors, transactions, month],
+    () => cashForMonth(anchors, flowMap, month),
+    [anchors, flowMap, month],
   );
   const netWorth = (cash || 0) + DEMO_INVESTMENT;
 
