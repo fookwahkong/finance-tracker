@@ -14,13 +14,14 @@ export const NAV = {
   ],
 };
 
-function Links({ items }) {
+function Links({ items, onNavigate }) {
   return (
     <nav className="sidebar-nav">
       {items.map(({ to, label, icon, soon }) => (
         <NavLink
           key={to}
           to={to}
+          onClick={onNavigate}
           className={({ isActive }) => `side-link${isActive ? " active" : ""}${soon ? " soon" : ""}`}
         >
           <span className="ico">{icon}</span>
@@ -32,9 +33,9 @@ function Links({ items }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ open = false, onNavigate }) {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${open ? " open" : ""}`}>
       <div className="sidebar-brand">
         <div className="brand-mark">FT</div>
         <div className="brand-name">Finance Tracker</div>
@@ -45,10 +46,10 @@ export default function Sidebar() {
       </div> */}
 
       <div className="sidebar-section">MAIN MENU</div>
-      <Links items={NAV.main} />
+      <Links items={NAV.main} onNavigate={onNavigate} />
 
       <div className="sidebar-section mt">MANAGEMENT</div>
-      <Links items={NAV.manage} />
+      <Links items={NAV.manage} onNavigate={onNavigate} />
     </aside>
   );
 }

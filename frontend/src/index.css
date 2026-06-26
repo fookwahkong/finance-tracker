@@ -174,6 +174,18 @@ a { color: inherit; }
   background: var(--surface);
 }
 
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink, inherit);
+  padding: 4px 6px;
+  margin: -4px 0;
+}
+
 .topbar-title {
   font-weight: 800;
   font-size: 20px;
@@ -495,7 +507,24 @@ a { color: inherit; }
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 720px) {
-  .sidebar { display: none; }
+  .nav-toggle { display: block; }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 110;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.18);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 105;
+    background: rgba(22, 48, 47, 0.42);
+  }
   .page, .topbar { padding-left: 18px; padding-right: 18px; }
   .grid-4 { grid-template-columns: 1fr; }
 }
