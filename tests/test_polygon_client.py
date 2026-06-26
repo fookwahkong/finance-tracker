@@ -1,4 +1,13 @@
+import httpx
+import pytest
 from core.investments import cache
+from core.investments.providers.polygon import BASE_URL, PolygonClient
+
+
+def _client_with_transport(handler):
+    client = PolygonClient()
+    client._http = httpx.Client(base_url=BASE_URL, transport=httpx.MockTransport(handler))
+    return client
 
 
 def test_get_or_fetch_calls_fetch_and_returns_result():
@@ -11,3 +20,67 @@ def test_get_or_fetch_calls_fetch_and_returns_result():
     result = cache.get_or_fetch("AAPL:ticker", fetch)
     assert result == {"ok": True}
     assert calls == [1]
+
+
+def test_get_returns_parsed_json_and_sends_auth_header():
+    seen = {}
+
+    def handler(request):
+        seen["url"] = str(request.url)
+        seen["auth"] = request.headers.get("authorization")
+        return httpx.Response(200, json={"status": "OK", "results": {"ticker": "AAPL"}})
+
+    client = _client_with_transport(handler)
+    data = client._get("/v3/reference/tickers/AAPL")
+
+    assert data == {"status": "OK", "results": {"ticker": "AAPL"}}
+    assert seen["url"] == "https://api.polygon.io/v3/reference/tickers/AAPL"
+    assert seen["auth"] == "Bearer test-polygon-key"
+
+
+def test_get_raises_runtimeerror_on_http_error():
+    def handler(request):
+        return httpx.Response(404, json={"status": "NOT_FOUND"})
+
+    client = _client_with_transport(handler)
+    with pytest.raises(RuntimeError, match="Polygon request failed"):
+        client._get("/v3/reference/tickers/NOPE")
+
+
+def test_ticker_details_hits_reference_endpoint():
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        return httpx.Response(200, json={"results": {"name": "Apple Inc."}})
+
+    client = _client_with_transport(handler)
+    data = client.ticker_details("AAPL")
+    assert data["results"]["name"] == "Apple Inc."
+    assert seen["path"] == "/v3/reference/tickers/AAPL"
+
+
+def test_previous_close_hits_prev_endpoint():
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        return httpx.Response(200, json={"results": [{"c": 195.0}]})
+
+    client = _client_with_transport(handler)
+    data = client.previous_close("AAPL")
+    assert data["results"][0]["c"] == 195.0
+    assert seen["path"] == "/v2/aggs/ticker/AAPL/prev"
+
+
+def test_aggregates_builds_range_path():
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        return httpx.Response(200, json={"results": [{"c": 1}, {"c": 2}]})
+
+    client = _client_with_transport(handler)
+    data = client.aggregates("AAPL", "2026-05-01", "2026-06-01")
+    assert len(data["results"]) == 2
+    assert seen["path"] == "/v2/aggs/ticker/AAPL/range/1/day/2026-05-01/2026-06-01"
