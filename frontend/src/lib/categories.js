@@ -17,6 +17,8 @@ export const CATEGORY_EMOJI = {
   "Beauty": "💄",
   "Others": "📦",
   "Travel": "✈️",
+  "Utilities": "🛠️",
+  "Investment": "📊",
 };
 
 export const CATEGORIES = Object.keys(CATEGORY_EMOJI);
