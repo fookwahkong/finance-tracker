@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   getTransactions, createTransaction, updateTransaction, deleteTransaction, getCategories,
 } from "../api/client";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../lib/format";
+import MonthBars from "../components/MonthBars";
+import { emojiFor } from "../lib/categories";
+import { lastSixMonths, monthlyTotals } from "../lib/aggregate";
 
 // Payment methods stored lowercase in the transaction `source` column.
 const METHODS = [
@@ -40,6 +44,13 @@ export default function Spending() {
   }
   useEffect(() => { load(); }, [month]);
   useEffect(() => { getCategories().then(setCategories).catch(() => {}); }, []);
+
+  const [allTx, setAllTx] = useState([]);
+  useEffect(() => { getTransactions().then(setAllTx).catch(() => setAllTx([])); }, []);
+  const sixMonthData = useMemo(
+    () => monthlyTotals(allTx, lastSixMonths()),
+    [allTx],
+  );
 
   // Close the per-row action menu on any outside click.
   useEffect(() => {
@@ -191,6 +202,15 @@ export default function Spending() {
         </div>
       </div>
 
+      {/* 6-month overview */}
+      <section className="card">
+        <div className="card-head">
+          <div className="card-title">Last 6 Months</div>
+          <span className="pill" style={{ marginLeft: "auto" }}>Spending vs Income</span>
+        </div>
+        <MonthBars data={sixMonthData} />
+      </section>
+
       {/* Toolbar */}
       <div className="card" style={{ padding: "16px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -215,7 +235,7 @@ export default function Spending() {
         </div>
       </div>
 
-      {adding && (
+      {adding && createPortal(
         <div className="modal-backdrop" role="presentation" onMouseDown={closeTransactionModal}>
           <div
             className="modal-panel"
@@ -276,7 +296,8 @@ export default function Spending() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Spending by category */}
@@ -335,7 +356,7 @@ export default function Spending() {
                 return (
                   <div className="row" key={t.id}>
                     <div className="row-ico" style={{ background: income ? "var(--green-soft)" : "var(--teal-soft)" }}>
-                      {(t.item || "?").charAt(0).toUpperCase()}
+                      {emojiFor(t.category)}
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div className="row-name">{t.item}</div>
