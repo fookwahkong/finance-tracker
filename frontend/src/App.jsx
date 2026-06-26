@@ -21,7 +21,6 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/investment" element={<Placeholder title="Investment" icon="▲" />} />
           <Route path="/budget" element={<Budget />} />
-          <Route path="/subscriptions" element={<Placeholder title="Subscriptions" icon="↻" />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

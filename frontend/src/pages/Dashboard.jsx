@@ -4,16 +4,11 @@ import { getMonthlyReport, getTransactions, getBudgets } from "../api/client";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../lib/format";
 import { emojiFor } from "../lib/categories";
 import { lastSixMonths, monthlyTotals } from "../lib/aggregate";
+import UpcomingBills from "../components/UpcomingBills";
 
 // Static sample data for widgets that have no backend yet.
 const DEMO_BARS_A = [40, 75, 55, 90, 50, 80, 45, 65];
 const DEMO_BARS_B = [50, 65, 80, 55, 90, 60, 75, 85];
-const DEMO_BILLS = [
-  { name: "Spotify", cat: "Music", amount: "−$12.12", date: "Jul 25", icon: "♪", bg: "var(--green-soft)" },
-  { name: "Rent", cat: "Housing", amount: "−$1,500", date: "Aug 01", icon: "⌂", bg: "var(--teal-soft)" },
-  { name: "Starbucks", cat: "Food", amount: "−$24.32", date: "Aug 12", icon: "☕", bg: "var(--red-soft)" },
-  { name: "YouTube", cat: "Entertainment", amount: "−$15.00", date: "Aug 13", icon: "▶", bg: "var(--red-soft)" },
-];
 const DEMO_GOALS = [
   { name: "Emergency Fund", icon: "🛟", saved: "$8,400", target: "$12,000", pct: 70 },
   { name: "Vacation 2026", icon: "✈️", saved: "$2,100", target: "$5,000", pct: 42 },
@@ -206,24 +201,7 @@ export default function Dashboard() {
           </svg>
         </section>
 
-        <section className="card">
-          <div className="card-head">
-            <div className="card-title">Upcoming Bills <Demo /></div>
-          </div>
-          {DEMO_BILLS.map((b) => (
-            <div className="row" key={b.name}>
-              <div className="row-ico" style={{ background: b.bg }}>{b.icon}</div>
-              <div style={{ minWidth: 0 }}>
-                <div className="row-name">{b.name}</div>
-                <div className="row-sub">{b.cat}</div>
-              </div>
-              <div className="row-right">
-                <div className="row-name neg">{b.amount}</div>
-                <div className="row-sub">{b.date}</div>
-              </div>
-            </div>
-          ))}
-        </section>
+        <UpcomingBills />
       </div>
 
       {/* Savings goals (demo) + Recent transactions (real) */}

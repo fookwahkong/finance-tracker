@@ -11,7 +11,6 @@ export const NAV = {
   manage: [
     { to: "/budget", label: "Budget", icon: "◇" },
     { to: "/settings", label: "Settings", icon: "⚙" },
-    { to: "/subscriptions", label: "Subscriptions", icon: "↻", soon: true },
   ],
 };
 
