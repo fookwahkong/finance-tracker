@@ -50,6 +50,25 @@ def test_parse_applies_sign_and_merges(client, monkeypatch):
     assert rows[1]["is_new"] is True
 
 
+def test_parse_paylah_forces_food_and_drink(client, monkeypatch):
+    monkeypatch.setattr(statements, "extract_rows", lambda data: [
+        {"date": "2026-05-02", "item": "FOMO PAY", "amount": 4.80,
+         "direction": "out", "source": "paylah"},
+    ])
+    # LLM suggests something else; the PayLah rule must override it.
+    monkeypatch.setattr(statements, "categorize_rows", lambda items, cats: [
+        {"category": "Shopping", "is_new": False},
+    ])
+    resp = client.post(
+        "/api/statements/parse",
+        files={"file": ("s.pdf", b"%PDF-fake", "application/pdf")},
+    )
+    assert resp.status_code == 200
+    row = resp.json()["rows"][0]
+    assert row["suggested_category"] == "Food & Drink"
+    assert row["is_new"] is False
+
+
 def test_parse_rejects_empty(client, monkeypatch):
     monkeypatch.setattr(statements, "extract_rows", lambda data: [])
     monkeypatch.setattr(statements, "categorize_rows", lambda descs, cats: [])
