@@ -5,7 +5,7 @@ export const NAV = {
     { to: "/dashboard", label: "Dashboard", icon: "▦" },
     { to: "/spending", label: "Spending", icon: "◎" },
     // { to: "/report", label: "Report", icon: "▤" },
-    { to: "/investment", label: "Investment", icon: "▲", soon: true },
+    { to: "/investment", label: "Investment", icon: "▲" },
   ],
   manage: [
     { to: "/budget", label: "Budget", icon: "◇" },
