@@ -36,3 +36,19 @@ def get_aggregates(
         return client.aggregates(symbol, from_, to)
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
+
+
+@router.get("/dividends/{symbol}")
+def get_dividends(symbol: str):
+    try:
+        return client.dividends(symbol)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+
+@router.get("/sma/{symbol}")
+def get_sma(symbol: str):
+    try:
+        return client.sma(symbol)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))

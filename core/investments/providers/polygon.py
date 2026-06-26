@@ -51,3 +51,17 @@ class PolygonClient:
         symbol = symbol.upper()
         path = f"/v2/aggs/ticker/{symbol}/range/1/day/{from_date}/{to_date}"
         return cache.get_or_fetch(f"{symbol}:aggs:{from_date}:{to_date}", lambda: self._get(path))
+
+    def dividends(self, symbol: str) -> dict:
+        symbol = symbol.upper()
+        return cache.get_or_fetch(
+            f"{symbol}:dividends",
+            lambda: self._get("/v3/reference/dividends", params={"ticker": symbol}),
+        )
+
+    def sma(self, symbol: str) -> dict:
+        symbol = symbol.upper()
+        return cache.get_or_fetch(
+            f"{symbol}:sma",
+            lambda: self._get(f"/v1/indicators/sma/{symbol}"),
+        )

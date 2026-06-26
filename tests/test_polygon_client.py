@@ -84,3 +84,31 @@ def test_aggregates_builds_range_path():
     data = client.aggregates("AAPL", "2026-05-01", "2026-06-01")
     assert len(data["results"]) == 2
     assert seen["path"] == "/v2/aggs/ticker/AAPL/range/1/day/2026-05-01/2026-06-01"
+
+
+def test_dividends_hits_reference_dividends_with_ticker_param():
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["ticker"] = request.url.params.get("ticker")
+        return httpx.Response(200, json={"results": [{"cash_amount": 0.24}]})
+
+    client = _client_with_transport(handler)
+    data = client.dividends("AAPL")
+    assert data["results"][0]["cash_amount"] == 0.24
+    assert seen["path"] == "/v3/reference/dividends"
+    assert seen["ticker"] == "AAPL"
+
+
+def test_sma_hits_indicator_endpoint():
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        return httpx.Response(200, json={"results": {"values": [{"value": 190.1}]}})
+
+    client = _client_with_transport(handler)
+    data = client.sma("AAPL")
+    assert data["results"]["values"][0]["value"] == 190.1
+    assert seen["path"] == "/v1/indicators/sma/AAPL"

@@ -9,6 +9,8 @@ def fake_polygon():
     svc.ticker_details.return_value = {"results": {"ticker": "AAPL", "name": "Apple Inc."}}
     svc.previous_close.return_value = {"results": [{"c": 195.0, "o": 190.0}]}
     svc.aggregates.return_value = {"results": [{"c": 1}, {"c": 2}]}
+    svc.dividends.return_value = {"results": [{"cash_amount": 0.24}]}
+    svc.sma.return_value = {"results": {"values": [{"value": 190.1}]}}
     return svc
 
 
@@ -44,3 +46,15 @@ def test_aggregates_endpoint_defaults_dates_when_missing(client, fake_polygon):
     args = fake_polygon.aggregates.call_args[0]
     assert args[0] == "AAPL"
     assert len(args[1]) == 10 and len(args[2]) == 10
+
+
+def test_dividends_endpoint_returns_raw_payload(client):
+    resp = client.get("/api/investments/market/dividends/AAPL")
+    assert resp.status_code == 200
+    assert resp.json()["results"][0]["cash_amount"] == 0.24
+
+
+def test_sma_endpoint_returns_raw_payload(client):
+    resp = client.get("/api/investments/market/sma/AAPL")
+    assert resp.status_code == 200
+    assert resp.json()["results"]["values"][0]["value"] == 190.1
