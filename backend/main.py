@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.routers import transactions, categories, reports, telegram, ingest, statements, budgets, subscriptions, networth
+from backend.routers.investments import market as investments_market
 from core.validation import ValidationError
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -37,6 +38,7 @@ app.include_router(statements.router, prefix="/api/statements", tags=["statement
 app.include_router(budgets.router, prefix="/api/budgets", tags=["budgets"])
 app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["subscriptions"])
 app.include_router(networth.router, prefix="/api/networth", tags=["networth"])
+app.include_router(investments_market.router, prefix="/api/investments/market", tags=["investments"])
 
 
 @app.get("/")
