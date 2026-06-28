@@ -21,6 +21,33 @@ Built with a **React + FastAPI** stack, deployed **serverless on Vercel**, backe
 
 ---
 
+## 🎓 Why I built this — learning end-to-end development
+
+This is a **hands-on project to learn end-to-end development**: taking a product from idea → design → frontend → backend → database → deployment, and owning every layer in between. The AI integration, serverless architecture, and multi-channel ingestion are **supplements** — extras layered on top of the core full-stack fundamentals once they were in place.
+
+Because it's a learning project, **not every stage of a production end-to-end lifecycle is implemented yet**. Rather than hide the gaps, they're listed below as placeholders — they're on the path I'm still working through.
+
+| End-to-end stage | Status |
+|---|---|
+| Planning & requirements | ✅ Done |
+| UI / UX design (wireframes, design system) | 🚧 Placeholder — built UI directly, no formal design pass yet |
+| Frontend (React SPA) | ✅ Done |
+| Backend / REST API (FastAPI) | ✅ Done |
+| Database design (Postgres schema + constraints) | ✅ Done |
+| Authentication & user accounts | 🚧 Placeholder — currently single-user; endpoints are secret/API-key gated, no multi-user auth |
+| Automated testing | ✅ Backend (pytest) · 🚧 Placeholder — no frontend / end-to-end UI tests |
+| Code quality (lint, formatting, type checks) | 🚧 Placeholder — no enforced linter/formatter config yet |
+| CI/CD pipeline | 🚧 Placeholder — no automated build/test/deploy pipeline yet |
+| Containerization (Docker) | 🚧 Placeholder — not containerized |
+| Deployment | ✅ Done — serverless on Vercel + scheduled cron |
+| Security | ✅ Partial — webhook secret, API-key gating, CORS allow-list, DB constraints |
+| Monitoring & observability (logging, error tracking, alerts) | 🚧 Placeholder — no structured monitoring yet |
+| Documentation | ✅ Done — this README |
+
+> **Supplements beyond core end-to-end:** AI/LLM integration, a pluggable provider seam, serverless deployment, and four independent ingestion channels.
+
+---
+
 ## 📸 Screenshots
 
 > _Drop in dashboard / spending / report screenshots here._
