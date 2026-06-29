@@ -35,7 +35,7 @@ export default function MonthVsMonth({ transactions }) {
         <Suspense fallback={<div className="empty">Loading chart…</div>}>
           <IncomeSpendBars data={barData} />
         </Suspense>
-        <div className="grid-4" style={{ marginTop: 16 }}>
+        <div className="grid-6" style={{ marginTop: 16 }}>
           {barData.map((d, i) => (
             <div className="stat" key={d.month}>
               <div className="stat-label">{MONTH_ABBR[i]}</div>

@@ -267,6 +267,7 @@ a { color: inherit; }
 .grid-2b { display: grid; grid-template-columns: 1fr 1.55fr; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
 .grid-cols { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; }
 
 /* ── Stat / summary cards ── */
