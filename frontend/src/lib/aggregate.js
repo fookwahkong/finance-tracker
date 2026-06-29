@@ -83,6 +83,26 @@ export function categoryMonthlySeries(transactions, year, category) {
   return months.map((m) => ({ month: m, amount: acc[m] }));
 }
 
+// Per-category stats for a year's Budget row: the 12 monthly spend amounts and
+// the average over months that had any spend (0 when none).
+export function categoryYearStats(transactions, year, category) {
+  const series = categoryMonthlySeries(transactions, year, category);
+  const withSpend = series.filter((s) => s.amount > 0);
+  const average = withSpend.length
+    ? withSpend.reduce((s, x) => s + x.amount, 0) / withSpend.length
+    : 0;
+  return { months: series.map((s) => s.amount), average };
+}
+
+// Budget status from average monthly spend vs the monthly budget.
+// over: avg > budget; watch: 80%..100% of budget; on: otherwise (incl. unset).
+export function budgetStatus(avgSpend, budget) {
+  if (!budget || budget <= 0) return "on";
+  if (avgSpend > budget) return "over";
+  if (avgSpend >= 0.8 * budget) return "watch";
+  return "on";
+}
+
 // Traced cash for targetMonth: take the nearest anchor whose month is <=
 // targetMonth, then add each later month's net flow (from a precomputed
 // netFlowMap) up to and including targetMonth. Returns null when no anchor

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   yearsInData, monthsOfYear, incomeSpendByMonth, categoryMonthlySeries,
+  categoryYearStats, budgetStatus,
 } from "./aggregate";
 
 describe("monthsOfYear", () => {
@@ -72,5 +73,40 @@ describe("categoryMonthlySeries", () => {
   it("routes null category to Others", () => {
     const series = categoryMonthlySeries(tx, 2025, "Others");
     expect(series[4]).toEqual({ month: "2025-05", amount: 25 });
+  });
+});
+
+describe("categoryYearStats", () => {
+  const tx = [
+    { date: "2025-01-10", amount: -100, category: "Groceries" },
+    { date: "2025-02-10", amount: -300, category: "Groceries" },
+  ];
+
+  it("returns 12 month amounts and averages over months with spend", () => {
+    const { months, average } = categoryYearStats(tx, 2025, "Groceries");
+    expect(months).toHaveLength(12);
+    expect(months[0]).toBe(100);
+    expect(months[1]).toBe(300);
+    expect(average).toBe(200); // (100+300)/2, zero months excluded
+  });
+
+  it("averages to 0 when there is no spend", () => {
+    expect(categoryYearStats(tx, 2025, "Travel").average).toBe(0);
+  });
+});
+
+describe("budgetStatus", () => {
+  it("is on track when avg < 80% of budget", () => {
+    expect(budgetStatus(700, 1000)).toBe("on");
+  });
+  it("is watch when avg is 80%..100% of budget", () => {
+    expect(budgetStatus(800, 1000)).toBe("watch");
+    expect(budgetStatus(1000, 1000)).toBe("watch");
+  });
+  it("is over when avg exceeds budget", () => {
+    expect(budgetStatus(1001, 1000)).toBe("over");
+  });
+  it("is on track when budget is unset/zero", () => {
+    expect(budgetStatus(500, 0)).toBe("on");
   });
 });
