@@ -38,6 +38,7 @@ class PolygonClient:
         return cache.get_or_fetch(
             f"{symbol}:ticker",
             lambda: self._get(f"/v3/reference/tickers/{symbol}"),
+            86400,
         )
 
     def previous_close(self, symbol: str) -> dict:
@@ -45,18 +46,20 @@ class PolygonClient:
         return cache.get_or_fetch(
             f"{symbol}:prev",
             lambda: self._get(f"/v2/aggs/ticker/{symbol}/prev"),
+            86400,
         )
 
     def aggregates(self, symbol: str, from_date: str, to_date: str) -> dict:
         symbol = symbol.upper()
         path = f"/v2/aggs/ticker/{symbol}/range/1/day/{from_date}/{to_date}"
-        return cache.get_or_fetch(f"{symbol}:aggs:{from_date}:{to_date}", lambda: self._get(path))
+        return cache.get_or_fetch(f"{symbol}:aggs:{from_date}:{to_date}", lambda: self._get(path), 21600)
 
     def dividends(self, symbol: str) -> dict:
         symbol = symbol.upper()
         return cache.get_or_fetch(
             f"{symbol}:dividends",
             lambda: self._get("/v3/reference/dividends", params={"ticker": symbol}),
+            86400,
         )
 
     def sma(self, symbol: str) -> dict:
@@ -64,4 +67,5 @@ class PolygonClient:
         return cache.get_or_fetch(
             f"{symbol}:sma",
             lambda: self._get(f"/v1/indicators/sma/{symbol}"),
+            21600,
         )

@@ -1,13 +1,37 @@
-"""Caching seam for investment provider calls.
+"""Supabase-backed cache for investment provider calls.
 
-Feature 1 is a pass-through: it calls the fetch function and returns the
-result with no storage. The interface exists so a real cache (in-memory or
-Supabase) can be slotted in later without touching call sites. The Polygon
-free tier allows only 5 calls/minute, so this is where rate-limit handling
-will live.
+One row per cache key in the investment_cache table. On a hit within TTL the
+stored payload is returned; on a miss or stale entry, fetch_fn is called and
+the result is upserted. Validation is the provider's responsibility — fetch_fn
+must return valid data or raise; this layer never inspects the payload.
 """
+from datetime import datetime, timezone
 from typing import Callable
 
+from core.db import supabase
 
-def get_or_fetch(key: str, fetch_fn: Callable[[], dict]) -> dict:
-    return fetch_fn()
+Payload = dict | list
+
+
+def get_or_fetch(key: str, fetch_fn: Callable[[], Payload], ttl_seconds: int) -> Payload:
+    result = (
+        supabase.table("investment_cache")
+        .select("data,fetched_at")
+        .eq("key", key)
+        .maybe_single()
+        .execute()
+    )
+    row = result.data
+    if row:
+        fetched_at = datetime.fromisoformat(row["fetched_at"])
+        if (datetime.now(timezone.utc) - fetched_at).total_seconds() < ttl_seconds:
+            return row["data"]
+    fresh = fetch_fn()
+    supabase.table("investment_cache").upsert(
+        {
+            "key": key,
+            "data": fresh,
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+        }
+    ).execute()
+    return fresh

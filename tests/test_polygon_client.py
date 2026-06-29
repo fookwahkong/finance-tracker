@@ -10,16 +10,9 @@ def _client_with_transport(handler):
     return client
 
 
-def test_get_or_fetch_calls_fetch_and_returns_result():
-    calls = []
-
-    def fetch():
-        calls.append(1)
-        return {"ok": True}
-
-    result = cache.get_or_fetch("AAPL:ticker", fetch)
-    assert result == {"ok": True}
-    assert calls == [1]
+@pytest.fixture(autouse=True)
+def _bypass_cache(monkeypatch):
+    monkeypatch.setattr(cache, "get_or_fetch", lambda key, fetch_fn, ttl_seconds: fetch_fn())
 
 
 def test_get_returns_parsed_json_and_sends_auth_header():
