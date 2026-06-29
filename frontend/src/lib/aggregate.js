@@ -41,6 +41,25 @@ export function netFlowMap(transactions) {
   return map;
 }
 
+// Distinct calendar years present in transaction dates, plus the current
+// year, sorted descending. Used to populate year dropdowns.
+export function yearsInData(transactions, today = new Date()) {
+  const set = new Set([today.getFullYear()]);
+  for (const t of transactions) {
+    const y = Number(String(t.date || "").slice(0, 4));
+    if (y) set.add(y);
+  }
+  return [...set].sort((a, b) => b - a);
+}
+
+// Twelve "YYYY-MM" keys for a calendar year, January first.
+export function monthsOfYear(year) {
+  return Array.from(
+    { length: 12 },
+    (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`,
+  );
+}
+
 // Traced cash for targetMonth: take the nearest anchor whose month is <=
 // targetMonth, then add each later month's net flow (from a precomputed
 // netFlowMap) up to and including targetMonth. Returns null when no anchor
