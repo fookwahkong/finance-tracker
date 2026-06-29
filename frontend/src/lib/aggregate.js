@@ -60,6 +60,29 @@ export function monthsOfYear(year) {
   );
 }
 
+// 12-entry income/spending/net series for a calendar year (Jan first).
+export function incomeSpendByMonth(transactions, year) {
+  return monthlyTotals(transactions, monthsOfYear(year)).map((r) => ({
+    ...r,
+    net: r.income - r.spending,
+  }));
+}
+
+// 12-entry expense-spend series (positive amounts) for one category across a
+// year. Transactions with no category are bucketed under "Others".
+export function categoryMonthlySeries(transactions, year, category) {
+  const months = monthsOfYear(year);
+  const acc = Object.fromEntries(months.map((m) => [m, 0]));
+  for (const t of transactions) {
+    if (t.amount >= 0) continue;
+    const key = String(t.date || "").slice(0, 7);
+    if (!(key in acc)) continue;
+    if ((t.category || "Others") !== category) continue;
+    acc[key] += -t.amount;
+  }
+  return months.map((m) => ({ month: m, amount: acc[m] }));
+}
+
 // Traced cash for targetMonth: take the nearest anchor whose month is <=
 // targetMonth, then add each later month's net flow (from a precomputed
 // netFlowMap) up to and including targetMonth. Returns null when no anchor

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { yearsInData, monthsOfYear } from "./aggregate";
+import {
+  yearsInData, monthsOfYear, incomeSpendByMonth, categoryMonthlySeries,
+} from "./aggregate";
 
 describe("monthsOfYear", () => {
   it("returns 12 padded YYYY-MM keys Jan..Dec", () => {
@@ -29,5 +31,46 @@ describe("yearsInData", () => {
   it("ignores rows with missing/blank dates", () => {
     const tx = [{ date: "", amount: -10 }, { amount: -10 }, { date: "2023-05-01", amount: -10 }];
     expect(yearsInData(tx, today)).toEqual([2026, 2023]);
+  });
+});
+
+describe("incomeSpendByMonth", () => {
+  const tx = [
+    { date: "2025-01-10", amount: 1000 },   // income Jan
+    { date: "2025-01-12", amount: -400 },    // spend Jan
+    { date: "2025-03-05", amount: -250 },    // spend Mar
+    { date: "2024-12-31", amount: -999 },    // other year, ignored
+  ];
+
+  it("returns 12 entries with income/spending/net per month", () => {
+    const rows = incomeSpendByMonth(tx, 2025);
+    expect(rows).toHaveLength(12);
+    expect(rows[0]).toEqual({ month: "2025-01", spending: 400, income: 1000, net: 600 });
+    expect(rows[2]).toEqual({ month: "2025-03", spending: 250, income: 0, net: -250 });
+    expect(rows[1]).toEqual({ month: "2025-02", spending: 0, income: 0, net: 0 });
+  });
+});
+
+describe("categoryMonthlySeries", () => {
+  const tx = [
+    { date: "2025-01-10", amount: -60, category: "Groceries" },
+    { date: "2025-01-22", amount: -40, category: "Groceries" },
+    { date: "2025-02-03", amount: -30, category: "Groceries" },
+    { date: "2025-02-03", amount: -99, category: "Transport" },
+    { date: "2025-04-01", amount: 500, category: "Groceries" }, // income ignored
+    { date: "2025-05-01", amount: -25, category: null },          // -> Others
+  ];
+
+  it("sums only expenses for the requested category, 12 entries", () => {
+    const series = categoryMonthlySeries(tx, 2025, "Groceries");
+    expect(series).toHaveLength(12);
+    expect(series[0]).toEqual({ month: "2025-01", amount: 100 });
+    expect(series[1]).toEqual({ month: "2025-02", amount: 30 });
+    expect(series[3]).toEqual({ month: "2025-04", amount: 0 }); // income excluded
+  });
+
+  it("routes null category to Others", () => {
+    const series = categoryMonthlySeries(tx, 2025, "Others");
+    expect(series[4]).toEqual({ month: "2025-05", amount: 25 });
   });
 });
