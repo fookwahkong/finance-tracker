@@ -237,7 +237,9 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   margin-bottom: 16px;
+  margin-left: 8px;
   gap: 12px;
+  justify-content: space-between
 }
 .card-title { font-size: 15px; font-weight: 700; }
 .card-sub { font-size: 14px; color: var(--muted); font-weight: 600; }
@@ -263,6 +265,7 @@ a { color: inherit; }
 /* ── Grids ── */
 .grid-2 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 20px; }
 .grid-2b { display: grid; grid-template-columns: 1fr 1.55fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .grid-cols { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; }
 

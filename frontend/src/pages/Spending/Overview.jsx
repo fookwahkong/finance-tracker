@@ -172,6 +172,15 @@ export default function Overview({ transactions, categories, onChanged }) {
       {/* Month selector */}
       <div className="card" style={{ padding: "16px 20px" }}>
         <div className="month-btns">
+          <select
+            className="select"
+            style={{ width: "auto", marginLeft: 8 }}
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+          >
+            {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+          </select>
+          
           {MONTH_ABBR.map((m, i) => {
             const mm = String(i + 1).padStart(2, "0");
             return (
@@ -185,14 +194,7 @@ export default function Overview({ transactions, categories, onChanged }) {
               </button>
             );
           })}
-          <select
-            className="select"
-            style={{ width: "auto", marginLeft: 8 }}
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-          >
-            {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
-          </select>
+          
         </div>
       </div>
 

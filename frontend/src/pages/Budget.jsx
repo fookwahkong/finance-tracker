@@ -56,7 +56,7 @@ export default function Budget() {
 
   return (
     <>
-      <div className="grid-4">
+      <div className="grid-3">
         <div className="stat">
           <div className="stat-label">On track</div>
           <div className="stat-value pos">{counts.on}</div>
@@ -72,14 +72,6 @@ export default function Budget() {
           <div className="stat-value neg">{counts.over}</div>
           <div className="stat-note">avg above budget</div>
         </div>
-        <div className="stat accent">
-          <div className="stat-label">Year</div>
-          <div style={{ marginTop: 6 }}>
-            <select className="select" style={{ width: "auto" }} value={year} onChange={(e) => setYear(e.target.value)}>
-              {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
-            </select>
-          </div>
-        </div>
       </div>
 
       <div className="card" style={{ padding: "12px 20px", display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center" }}>
@@ -88,8 +80,18 @@ export default function Budget() {
         <span className="status-badge status-over">Over</span><span className="row-sub">avg &gt; budget</span>
       </div>
 
-      <section className="card">
-        <div className="card-head"><div className="card-title">Budget by Category — {year}</div></div>
+      <section className="card" >
+        <div className="card-head">
+          <div className="card-title">Budget by Category — {year}</div>
+          <select
+            className="select"
+            style={{ width: "auto", marginLeft: 8 }}
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+          >
+            {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+          </select>
+        </div>
         <div className="table-scroll">
           <table className="budget-tbl">
             <thead>
