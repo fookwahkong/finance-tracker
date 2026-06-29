@@ -31,21 +31,16 @@ class PolygonClient:
             resp.raise_for_status()
         except httpx.HTTPError as exc:
             raise RuntimeError(f"Polygon request failed for {path}: {exc}") from exc
-        return resp.json()
+        data = resp.json()
+        if data is None or (isinstance(data, dict) and data.get("status") == "ERROR"):
+            raise RuntimeError(f"Polygon returned an error payload for {path}: {data}")
+        return data
 
     def ticker_details(self, symbol: str) -> dict:
         symbol = symbol.upper()
         return cache.get_or_fetch(
             f"{symbol}:ticker",
             lambda: self._get(f"/v3/reference/tickers/{symbol}"),
-            86400,
-        )
-
-    def previous_close(self, symbol: str) -> dict:
-        symbol = symbol.upper()
-        return cache.get_or_fetch(
-            f"{symbol}:prev",
-            lambda: self._get(f"/v2/aggs/ticker/{symbol}/prev"),
             86400,
         )
 

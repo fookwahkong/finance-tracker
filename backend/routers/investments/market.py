@@ -16,14 +16,6 @@ def get_ticker(symbol: str):
         raise HTTPException(status_code=502, detail=str(exc))
 
 
-@router.get("/prev-close/{symbol}")
-def get_prev_close(symbol: str):
-    try:
-        return client.previous_close(symbol)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
-
-
 @router.get("/aggregates/{symbol}")
 def get_aggregates(
     symbol: str,

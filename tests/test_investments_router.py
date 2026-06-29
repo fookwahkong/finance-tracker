@@ -7,7 +7,6 @@ from fastapi.testclient import TestClient
 def fake_polygon():
     svc = MagicMock()
     svc.ticker_details.return_value = {"results": {"ticker": "AAPL", "name": "Apple Inc."}}
-    svc.previous_close.return_value = {"results": [{"c": 195.0, "o": 190.0}]}
     svc.aggregates.return_value = {"results": [{"c": 1}, {"c": 2}]}
     svc.dividends.return_value = {"results": [{"cash_amount": 0.24}]}
     svc.sma.return_value = {"results": {"values": [{"value": 190.1}]}}
@@ -25,12 +24,6 @@ def test_ticker_endpoint_returns_raw_payload(client):
     resp = client.get("/api/investments/market/ticker/aapl")
     assert resp.status_code == 200
     assert resp.json()["results"]["name"] == "Apple Inc."
-
-
-def test_prev_close_endpoint_returns_raw_payload(client):
-    resp = client.get("/api/investments/market/prev-close/AAPL")
-    assert resp.status_code == 200
-    assert resp.json()["results"][0]["c"] == 195.0
 
 
 def test_aggregates_endpoint_passes_date_range(client, fake_polygon):

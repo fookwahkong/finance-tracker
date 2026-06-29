@@ -40,6 +40,15 @@ def test_get_raises_runtimeerror_on_http_error():
         client._get("/v3/reference/tickers/NOPE")
 
 
+def test_get_raises_on_error_status_payload():
+    def handler(request):
+        return httpx.Response(200, json={"status": "ERROR", "error": "rate limit"})
+
+    client = _client_with_transport(handler)
+    with pytest.raises(RuntimeError, match="error payload"):
+        client._get("/v3/reference/tickers/AAPL")
+
+
 def test_ticker_details_hits_reference_endpoint():
     seen = {}
 
@@ -51,19 +60,6 @@ def test_ticker_details_hits_reference_endpoint():
     data = client.ticker_details("AAPL")
     assert data["results"]["name"] == "Apple Inc."
     assert seen["path"] == "/v3/reference/tickers/AAPL"
-
-
-def test_previous_close_hits_prev_endpoint():
-    seen = {}
-
-    def handler(request):
-        seen["path"] = request.url.path
-        return httpx.Response(200, json={"results": [{"c": 195.0}]})
-
-    client = _client_with_transport(handler)
-    data = client.previous_close("AAPL")
-    assert data["results"][0]["c"] == 195.0
-    assert seen["path"] == "/v2/aggs/ticker/AAPL/prev"
 
 
 def test_aggregates_builds_range_path():
