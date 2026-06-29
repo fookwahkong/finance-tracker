@@ -9,6 +9,7 @@ from backend.routers import transactions, categories, reports, telegram, ingest,
 from backend.routers.investments import (
     market as investments_market,
     financials as investments_financials,
+    company as investments_company,
 )
 from core.validation import ValidationError
 
@@ -43,6 +44,7 @@ app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["sub
 app.include_router(networth.router, prefix="/api/networth", tags=["networth"])
 app.include_router(investments_market.router, prefix="/api/investments/market", tags=["investments"])
 app.include_router(investments_financials.router, prefix="/api/investments/financials", tags=["investments"])
+app.include_router(investments_company.router, prefix="/api/investments/company", tags=["investments"])
 
 
 @app.get("/")
