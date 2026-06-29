@@ -14,3 +14,4 @@ os.environ.setdefault(
 )
 os.environ.setdefault("POLYGON_API_KEY", "test-polygon-key")
 os.environ.setdefault("FMP_API_KEY", "test-fmp-key")
+os.environ.setdefault("FINNHUB_API_KEY", "test-finnhub-key")
