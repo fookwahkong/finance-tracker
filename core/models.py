@@ -78,3 +78,13 @@ class NetWorth(BaseModel):
     month: str
     cash: float
 
+
+class ClaimCreate(BaseModel):
+    debit_tx_id: str
+    my_share: float
+    counterparty: Optional[str] = None
+
+
+class ClaimCreditCreate(BaseModel):
+    credit_tx_id: str
+    allocated_amount: float
