@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   createTransaction, updateTransaction, deleteTransaction,
 } from "../../api/client";
-import { createClaim, settleClaim, reopenClaim, unlinkCredit } from "../../api/claims";
+import { createClaim, linkCredit, settleClaim, reopenClaim, unlinkCredit } from "../../api/claims";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
 import { yearsInData, applyAdjustmentsToMonth } from "../../lib/aggregate";
@@ -215,6 +215,28 @@ export default function Overview({ transactions, categories, claims = [], claimL
   async function onUnlink(claimId, linkId) {
     await unlinkCredit(claimId, linkId);
     reloadClaims?.();
+  }
+  async function onDropCredit(e, claim) {
+    const creditId = e.dataTransfer.getData("text/credit-id");
+    if (!creditId) return;
+    const credit = transactions.find((t) => t.id === creditId);
+    if (!credit || credit.amount <= 0) return;
+    const links = claim.links || [];
+    const rem = remaining(claim.expected, links);
+    const full = Math.abs(credit.amount);
+    let allocated = full;
+    if (full > rem) {
+      const input = window.prompt(`This credit is ${money(full)} but only ${money(rem)} is still owed. Allocate how much?`, String(rem));
+      if (input == null) return;
+      allocated = Number(input);
+      if (!(allocated > 0)) return;
+    }
+    try {
+      await linkCredit(claim.id, { credit_tx_id: creditId, allocated_amount: allocated });
+      reloadClaims?.();
+    } catch (err) {
+      window.alert(err?.response?.data?.detail || "Unable to link credit.");
+    }
   }
   async function handleDelete(id) {
     if (window.confirm("Delete this transaction?")) {
@@ -471,7 +493,11 @@ export default function Overview({ transactions, categories, claims = [], claimL
                     const income = t.amount > 0;
                     return (
                       <div key={t.id}>
-                        <div className="row">
+                        <div
+                          className="row"
+                          draggable={t.amount > 0}
+                          onDragStart={t.amount > 0 ? (e) => { e.dataTransfer.setData("text/credit-id", t.id); } : undefined}
+                        >
                         <div className="row-ico" style={{ background: income ? "var(--green-soft)" : "var(--teal-soft)" }}>
                           {emojiFor(t.category)}
                         </div>
@@ -509,7 +535,12 @@ export default function Overview({ transactions, categories, claims = [], claimL
                           const txById = Object.fromEntries(transactions.map((x) => [x.id, x]));
                           const settled = claim.status === "settled";
                           return (
-                            <div className="claim-nest" style={{ marginLeft: 52, marginBottom: 8 }}>
+                            <div
+                              className="claim-nest"
+                              style={{ marginLeft: 52, marginBottom: 8 }}
+                              onDragOver={!settled ? (e) => e.preventDefault() : undefined}
+                              onDrop={!settled ? (e) => { e.preventDefault(); onDropCredit(e, claim); } : undefined}
+                            >
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <button type="button" className="btn btn-ghost btn-icon" onClick={() => toggleClaim(claim.id)} aria-label="Toggle linked credits">
                                   {expandedClaims[claim.id] ? "v" : ">"}
