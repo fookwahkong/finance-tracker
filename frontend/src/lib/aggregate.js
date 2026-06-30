@@ -8,8 +8,22 @@ export function lastSixMonths(today = new Date()) {
   return out;
 }
 
+// Sum settled-claim adjustments for a month. When `category` is given, the
+// spending side is limited to that category; the income side is always the
+// full month total (income is category-agnostic).
+export function applyAdjustmentsToMonth(month, category, adjustments = []) {
+  let spendingDelta = 0;
+  let incomeDelta = 0;
+  for (const a of adjustments) {
+    if (a.month !== month) continue;
+    incomeDelta += a.amount;
+    if (category == null || a.category === category) spendingDelta += a.amount;
+  }
+  return { spendingDelta, incomeDelta };
+}
+
 // Spending (positive) and income totals per month for the given month keys.
-export function monthlyTotals(transactions, months) {
+export function monthlyTotals(transactions, months, adjustments = []) {
   const acc = Object.fromEntries(months.map((m) => [m, { spending: 0, income: 0 }]));
   for (const t of transactions) {
     const key = String(t.date || "").slice(0, 7);
@@ -17,7 +31,14 @@ export function monthlyTotals(transactions, months) {
     if (t.amount < 0) acc[key].spending += -t.amount;
     else acc[key].income += t.amount;
   }
-  return months.map((month) => ({ month, ...acc[month] }));
+  return months.map((month) => {
+    const { spendingDelta, incomeDelta } = applyAdjustmentsToMonth(month, null, adjustments);
+    return {
+      month,
+      spending: acc[month].spending - spendingDelta,
+      income: acc[month].income - incomeDelta,
+    };
+  });
 }
 
 // The "YYYY-MM" key one month after the given key.
@@ -70,7 +91,7 @@ export function incomeSpendByMonth(transactions, year) {
 
 // 12-entry expense-spend series (positive amounts) for one category across a
 // year. Transactions with no category are bucketed under "Others".
-export function categoryMonthlySeries(transactions, year, category) {
+export function categoryMonthlySeries(transactions, year, category, adjustments = []) {
   const months = monthsOfYear(year);
   const acc = Object.fromEntries(months.map((m) => [m, 0]));
   for (const t of transactions) {
@@ -80,7 +101,10 @@ export function categoryMonthlySeries(transactions, year, category) {
     if ((t.category || "Others") !== category) continue;
     acc[key] += -t.amount;
   }
-  return months.map((m) => ({ month: m, amount: acc[m] }));
+  return months.map((m) => {
+    const { spendingDelta } = applyAdjustmentsToMonth(m, category, adjustments);
+    return { month: m, amount: acc[m] - spendingDelta };
+  });
 }
 
 // Per-category stats for a year's Budget row: the 12 monthly spend amounts and

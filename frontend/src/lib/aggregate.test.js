@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  yearsInData, monthsOfYear, incomeSpendByMonth, categoryMonthlySeries,
+  yearsInData, monthsOfYear, monthlyTotals, incomeSpendByMonth, categoryMonthlySeries,
   categoryYearStats, budgetStatus,
 } from "./aggregate";
 
@@ -108,5 +108,31 @@ describe("budgetStatus", () => {
   });
   it("is on track when budget is unset/zero", () => {
     expect(budgetStatus(500, 0)).toBe("on");
+  });
+});
+
+describe("claim-aware aggregation", () => {
+  const tx = [
+    { date: "2026-06-01", amount: -100, category: "Groceries" },
+    { date: "2026-06-20", amount: 75, category: "Groceries" },
+  ];
+  const adj = [{ month: "2026-06", category: "Groceries", amount: 75 }];
+
+  it("monthlyTotals subtracts adjustment from spending and income", () => {
+    const [row] = monthlyTotals(tx, ["2026-06"], adj);
+    expect(row.spending).toBe(25);
+    expect(row.income).toBe(0);
+  });
+
+  it("monthlyTotals with no adjustments is unchanged", () => {
+    const [row] = monthlyTotals(tx, ["2026-06"]);
+    expect(row.spending).toBe(100);
+    expect(row.income).toBe(75);
+  });
+
+  it("categoryMonthlySeries subtracts from the claim's category", () => {
+    const series = categoryMonthlySeries(tx, 2026, "Groceries", adj);
+    const june = series.find((s) => s.month === "2026-06");
+    expect(june.amount).toBe(25);
   });
 });
