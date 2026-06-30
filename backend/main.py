@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.routers import transactions, categories, reports, telegram, ingest, statements, budgets, subscriptions, networth
+from backend.routers import transactions, categories, reports, telegram, ingest, statements, budgets, subscriptions, networth, claims
 from backend.routers.investments import (
     market as investments_market,
     financials as investments_financials,
@@ -42,6 +42,7 @@ app.include_router(statements.router, prefix="/api/statements", tags=["statement
 app.include_router(budgets.router, prefix="/api/budgets", tags=["budgets"])
 app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["subscriptions"])
 app.include_router(networth.router, prefix="/api/networth", tags=["networth"])
+app.include_router(claims.router, prefix="/api/claims", tags=["claims"])
 app.include_router(investments_market.router, prefix="/api/investments/market", tags=["investments"])
 app.include_router(investments_financials.router, prefix="/api/investments/financials", tags=["investments"])
 app.include_router(investments_company.router, prefix="/api/investments/company", tags=["investments"])
