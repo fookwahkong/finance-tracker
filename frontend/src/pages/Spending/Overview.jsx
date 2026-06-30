@@ -3,9 +3,11 @@ import { createPortal } from "react-dom";
 import {
   createTransaction, updateTransaction, deleteTransaction,
 } from "../../api/client";
+import { createClaim } from "../../api/claims";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
-import { yearsInData } from "../../lib/aggregate";
+import { yearsInData, applyAdjustmentsToMonth } from "../../lib/aggregate";
+import { claimAdjustments, remaining } from "../../lib/claims";
 
 const METHODS = [
   { value: "cash", label: "Cash" },
@@ -27,7 +29,7 @@ const EMPTY_FORM = {
   source: "cash",
 };
 
-export default function Overview({ transactions, categories, onChanged }) {
+export default function Overview({ transactions, categories, claims = [], claimLinks = [], onChanged, reloadClaims }) {
   const [year, setYear] = useState(currentMonth().slice(0, 4));
   const [monthNum, setMonthNum] = useState(currentMonth().slice(5, 7));
   const month = `${year}-${monthNum}`;
@@ -39,6 +41,10 @@ export default function Overview({ transactions, categories, onChanged }) {
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [menuFor, setMenuFor] = useState(null);
+  const [shareFor, setShareFor] = useState(null);
+  const [shareForm, setShareForm] = useState({ my_share: "", counterparty: "" });
+  const [shareError, setShareError] = useState("");
+  const [sharing, setSharing] = useState(false);
 
   const years = useMemo(() => yearsInData(transactions), [transactions]);
 
@@ -46,6 +52,17 @@ export default function Overview({ transactions, categories, onChanged }) {
   const monthTx = useMemo(
     () => transactions.filter((t) => String(t.date || "").slice(0, 7) === month),
     [transactions, month],
+  );
+
+  const claimByDebit = useMemo(() => {
+    const map = {};
+    for (const c of claims) map[c.debit_tx_id] = c;
+    return map;
+  }, [claims]);
+
+  const adjustments = useMemo(
+    () => claimAdjustments(transactions, claims, claimLinks),
+    [transactions, claims, claimLinks],
   );
 
   useEffect(() => {
@@ -61,8 +78,13 @@ export default function Overview({ transactions, categories, onChanged }) {
       : monthTx.filter((t) => (t.category || "Uncategorized") === catFilter)
   ), [monthTx, catFilter]);
 
-  const totalSpend = filtered.filter((t) => t.amount < 0).reduce((s, t) => s - t.amount, 0);
-  const totalIncome = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const rawSpend = filtered.filter((t) => t.amount < 0).reduce((s, t) => s - t.amount, 0);
+  const rawIncome = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const monthAdj = applyAdjustmentsToMonth(month, null, adjustments);
+  const totalSpend = catFilter === "all"
+    ? rawSpend - monthAdj.spendingDelta
+    : rawSpend - applyAdjustmentsToMonth(month, catFilter, adjustments).spendingDelta;
+  const totalIncome = rawIncome - monthAdj.incomeDelta;
   const net = totalIncome - totalSpend;
   const avg = filtered.length
     ? filtered.reduce((s, t) => s + Math.abs(t.amount), 0) / filtered.length
@@ -74,9 +96,13 @@ export default function Overview({ transactions, categories, onChanged }) {
       const name = t.category || "Uncategorized";
       by[name] = (by[name] || 0) + (-t.amount);
     });
-    const sorted = Object.entries(by).sort((a, b) => b[1] - a[1]);
+    for (const name of Object.keys(by)) {
+      const { spendingDelta } = applyAdjustmentsToMonth(month, name, adjustments);
+      by[name] = Math.max(0, by[name] - spendingDelta);
+    }
+    const sorted = Object.entries(by).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     return sorted.map(([name, value], i) => ({ name, value, color: colorFor(i) }));
-  }, [monthTx]);
+  }, [monthTx, month, adjustments]);
   const breakdownSpend = catRows.reduce((s, c) => s + c.value, 0);
 
   const groups = useMemo(() => {
@@ -145,6 +171,31 @@ export default function Overview({ transactions, categories, onChanged }) {
     }
   }
 
+  function openShareDialog(t) {
+    setShareFor(t);
+    setShareForm({ my_share: "", counterparty: "" });
+    setShareError("");
+  }
+
+  async function submitShare(e) {
+    e.preventDefault();
+    setSharing(true);
+    setShareError("");
+    try {
+      await createClaim({
+        debit_tx_id: shareFor.id,
+        my_share: Number(shareForm.my_share),
+        counterparty: shareForm.counterparty || null,
+      });
+      setShareFor(null);
+      reloadClaims?.();
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setShareError(typeof detail === "string" ? detail : "Unable to mark as shared.");
+    } finally {
+      setSharing(false);
+    }
+  }
   async function handleDelete(id) {
     if (window.confirm("Delete this transaction?")) {
       await deleteTransaction(id);
@@ -271,6 +322,45 @@ export default function Overview({ transactions, categories, onChanged }) {
         document.body
       )}
 
+      {shareFor && createPortal(
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => !sharing && setShareFor(null)}>
+          <div className="modal-panel" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div>
+                <div className="modal-title">Shared expense</div>
+                <div className="modal-sub">Total paid {money(Math.abs(shareFor.amount))} - {shareFor.item}</div>
+              </div>
+              <button type="button" className="btn btn-ghost btn-icon" aria-label="Close" onClick={() => setShareFor(null)} disabled={sharing}>x</button>
+            </div>
+            <form onSubmit={submitShare}>
+              {shareError && <div className="form-error" role="alert">{shareError}</div>}
+              <div className="form-grid modal-form-grid">
+                <div className="field">
+                  <label className="field-label">My share</label>
+                  <input className="input" type="number" step="0.01" min="0" required
+                    placeholder="25" value={shareForm.my_share}
+                    onChange={(e) => setShareForm({ ...shareForm, my_share: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Owed back</label>
+                  <input className="input" type="text" disabled
+                    value={shareForm.my_share ? money(Math.abs(shareFor.amount) - Number(shareForm.my_share)) : ""} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Who owes you</label>
+                  <input className="input" type="text" placeholder="Friend" value={shareForm.counterparty}
+                    onChange={(e) => setShareForm({ ...shareForm, counterparty: e.target.value })} />
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setShareFor(null)} disabled={sharing}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={sharing}>{sharing ? "Saving..." : "Mark as shared"}</button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
       {monthTx.length === 0 ? (
         <section className="card">
           <div className="empty">No transactions in this month.</div>
@@ -369,6 +459,11 @@ export default function Overview({ transactions, categories, onChanged }) {
                           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
                             {t.category && <span className="chip">{t.category}</span>}
                             {t.source && <span className="row-sub">· {methodLabel(t.source)}</span>}
+                            {claimByDebit[t.id]?.status === "open" && (
+                              <span className="chip" style={{ background: "var(--amber-soft, #fef3c7)" }}>
+                                Shared {money(remaining(claimByDebit[t.id].expected, claimByDebit[t.id].links || []))} pending
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="row-name" style={{ width: 110, textAlign: "right", color: income ? "var(--green)" : "var(--ink)" }}>
@@ -379,6 +474,9 @@ export default function Overview({ transactions, categories, onChanged }) {
                           {menuFor === t.id && (
                             <div className="dd-menu" style={{ top: 38, minWidth: 140 }}>
                               <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); startEdit(t); }}>✎ Edit</div>
+                              {t.amount < 0 && !claimByDebit[t.id] && (
+                                <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); openShareDialog(t); }}>Mark as shared</div>
+                              )}
                               <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); handleDelete(t.id); }}>✕ Delete</div>
                             </div>
                           )}
