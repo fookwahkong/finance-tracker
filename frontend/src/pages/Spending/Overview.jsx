@@ -3,11 +3,11 @@ import { createPortal } from "react-dom";
 import {
   createTransaction, updateTransaction, deleteTransaction,
 } from "../../api/client";
-import { createClaim } from "../../api/claims";
+import { createClaim, settleClaim, reopenClaim, unlinkCredit } from "../../api/claims";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
 import { yearsInData, applyAdjustmentsToMonth } from "../../lib/aggregate";
-import { claimAdjustments, remaining } from "../../lib/claims";
+import { claimAdjustments, receivedTotal, remaining } from "../../lib/claims";
 
 const METHODS = [
   { value: "cash", label: "Cash" },
@@ -45,6 +45,7 @@ export default function Overview({ transactions, categories, claims = [], claimL
   const [shareForm, setShareForm] = useState({ my_share: "", counterparty: "" });
   const [shareError, setShareError] = useState("");
   const [sharing, setSharing] = useState(false);
+  const [expandedClaims, setExpandedClaims] = useState({});
 
   const years = useMemo(() => yearsInData(transactions), [transactions]);
 
@@ -195,6 +196,25 @@ export default function Overview({ transactions, categories, claims = [], claimL
     } finally {
       setSharing(false);
     }
+  }
+  function toggleClaim(id) {
+    setExpandedClaims((m) => ({ ...m, [id]: !m[id] }));
+  }
+
+  async function onSettle(claimId) {
+    if (!window.confirm("Mark this claim as all accounted for?")) return;
+    await settleClaim(claimId);
+    reloadClaims?.();
+  }
+
+  async function onReopen(claimId) {
+    await reopenClaim(claimId);
+    reloadClaims?.();
+  }
+
+  async function onUnlink(claimId, linkId) {
+    await unlinkCredit(claimId, linkId);
+    reloadClaims?.();
   }
   async function handleDelete(id) {
     if (window.confirm("Delete this transaction?")) {
@@ -450,7 +470,8 @@ export default function Overview({ transactions, categories, claims = [], claimL
                   {g.items.map((t) => {
                     const income = t.amount > 0;
                     return (
-                      <div className="row" key={t.id}>
+                      <div key={t.id}>
+                        <div className="row">
                         <div className="row-ico" style={{ background: income ? "var(--green-soft)" : "var(--teal-soft)" }}>
                           {emojiFor(t.category)}
                         </div>
@@ -481,6 +502,44 @@ export default function Overview({ transactions, categories, claims = [], claimL
                             </div>
                           )}
                         </div>
+                      </div>
+                        {claimByDebit[t.id] && (() => {
+                          const claim = claimByDebit[t.id];
+                          const links = claim.links || [];
+                          const txById = Object.fromEntries(transactions.map((x) => [x.id, x]));
+                          const settled = claim.status === "settled";
+                          return (
+                            <div className="claim-nest" style={{ marginLeft: 52, marginBottom: 8 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <button type="button" className="btn btn-ghost btn-icon" onClick={() => toggleClaim(claim.id)} aria-label="Toggle linked credits">
+                                  {expandedClaims[claim.id] ? "v" : ">"}
+                                </button>
+                                <span className="row-sub">
+                                  {settled ? "Settled" : `Owed ${money(claim.expected)}`} - received {money(receivedTotal(links))}
+                                  {claim.counterparty ? ` - ${claim.counterparty}` : ""}
+                                </span>
+                                <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                                  {!settled && <button type="button" className="btn btn-outline" onClick={() => onSettle(claim.id)}>Close claim</button>}
+                                  {settled && <button type="button" className="btn btn-ghost" onClick={() => onReopen(claim.id)}>Reopen</button>}
+                                </span>
+                              </div>
+                              {expandedClaims[claim.id] && links.map((l) => {
+                                const credit = txById[l.credit_tx_id];
+                                return (
+                                  <div className="row" key={l.id} style={{ paddingLeft: 12 }}>
+                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                      <div className="row-name">{credit ? credit.item : "Linked credit"}</div>
+                                      <div className="row-sub">{credit ? credit.date : ""} - allocated {money(l.allocated_amount)}</div>
+                                    </div>
+                                    {!settled && (
+                                      <button type="button" className="btn btn-ghost btn-icon" aria-label="Unlink credit" onClick={() => onUnlink(claim.id, l.id)}>x</button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })}
