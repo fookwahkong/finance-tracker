@@ -90,3 +90,29 @@ def test_caches_list_payload(store):
     result = cache.get_or_fetch("AAPL:income", lambda: [{"y": 2025}], 604800)
     assert result == [{"y": 2025}]
     assert store["AAPL:income"]["data"] == [{"y": 2025}]
+
+
+class NoneOnMissTable(FakeTable):
+    # Mirrors the real postgrest client: maybe_single().execute() returns None
+    # (not a response object) when no row matches.
+    def execute(self):
+        if self._upsert is None and self._key not in self.store:
+            return None
+        return super().execute()
+
+
+class NoneOnMissSupabase:
+    def __init__(self, store):
+        self.store = store
+
+    def table(self, name):
+        return NoneOnMissTable(self.store)
+
+
+def test_miss_returning_none_response_is_treated_as_miss(monkeypatch):
+    s = {}
+    monkeypatch.setattr(cache, "supabase", NoneOnMissSupabase(s))
+
+    result = cache.get_or_fetch("AAPL:ticker", lambda: {"ok": True}, 3600)
+    assert result == {"ok": True}
+    assert s["AAPL:ticker"]["data"] == {"ok": True}

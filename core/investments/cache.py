@@ -21,7 +21,8 @@ def get_or_fetch(key: str, fetch_fn: Callable[[], Payload], ttl_seconds: int) ->
         .maybe_single()
         .execute()
     )
-    row = result.data
+    # maybe_single().execute() returns None (not a response) on a cache miss.
+    row = result.data if result else None
     if row:
         fetched_at = datetime.fromisoformat(row["fetched_at"])
         if (datetime.now(timezone.utc) - fetched_at).total_seconds() < ttl_seconds:
