@@ -57,3 +57,35 @@ create table if not exists net_worth (
   month text not null unique,
   cash numeric not null
 );
+
+-- Shared-expense claims -------------------------------------------------------
+-- A claim sits between a shared-expense debit and its later reimbursement
+-- credits. Effects on spending/income are computed at read time (no rows
+-- are written to `transactions`); only at status='settled' do they apply.
+create table if not exists claims (
+  id uuid primary key default gen_random_uuid(),
+  debit_tx_id uuid not null references transactions(id) on delete cascade,
+  total numeric not null check (total > 0),
+  my_share numeric not null check (my_share >= 0),
+  expected numeric not null check (expected >= 0),
+  category text,
+  counterparty text,
+  status text not null default 'open' check (status in ('open', 'settled')),
+  created_at timestamptz not null default now(),
+  settled_at timestamptz,
+  constraint claims_share_below_total check (my_share < total)
+);
+
+-- One claim per debit.
+create unique index if not exists claims_debit_tx_id_key on claims (debit_tx_id);
+
+-- Many-to-many link between a claim and the reimbursement credits applied to it.
+create table if not exists claim_credits (
+  id uuid primary key default gen_random_uuid(),
+  claim_id uuid not null references claims(id) on delete cascade,
+  credit_tx_id uuid not null references transactions(id) on delete cascade,
+  allocated_amount numeric not null check (allocated_amount > 0)
+);
+
+create index if not exists claim_credits_claim_id_idx on claim_credits (claim_id);
+create index if not exists claim_credits_credit_tx_id_idx on claim_credits (credit_tx_id);
