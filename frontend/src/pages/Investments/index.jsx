@@ -1,78 +1,28 @@
 import { useState } from "react";
-import {
-  getTicker,
-  getPrevClose,
-  getAggregates,
-  getDividends,
-  getSma,
-} from "../../api/investments";
-import RawJson from "./components/RawJson";
+import StockPage from "./StockPage";
 
 export default function Investments() {
   const [symbol, setSymbol] = useState("AAPL");
-  const [data, setData] = useState({
-    ticker: null,
-    prevClose: null,
-    aggregates: null,
-    dividends: null,
-    sma: null,
-  });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [draft, setDraft] = useState("AAPL");
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [ticker, prevClose, aggregates, dividends, sma] = await Promise.all([
-        getTicker(symbol),
-        getPrevClose(symbol),
-        getAggregates(symbol),
-        getDividends(symbol),
-        getSma(symbol),
-      ]);
-      setData({ ticker, prevClose, aggregates, dividends, sma });
-    } catch (e) {
-      setError(e?.response?.data?.detail || e.message);
-    } finally {
-      setLoading(false);
-    }
+  const submit = (e) => {
+    e.preventDefault();
+    const next = draft.trim().toUpperCase();
+    if (next) setSymbol(next);
   };
 
   return (
     <div className="card">
-      <h2>Investment — raw Polygon data</h2>
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+      <form onSubmit={submit} style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
         <input
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-          placeholder="Ticker (e.g. AAPL)"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.toUpperCase())}
+          placeholder="Search ticker (e.g. AAPL)"
+          aria-label="Ticker symbol"
         />
-        <button onClick={load} disabled={loading}>
-          {loading ? "Loading…" : "Fetch"}
-        </button>
-      </div>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      <section>
-        <h3>Ticker details</h3>
-        <RawJson value={data.ticker} />
-      </section>
-      <section>
-        <h3>Previous close</h3>
-        <RawJson value={data.prevClose} />
-      </section>
-      <section>
-        <h3>Aggregates (last 30 days, daily)</h3>
-        <RawJson value={data.aggregates} />
-      </section>
-      <section>
-        <h3>Dividends (corporate actions)</h3>
-        <RawJson value={data.dividends} />
-      </section>
-      <section>
-        <h3>SMA (Polygon-computed indicator)</h3>
-        <RawJson value={data.sma} />
-      </section>
+        <button type="submit">Search</button>
+      </form>
+      <StockPage key={symbol} symbol={symbol} />
     </div>
   );
 }
