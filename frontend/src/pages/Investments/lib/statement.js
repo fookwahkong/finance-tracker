@@ -2,7 +2,7 @@ const DASH = "—";
 
 export function statementColumns(periods) {
   if (!Array.isArray(periods)) return [];
-  return periods.map((p) => String(p.calendarYear || p.date || ""));
+  return periods.map((p) => String(p.calendarYear || p.fiscalYear || p.date || ""));
 }
 
 export function statementRows(periods, fields) {

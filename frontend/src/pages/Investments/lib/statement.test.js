@@ -11,6 +11,14 @@ describe("statementColumns", () => {
   it("uses calendarYear, newest first as given", () => {
     expect(statementColumns(periods)).toEqual(["2025", "2024"]);
   });
+
+  it("falls back to fiscalYear (FMP /stable/) then date", () => {
+    const stable = [
+      { fiscalYear: "2025", date: "2025-09-27", revenue: 1 },
+      { date: "2024-09-28", revenue: 1 },
+    ];
+    expect(statementColumns(stable)).toEqual(["2025", "2024-09-28"]);
+  });
 });
 
 describe("statementRows", () => {

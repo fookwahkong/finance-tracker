@@ -10,7 +10,7 @@ import httpx
 
 from core.investments import cache
 
-BASE_URL = "https://financialmodelingprep.com/api/v3"
+BASE_URL = "https://financialmodelingprep.com/stable"
 
 
 class FMPClient:
@@ -36,12 +36,12 @@ class FMPClient:
 
     def income_statement(self, symbol: str) -> list:
         symbol = symbol.upper()
-        return cache.get_or_fetch(f"{symbol}:income", lambda: self._get(f"/income-statement/{symbol}"), 604800)
+        return cache.get_or_fetch(f"{symbol}:income", lambda: self._get("/income-statement", {"symbol": symbol}), 604800)
 
     def balance_sheet(self, symbol: str) -> list:
         symbol = symbol.upper()
-        return cache.get_or_fetch(f"{symbol}:balance", lambda: self._get(f"/balance-sheet-statement/{symbol}"), 604800)
+        return cache.get_or_fetch(f"{symbol}:balance", lambda: self._get("/balance-sheet-statement", {"symbol": symbol}), 604800)
 
     def cash_flow(self, symbol: str) -> list:
         symbol = symbol.upper()
-        return cache.get_or_fetch(f"{symbol}:cashflow", lambda: self._get(f"/cash-flow-statement/{symbol}"), 604800)
+        return cache.get_or_fetch(f"{symbol}:cashflow", lambda: self._get("/cash-flow-statement", {"symbol": symbol}), 604800)

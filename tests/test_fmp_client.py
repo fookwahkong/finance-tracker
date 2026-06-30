@@ -43,12 +43,14 @@ def test_income_statement_hits_endpoint_and_uppercases():
 
     def handler(request):
         seen["path"] = request.url.path
+        seen["symbol"] = request.url.params.get("symbol")
         return httpx.Response(200, json=[{"revenue": 1}])
 
     client = _client_with_transport(handler)
     data = client.income_statement("aapl")
     assert data == [{"revenue": 1}]
-    assert seen["path"] == "/api/v3/income-statement/AAPL"
+    assert seen["path"] == "/stable/income-statement"
+    assert seen["symbol"] == "AAPL"
 
 
 def test_balance_sheet_hits_endpoint():
@@ -56,11 +58,13 @@ def test_balance_sheet_hits_endpoint():
 
     def handler(request):
         seen["path"] = request.url.path
+        seen["symbol"] = request.url.params.get("symbol")
         return httpx.Response(200, json=[{"totalAssets": 1}])
 
     client = _client_with_transport(handler)
     client.balance_sheet("AAPL")
-    assert seen["path"] == "/api/v3/balance-sheet-statement/AAPL"
+    assert seen["path"] == "/stable/balance-sheet-statement"
+    assert seen["symbol"] == "AAPL"
 
 
 def test_cash_flow_hits_endpoint():
@@ -68,8 +72,10 @@ def test_cash_flow_hits_endpoint():
 
     def handler(request):
         seen["path"] = request.url.path
+        seen["symbol"] = request.url.params.get("symbol")
         return httpx.Response(200, json=[{"netIncome": 1}])
 
     client = _client_with_transport(handler)
     client.cash_flow("AAPL")
-    assert seen["path"] == "/api/v3/cash-flow-statement/AAPL"
+    assert seen["path"] == "/stable/cash-flow-statement"
+    assert seen["symbol"] == "AAPL"
