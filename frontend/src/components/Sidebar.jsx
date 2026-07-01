@@ -36,14 +36,11 @@ function Links({ items, onNavigate }) {
 export default function Sidebar({ open = false, onNavigate }) {
   return (
     <aside className={`sidebar${open ? " open" : ""}`}>
+      <div className="sidebar-toggle-affordance" aria-hidden="true">☰</div>
       <div className="sidebar-brand">
         <div className="brand-mark">FT</div>
         <div className="brand-name">Finance Tracker</div>
       </div>
-      {/* <div className="sidebar-search">
-        <span>⌕</span>
-        <span>Search</span>
-      </div> */}
 
       <div className="sidebar-section">MAIN MENU</div>
       <Links items={NAV.main} onNavigate={onNavigate} />

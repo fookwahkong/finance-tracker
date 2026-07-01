@@ -508,6 +508,8 @@ export default function Overview({ transactions, categories, claims = [], claimL
                     const income = t.amount > 0;
                     const claim = claimByDebit[t.id];
                     const displayAmount = claim ? t.amount + receivedTotal(claim.links || []) : t.amount;
+                    const v = claim ? variance(receivedTotal(claim.links || []), claim.expected) : 0;
+                    const settled = claim?.status === "settled";
                     return (
                       <div key={t.id}>
                         <div
@@ -523,11 +525,31 @@ export default function Overview({ transactions, categories, claims = [], claimL
                             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
                               {t.category && <span className="chip">{t.category}</span>}
                               {t.source && <span className="row-sub">· {methodLabel(t.source)}</span>}
-                              {claimByDebit[t.id]?.status === "open" && (
-                                <span className="chip" style={{ background: "var(--amber-soft, #fef3c7)" }}>
-                                  Shared {money(remaining(claimByDebit[t.id].expected, claimByDebit[t.id].links || []))} pending
+                              {v !== 0 && (
+                                <span
+                                  className="chip"
+                                  style={
+                                    settled
+                                      ? { background: v > 0 ? "var(--green-soft)" : "var(--red-soft)", color: v > 0 ? "var(--green)" : "var(--red)" }
+                                      : { background: "var(--amber-soft)", color: "var(--amber)" }
+                                  }
+                                >
+                                  {settled ? (v > 0 ? "Gift" : "Shortfall") : (v > 0 ? "Over so far" : "Short so far")} {signed(v)}
                                 </span>
                               )}
+                              {v === 0 && claim && (
+                                <span
+                                  className="chip"
+                                  style={
+                                    settled
+                                      ? { background: "var(--ink)", color: "#fff" }
+                                      : { background: "var(--green)", color: "#fff" }
+                                  }
+                                >
+                                  {settled ? "Closed" : "All accounted for"}
+                                </span>
+                              )}
+
                             </div>
                           </div>
                           <div className="row-name" style={{ width: 110, textAlign: "right", color: income ? "var(--green)" : "var(--ink)" }}>
@@ -550,8 +572,6 @@ export default function Overview({ transactions, categories, claims = [], claimL
                           const claim = claimByDebit[t.id];
                           const links = claim.links || [];
                           const txById = Object.fromEntries(transactions.map((x) => [x.id, x]));
-                          const settled = claim.status === "settled";
-                          const v = variance(receivedTotal(links), claim.expected);
                           return (
                             <div
                               className="claim-nest"
@@ -563,15 +583,6 @@ export default function Overview({ transactions, categories, claims = [], claimL
                                 <button type="button" className="btn btn-ghost btn-icon" onClick={() => toggleClaim(claim.id)} aria-label="Toggle linked credits">
                                   {expandedClaims[claim.id] ? "v" : ">"}
                                 </button>
-                                <span className="row-sub">
-                                  {settled ? "Settled" : `Owed ${money(claim.expected)}`} - received {money(receivedTotal(links))}
-                                  {claim.counterparty ? ` - ${claim.counterparty}` : ""}
-                                </span>
-                                {v !== 0 && (
-                                  <span className="row-sub">
-                                    {settled ? (v > 0 ? "Gift" : "Shortfall") : (v > 0 ? "Over so far" : "Short so far")} {signed(v)}
-                                  </span>
-                                )}
                                 <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                                   {!settled && <button type="button" className="btn btn-outline" onClick={() => onSettle(claim.id)}>Close claim</button>}
                                   {settled && <button type="button" className="btn btn-ghost" onClick={() => onReopen(claim.id)}>Reopen</button>}

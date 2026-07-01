@@ -76,7 +76,7 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 8px 22px;
+  padding: 4px 2px 22px;
 }
 
 .brand-mark {
@@ -97,7 +97,33 @@ a { color: inherit; }
   font-weight: 800;
   font-size: 16px;
   letter-spacing: -0.3px;
+  white-space: nowrap;
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: opacity 0.15s ease, max-width 0.2s ease
 }
+
+.sidebar:hover .brand-name,
+.sidebar:focus-within .brand-name {
+  opacity: 1;
+  max-width: 200px;
+}
+
+.side-link span:not(.ico) {
+  white-space: nowrap;
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: opacity 0.15s ease, max-width 0.2s ease;
+}
+
+.sidebar:hover .side-link span:not(.ico),
+.sidebar:focus-within .side-link span:not(.ico) {
+  opacity: 1;
+  max-width: 160px;
+}
+
 
 .sidebar-search {
   display: flex;
@@ -118,6 +144,9 @@ a { color: inherit; }
   color: var(--muted-2);
   letter-spacing: 0.6px;
   padding: 0 8px 8px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 .sidebar-section.mt { padding-top: 20px; }
 
@@ -174,6 +203,13 @@ a { color: inherit; }
   padding: 20px 32px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+}
+
+.sidebar-toggle-affordance {
+  display: none;
+  font-size: 20px;
+  padding: 4px 8px 12px;
+  color: var(--muted-2);
 }
 
 .nav-toggle {
@@ -512,6 +548,39 @@ a { color: inherit; }
   .grid-2, .grid-2b, .grid-cols { grid-template-columns: 1fr; }
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
+
+@media (min-width: 721px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 68px;
+    overflow: hidden;
+    z-index: 50;
+    transition: width 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .sidebar:hover,
+  .sidebar:focus-within {
+    width: 248px;
+    overflow: visible;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.18);
+  }
+
+  .sidebar:hover .sidebar-section,
+  .sidebar:focus-within .sidebar-section {
+    opacity: 1;
+  }
+
+  .sidebar-toggle-affordance {
+    display: block;
+  }
+
+  .main {
+    margin-left: 68px;
+  }
+}
+
 @media (max-width: 720px) {
   .nav-toggle { display: block; }
   .sidebar {
