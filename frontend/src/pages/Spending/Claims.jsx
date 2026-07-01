@@ -2,7 +2,7 @@ import { money } from "../../lib/format";
 import { receivedTotal, remaining } from "../../lib/claims";
 import { settleClaim } from "../../api/claims";
 
-export default function Pending({ claims, onChanged }) {
+export default function Claims({ claims, onChanged }) {
   // c is individual claim object in CLAIMS array
   const open = claims.filter((c) => c.status === "open");
 

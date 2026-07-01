@@ -4,13 +4,13 @@ import { getClaims } from "../api/claims";
 import Overview from "./Spending/Overview";
 import MonthVsMonth from "./Spending/MonthVsMonth";
 import Insights from "./Spending/Insights";
-import Pending from "./Spending/Pending";
+import Claims from "./Spending/Claims";
 
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "month", label: "Month vs Month" },
   { id: "insights", label: "Insights" },
-  { id: "pending", label: "Pending" },
+  { id: "claims", label: "Claims" },
 ];
 
 export default function Spending() {
@@ -63,8 +63,8 @@ export default function Spending() {
       )}
       {tab === "month" && <MonthVsMonth transactions={transactions} />}
       {tab === "insights" && <Insights />}
-      {tab === "pending" && (
-        <Pending claims={claims} onChanged={() => { reload(); reloadClaims(); }} />
+      {tab === "claims" && (
+        <Claims claims={claims} onChanged={() => { reload(); reloadClaims(); }} />
       )}
     </>
   );
