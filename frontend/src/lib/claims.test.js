@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { receivedTotal, remaining, variance, linksByClaim, claimAdjustments } from "./claims";
+import { receivedTotal, remaining, variance, linksByClaim, claimAdjustments, allocatedByCredit } from "./claims";
 
 const link = (claim_id, allocated_amount, id = claim_id + "-l") => ({
   id, claim_id, credit_tx_id: "cr", allocated_amount,
@@ -51,5 +51,20 @@ describe("claimAdjustments", () => {
   it("settled under: capped at received (70)", () => {
     const claims = [{ id: "c1", debit_tx_id: "d1", expected: 75, category: "Groceries", status: "settled" }];
     expect(claimAdjustments(tx, claims, [link("c1", 70)])[0].amount).toBe(70);
+  });
+});
+
+describe("allocatedByCredit", () => {
+  it("sums allocated amounts per credit across all claims", () => {
+    const links = [
+      { id: "l1", claim_id: "c1", credit_tx_id: "cr1", allocated_amount: 10 },
+      { id: "l2", claim_id: "c2", credit_tx_id: "cr1", allocated_amount: 10 },
+      { id: "l3", claim_id: "c1", credit_tx_id: "cr2", allocated_amount: 5 },
+    ];
+    expect(allocatedByCredit(links)).toEqual({ cr1: 20, cr2: 5 });
+  });
+
+  it("returns an empty object for no links", () => {
+    expect(allocatedByCredit([])).toEqual({});
   });
 });

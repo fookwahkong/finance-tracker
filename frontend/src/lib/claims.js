@@ -23,6 +23,14 @@ export function linksByClaim(links) {
   return out;
 }
 
+export function allocatedByCredit(links) {
+  const out = {};
+  for (const l of links) {
+    out[l.credit_tx_id] = (out[l.credit_tx_id] || 0) + Number(l.allocated_amount);
+  }
+  return out;
+}
+
 // One adjustment per settled claim, dated in the debit's month.
 export function claimAdjustments(transactions, claims, links) {
   const txById = Object.fromEntries(transactions.map((t) => [t.id, t]));
