@@ -493,7 +493,20 @@ export default function Overview({ transactions, categories, claims = [], claimL
           </section>
 
           {/* Transactions by date */}
-          <section className="card">
+          <section
+            className="card"
+            onDragOver={(e) => { if (e.dataTransfer.types.includes("text/link-id")) e.preventDefault(); }}
+            onDrop={(e) => {
+              if (!e.dataTransfer.types.includes("text/link-id")) return;
+              if (e.target.closest(".claim-nest")) return;
+              e.preventDefault();
+              const linkId = e.dataTransfer.getData("text/link-id");
+              const claimId = e.dataTransfer.getData("text/claim-id");
+              if (!linkId || !claimId) return;
+              if (!window.confirm("Unlink this credit from the claim?")) return;
+              onUnlink(claimId, linkId);
+            }}
+          >
             <div className="card-head">
               <div className="card-title">Transactions by Date</div>
               <span className="pill" style={{ marginLeft: "auto" }}>{monthLabel(month)} · {catFilter === "all" ? "All categories" : catFilter}</span>
@@ -592,14 +605,20 @@ export default function Overview({ transactions, categories, claims = [], claimL
                               {expandedClaims[claim.id] && links.map((l) => {
                                 const credit = txById[l.credit_tx_id];
                                 return (
-                                  <div className="row" key={l.id} style={{ paddingLeft: 12 }}>
+                                  <div
+                                    className="row"
+                                    key={l.id}
+                                    style={{ paddingLeft: 12 }}
+                                    draggable={!settled}
+                                    onDragStart={!settled ? (e) => {
+                                      e.dataTransfer.setData("text/link-id", l.id);
+                                      e.dataTransfer.setData("text/claim-id", claim.id);
+                                    } : undefined}
+                                  >
                                     <div style={{ minWidth: 0, flex: 1 }}>
                                       <div className="row-name">{credit ? credit.item : "Linked credit"}</div>
                                       <div className="row-sub">{credit ? credit.date : ""} - allocated {money(l.allocated_amount)}</div>
                                     </div>
-                                    {!settled && (
-                                      <button type="button" className="btn btn-ghost btn-icon" aria-label="Unlink credit" onClick={() => onUnlink(claim.id, l.id)}>x</button>
-                                    )}
                                   </div>
                                 );
                               })}
