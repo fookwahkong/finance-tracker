@@ -7,7 +7,7 @@ import { createClaim, linkCredit, settleClaim, reopenClaim, deleteClaim, unlinkC
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
 import { yearsInData, applyAdjustmentsToMonth } from "../../lib/aggregate";
-import { claimAdjustments, receivedTotal, remaining, variance } from "../../lib/claims";
+import { claimAdjustments, receivedTotal, remaining, variance, allocatedByCredit } from "../../lib/claims";
 
 const METHODS = [
   { value: "cash", label: "Cash" },
@@ -57,9 +57,8 @@ export default function Overview({ transactions, categories, claims = [], claimL
     [transactions, month],
   );
 
-  const linkedCreditIds = useMemo(
-    // for each link object, pull out just its credit_tx_id
-    () => new Set(claimLinks.map((l) => l.credit_tx_id)),
+  const creditAllocations = useMemo(
+    () => allocatedByCredit(claimLinks),
     [claimLinks]
   )
 
@@ -117,13 +116,17 @@ export default function Overview({ transactions, categories, claims = [], claimL
   const groups = useMemo(() => {
     const order = [];
     const map = {};
-    const visible = filtered.filter((t) => !linkedCreditIds.has(t.id));  //filter the transaction that are nested
+    const visible = filtered.filter((t) => {
+      if (t.amount <= 0) return true;
+      const allocated = creditAllocations[t.id] || 0;
+      return t.amount - allocated > 0.005; // hide only once fully claimed
+    });
     visible.forEach((t) => {
       if (!map[t.date]) { map[t.date] = []; order.push(t.date); } //for bucketing the transaction into dates
       map[t.date].push(t);
     });
     return order.map((date) => ({ date, items: map[date] }));
-  }, [filtered]);
+  }, [filtered, creditAllocations]);
 
   function resetForm() {
     setForm({ ...EMPTY_FORM, date: new Date().toISOString().slice(0, 10) });
@@ -238,14 +241,13 @@ export default function Overview({ transactions, categories, claims = [], claimL
     if (!credit || credit.amount <= 0) return;
     const links = claim.links || [];
     const rem = remaining(claim.expected, links);
-    const full = Math.abs(credit.amount);
-    let allocated = full;
-    if (full > rem) {
-      const input = window.prompt(`This credit is ${money(full)} but only ${money(rem)} is still owed. Allocate how much?`, String(rem));
-      if (input == null) return;
-      allocated = Number(input);
-      if (!(allocated > 0)) return;
-    }
+    const unallocated = credit.amount - (creditAllocations[creditId] || 0);
+    if (unallocated <= 0) return;
+    const suggested = rem > 0 ? Math.min(unallocated, rem) : unallocated;
+    const input = window.prompt(`How much of this ${money(credit.amount)} credit is for this claim? (${money(unallocated)} still unclaimed)`, String(suggested));
+    if (input == null) return;
+    const allocated = Number(input);
+    if (!(allocated > 0)) return;
     try {
       await linkCredit(claim.id, { credit_tx_id: creditId, allocated_amount: allocated });
       reloadClaims?.();
@@ -520,7 +522,8 @@ export default function Overview({ transactions, categories, claims = [], claimL
                   {g.items.map((t) => {
                     const income = t.amount > 0;
                     const claim = claimByDebit[t.id];
-                    const displayAmount = claim ? t.amount + receivedTotal(claim.links || []) : t.amount;
+                    const creditAllocated = income ? (creditAllocations[t.id] || 0) : 0;
+                    const displayAmount = claim ? t.amount + receivedTotal(claim.links || []) : t.amount - creditAllocated;
                     const v = claim ? variance(receivedTotal(claim.links || []), claim.expected) : 0;
                     const settled = claim?.status === "settled";
                     return (
@@ -538,6 +541,11 @@ export default function Overview({ transactions, categories, claims = [], claimL
                             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
                               {t.category && <span className="chip">{t.category}</span>}
                               {t.source && <span className="row-sub">· {methodLabel(t.source)}</span>}
+                              {creditAllocated > 0 && (
+                                <span className="chip" style={{ background: "var(--amber-soft)", color: "var(--amber)" }}>
+                                  {money(creditAllocated)} claimed
+                                </span>
+                              )}
                               {v !== 0 && (
                                 <span
                                   className="chip"
