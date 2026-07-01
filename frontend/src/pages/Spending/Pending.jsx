@@ -3,12 +3,14 @@ import { receivedTotal, remaining } from "../../lib/claims";
 import { settleClaim } from "../../api/claims";
 
 export default function Pending({ claims, onChanged }) {
+  // c is individual claim object in CLAIMS array
   const open = claims.filter((c) => c.status === "open");
 
   async function close(id) {
     if (!window.confirm("Mark this claim as all accounted for?")) return;
-    await settleClaim(id);
-    onChanged();
+    // settleClaim will send a POST /api/claims/:id/settle 
+    await settleClaim(id); 
+    onChanged(); // trigger a reload for both transaction and claims
   }
 
   if (open.length === 0) {
@@ -37,6 +39,7 @@ export default function Pending({ claims, onChanged }) {
                 <td className="num">{money(c.expected)}</td>
                 <td className="num">{money(receivedTotal(links))}</td>
                 <td className="num" style={{ fontWeight: 700 }}>{money(remaining(c.expected, links))}</td>
+                {/* trigger close() function upon clicking */}
                 <td className="num"><button type="button" className="btn btn-outline" onClick={() => close(c.id)}>Close</button></td>
               </tr>
             );

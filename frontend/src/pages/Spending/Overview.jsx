@@ -3,11 +3,11 @@ import { createPortal } from "react-dom";
 import {
   createTransaction, updateTransaction, deleteTransaction,
 } from "../../api/client";
-import { createClaim, linkCredit, settleClaim, reopenClaim, unlinkCredit } from "../../api/claims";
+import { createClaim, linkCredit, settleClaim, reopenClaim, deleteClaim, unlinkCredit } from "../../api/claims";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
 import { yearsInData, applyAdjustmentsToMonth } from "../../lib/aggregate";
-import { claimAdjustments, receivedTotal, remaining } from "../../lib/claims";
+import { claimAdjustments, receivedTotal, remaining, variance } from "../../lib/claims";
 
 const METHODS = [
   { value: "cash", label: "Cash" },
@@ -51,9 +51,17 @@ export default function Overview({ transactions, categories, claims = [], claimL
 
   // Transactions for the selected month (backend returns date-desc overall).
   const monthTx = useMemo(
+    //slide the first 7 chars to get "2026-07"
+    //keep pnly transaction whose date falls in the currently selected year/month
     () => transactions.filter((t) => String(t.date || "").slice(0, 7) === month),
     [transactions, month],
   );
+
+  const linkedCreditIds = useMemo(
+    // for each link object, pull out just its credit_tx_id
+    () => new Set(claimLinks.map((l) => l.credit_tx_id)),
+    [claimLinks]
+  )
 
   const claimByDebit = useMemo(() => {
     const map = {};
@@ -109,8 +117,9 @@ export default function Overview({ transactions, categories, claims = [], claimL
   const groups = useMemo(() => {
     const order = [];
     const map = {};
-    filtered.forEach((t) => {
-      if (!map[t.date]) { map[t.date] = []; order.push(t.date); }
+    const visible = filtered.filter((t) => !linkedCreditIds.has(t.id));  //filter the transaction that are nested
+    visible.forEach((t) => {
+      if (!map[t.date]) { map[t.date] = []; order.push(t.date); } //for bucketing the transaction into dates
       map[t.date].push(t);
     });
     return order.map((date) => ({ date, items: map[date] }));
@@ -212,6 +221,12 @@ export default function Overview({ transactions, categories, claims = [], claimL
     reloadClaims?.();
   }
 
+  async function onDelete(claimId) {
+    if (!window.confirm("Mark this transaction as not shared? This deletes any linked credits to the claim.")) return;
+    await deleteClaim(claimId);
+    reloadClaims?.();
+  }
+
   async function onUnlink(claimId, linkId) {
     await unlinkCredit(claimId, linkId);
     reloadClaims?.();
@@ -273,7 +288,7 @@ export default function Overview({ transactions, categories, claims = [], claimL
           >
             {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
           </select>
-          
+
           {MONTH_ABBR.map((m, i) => {
             const mm = String(i + 1).padStart(2, "0");
             return (
@@ -287,7 +302,7 @@ export default function Overview({ transactions, categories, claims = [], claimL
               </button>
             );
           })}
-          
+
         </div>
       </div>
 
@@ -491,6 +506,8 @@ export default function Overview({ transactions, categories, claims = [], claimL
                   <div className="date-label">{g.date}</div>
                   {g.items.map((t) => {
                     const income = t.amount > 0;
+                    const claim = claimByDebit[t.id];
+                    const displayAmount = claim ? t.amount + receivedTotal(claim.links || []) : t.amount;
                     return (
                       <div key={t.id}>
                         <div
@@ -498,42 +515,43 @@ export default function Overview({ transactions, categories, claims = [], claimL
                           draggable={t.amount > 0}
                           onDragStart={t.amount > 0 ? (e) => { e.dataTransfer.setData("text/credit-id", t.id); } : undefined}
                         >
-                        <div className="row-ico" style={{ background: income ? "var(--green-soft)" : "var(--teal-soft)" }}>
-                          {emojiFor(t.category)}
-                        </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div className="row-name">{t.item}</div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
-                            {t.category && <span className="chip">{t.category}</span>}
-                            {t.source && <span className="row-sub">· {methodLabel(t.source)}</span>}
-                            {claimByDebit[t.id]?.status === "open" && (
-                              <span className="chip" style={{ background: "var(--amber-soft, #fef3c7)" }}>
-                                Shared {money(remaining(claimByDebit[t.id].expected, claimByDebit[t.id].links || []))} pending
-                              </span>
+                          <div className="row-ico" style={{ background: income ? "var(--green-soft)" : "var(--teal-soft)" }}>
+                            {emojiFor(t.category)}
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div className="row-name">{t.item}</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
+                              {t.category && <span className="chip">{t.category}</span>}
+                              {t.source && <span className="row-sub">· {methodLabel(t.source)}</span>}
+                              {claimByDebit[t.id]?.status === "open" && (
+                                <span className="chip" style={{ background: "var(--amber-soft, #fef3c7)" }}>
+                                  Shared {money(remaining(claimByDebit[t.id].expected, claimByDebit[t.id].links || []))} pending
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="row-name" style={{ width: 110, textAlign: "right", color: income ? "var(--green)" : "var(--ink)" }}>
+                            {signed(displayAmount)}
+                          </div>
+                          <div className="dd" style={{ flex: "none" }}>
+                            <button className="btn btn-ghost btn-icon" aria-label="Transaction actions" onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === t.id ? null : t.id); }}>⋯</button>
+                            {menuFor === t.id && (
+                              <div className="dd-menu" style={{ top: 38, minWidth: 140 }}>
+                                <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); startEdit(t); }}>✎ Edit</div>
+                                {t.amount < 0 && !claimByDebit[t.id] && (
+                                  <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); openShareDialog(t); }}>Mark as shared</div>
+                                )}
+                                <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); handleDelete(t.id); }}>✕ Delete</div>
+                              </div>
                             )}
                           </div>
                         </div>
-                        <div className="row-name" style={{ width: 110, textAlign: "right", color: income ? "var(--green)" : "var(--ink)" }}>
-                          {signed(t.amount)}
-                        </div>
-                        <div className="dd" style={{ flex: "none" }}>
-                          <button className="btn btn-ghost btn-icon" aria-label="Transaction actions" onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === t.id ? null : t.id); }}>⋯</button>
-                          {menuFor === t.id && (
-                            <div className="dd-menu" style={{ top: 38, minWidth: 140 }}>
-                              <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); startEdit(t); }}>✎ Edit</div>
-                              {t.amount < 0 && !claimByDebit[t.id] && (
-                                <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); openShareDialog(t); }}>Mark as shared</div>
-                              )}
-                              <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); handleDelete(t.id); }}>✕ Delete</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
                         {claimByDebit[t.id] && (() => {
                           const claim = claimByDebit[t.id];
                           const links = claim.links || [];
                           const txById = Object.fromEntries(transactions.map((x) => [x.id, x]));
                           const settled = claim.status === "settled";
+                          const v = variance(receivedTotal(links), claim.expected);
                           return (
                             <div
                               className="claim-nest"
@@ -549,9 +567,15 @@ export default function Overview({ transactions, categories, claims = [], claimL
                                   {settled ? "Settled" : `Owed ${money(claim.expected)}`} - received {money(receivedTotal(links))}
                                   {claim.counterparty ? ` - ${claim.counterparty}` : ""}
                                 </span>
+                                {v !== 0 && (
+                                  <span className="row-sub">
+                                    {settled ? (v > 0 ? "Gift" : "Shortfall") : (v > 0 ? "Over so far" : "Short so far")} {signed(v)}
+                                  </span>
+                                )}
                                 <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                                   {!settled && <button type="button" className="btn btn-outline" onClick={() => onSettle(claim.id)}>Close claim</button>}
                                   {settled && <button type="button" className="btn btn-ghost" onClick={() => onReopen(claim.id)}>Reopen</button>}
+                                  {!settled && <button type="button" className="btn btn-outline" onClick={() => onDelete(claim.id)}>Delete</button>}
                                 </span>
                               </div>
                               {expandedClaims[claim.id] && links.map((l) => {

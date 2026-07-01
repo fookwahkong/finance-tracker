@@ -19,13 +19,17 @@ export default function Spending() {
   const [categories, setCategories] = useState([]);
   const [claims, setClaims] = useState([]);
 
+  // to fetch transaction via getTransactions
   const reload = useCallback(() => {
     getTransactions().then(setTransactions).catch(() => setTransactions([]));
   }, []);
+
+  // to fetch claims via getClaims
   const reloadClaims = useCallback(() => {
     getClaims().then(setClaims).catch(() => setClaims([]));
   }, []);
 
+  // useEffect 
   useEffect(() => { reload(); }, [reload]);
   useEffect(() => { reloadClaims(); }, [reloadClaims]);
   useEffect(() => { getCategories().then(setCategories).catch(() => {}); }, []);

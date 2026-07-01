@@ -30,9 +30,10 @@ describe("linksByClaim", () => {
 describe("claimAdjustments", () => {
   const tx = [{ id: "d1", date: "2026-06-01", amount: -100, category: "Groceries" }];
 
-  it("ignores open claims", () => {
+  it("applies to open claims too", () => {
     const claims = [{ id: "c1", debit_tx_id: "d1", expected: 75, category: "Groceries", status: "open" }];
-    expect(claimAdjustments(tx, claims, [link("c1", 80)])).toEqual([]);
+    expect(claimAdjustments(tx, claims, [link("c1", 80)])).toEqual([
+      {month:"2026-06", category:"Groceries", amount: 75}]);
   });
 
   it("settled exact: subtract 75 in debit month", () => {

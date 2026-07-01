@@ -11,6 +11,7 @@ export function remaining(expected, links) {
 }
 
 export function variance(received, expected) {
+  // use for calculating the shortfall/extra of received credits
   return received - expected;
 }
 
@@ -28,7 +29,6 @@ export function claimAdjustments(transactions, claims, links) {
   const grouped = linksByClaim(links);
   const out = [];
   for (const claim of claims) {
-    if (claim.status !== "settled") continue;
     const debit = txById[claim.debit_tx_id];
     if (!debit) continue;
     const received = receivedTotal(grouped[claim.id] || []);
