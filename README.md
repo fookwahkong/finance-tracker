@@ -1,3 +1,8 @@
+uvicorn backend.main:app --reload
+
+cd frontend
+npm run dev
+
 # 💸 Finance Tracker
 
 > **Log a transaction by just typing "spent 12.50 on lunch" — AI does the rest.**
