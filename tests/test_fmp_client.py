@@ -79,3 +79,20 @@ def test_cash_flow_hits_endpoint():
     client.cash_flow("AAPL")
     assert seen["path"] == "/stable/cash-flow-statement"
     assert seen["symbol"] == "AAPL"
+
+
+def test_ratios_hits_endpoint_with_limit():
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["symbol"] = request.url.params.get("symbol")
+        seen["limit"] = request.url.params.get("limit")
+        return httpx.Response(200, json=[{"priceToEarningsRatio": 28.0}])
+
+    client = _client_with_transport(handler)
+    data = client.ratios("aapl")
+    assert data == [{"priceToEarningsRatio": 28.0}]
+    assert seen["path"] == "/stable/ratios"
+    assert seen["symbol"] == "AAPL"
+    assert seen["limit"] == "5"

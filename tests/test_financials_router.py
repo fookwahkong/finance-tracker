@@ -9,6 +9,7 @@ def fake_fmp():
     svc.income_statement.return_value = [{"revenue": 1}]
     svc.balance_sheet.return_value = [{"totalAssets": 2}]
     svc.cash_flow.return_value = [{"netIncome": 3}]
+    svc.ratios.return_value = [{"priceToEarningsRatio": 28.0}]
     return svc
 
 
@@ -35,6 +36,12 @@ def test_cashflow_endpoint_returns_raw_payload(client):
     resp = client.get("/api/investments/financials/cashflow/AAPL")
     assert resp.status_code == 200
     assert resp.json() == [{"netIncome": 3}]
+
+
+def test_ratios_endpoint_returns_raw_payload(client):
+    resp = client.get("/api/investments/financials/ratios/AAPL")
+    assert resp.status_code == 200
+    assert resp.json()[0]["priceToEarningsRatio"] == 28.0
 
 
 def test_income_endpoint_maps_runtimeerror_to_502(client, fake_fmp):

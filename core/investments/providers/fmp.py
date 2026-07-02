@@ -45,3 +45,7 @@ class FMPClient:
     def cash_flow(self, symbol: str) -> list:
         symbol = symbol.upper()
         return cache.get_or_fetch(f"{symbol}:cashflow", lambda: self._get("/cash-flow-statement", {"symbol": symbol}), 604800)
+
+    def ratios(self, symbol: str) -> list:
+        symbol = symbol.upper()
+        return cache.get_or_fetch(f"{symbol}:ratios", lambda: self._get("/ratios", {"symbol": symbol, "limit": 5}), 86400)

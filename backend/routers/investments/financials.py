@@ -28,3 +28,11 @@ def get_cashflow(symbol: str):
         return client.cash_flow(symbol)
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
+
+
+@router.get("/ratios/{symbol}")
+def get_ratios(symbol: str):
+    try:
+        return client.ratios(symbol)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
