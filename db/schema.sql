@@ -89,3 +89,16 @@ create table if not exists claim_credits (
 
 create index if not exists claim_credits_claim_id_idx on claim_credits (claim_id);
 create index if not exists claim_credits_credit_tx_id_idx on claim_credits (credit_tx_id);
+
+-- ── Investment transactions ─────────────────────────────────────────
+-- Single source of holdings; shares owned and average cost basis are
+-- derived from it client-side. Never written to the cash `transactions`.
+create table if not exists invest_transactions (
+  id uuid primary key default gen_random_uuid(),
+  ticker text not null,
+  type text not null check (type in ('BUY', 'SELL')),
+  quantity numeric not null check (quantity > 0),
+  price_per_share numeric not null check (price_per_share > 0),
+  purchase_date date not null,
+  created_at timestamptz not null default now()
+);

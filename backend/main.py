@@ -10,6 +10,7 @@ from backend.routers.investments import (
     market as investments_market,
     financials as investments_financials,
     company as investments_company,
+    portfolio as investments_portfolio,
 )
 from core.validation import ValidationError
 
@@ -46,6 +47,7 @@ app.include_router(claims.router, prefix="/api/claims", tags=["claims"])
 app.include_router(investments_market.router, prefix="/api/investments/market", tags=["investments"])
 app.include_router(investments_financials.router, prefix="/api/investments/financials", tags=["investments"])
 app.include_router(investments_company.router, prefix="/api/investments/company", tags=["investments"])
+app.include_router(investments_portfolio.router, prefix="/api/investments/portfolio", tags=["investments"])
 
 
 @app.get("/")

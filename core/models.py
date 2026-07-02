@@ -1,5 +1,5 @@
 from datetime import date as Date
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel
 
 
@@ -88,3 +88,11 @@ class ClaimCreate(BaseModel):
 class ClaimCreditCreate(BaseModel):
     credit_tx_id: str
     allocated_amount: float
+
+
+class InvestTransactionUpsert(BaseModel):
+    ticker: str
+    type: Literal["BUY", "SELL"]
+    quantity: float
+    price_per_share: float
+    purchase_date: str
