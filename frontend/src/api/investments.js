@@ -52,6 +52,13 @@ export const updateInvestTransaction = (id, data) =>
 export const deleteInvestTransaction = (id) =>
   api.delete(`/api/investments/portfolio/transactions/${id}`);
 
+// Market-wide (Finnhub via backend)
+export const getMarketNews = () =>
+  api.get("/api/investments/market/news").then((r) => r.data);
+
+export const getEarningsCalendar = () =>
+  api.get("/api/investments/market/earnings-calendar").then((r) => r.data);
+
 // FX (frankfurter via backend, server-cached 24h)
 export const getFxUsdSgd = () =>
   api.get("/api/investments/fx/usd-sgd").then((r) => r.data);
