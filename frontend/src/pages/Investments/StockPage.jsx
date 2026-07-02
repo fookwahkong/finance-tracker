@@ -58,7 +58,7 @@ export default function StockPage({ symbol }) {
           news={sections.news}
         />
       )}
-      {tab === "analysis" && <AnalysisTab aggregates={sections.aggregates} ratios={sections.ratios} />}
+      {tab === "analysis" && <AnalysisTab symbol={symbol} aggregates={sections.aggregates} ratios={sections.ratios} />}
       {tab === "earnings" && <EarningsTab earnings={sections.earnings} />}
       {tab === "financials" && (
         <FinancialsTab

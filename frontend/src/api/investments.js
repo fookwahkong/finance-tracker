@@ -69,6 +69,17 @@ export const getMarketNews = () =>
 export const getEarningsCalendar = () =>
   api.get("/api/investments/market/earnings-calendar").then((r) => r.data);
 
+// AI (Claude via backend, cached and caveated)
+export const peekBullBear = (symbol) =>
+  api.get(`/api/investments/ai/bull-bear/${symbol}`).then((r) => r.data);
+
+export const generateBullBear = (symbol) =>
+  api.post(`/api/investments/ai/bull-bear/${symbol}`).then((r) => r.data);
+
+export const getNewsSummary = (tickers) =>
+  api.get("/api/investments/ai/news-summary", { params: { tickers: tickers.join(",") } })
+    .then((r) => r.data);
+
 // FX (frankfurter via backend, server-cached 24h)
 export const getFxUsdSgd = () =>
   api.get("/api/investments/fx/usd-sgd").then((r) => r.data);

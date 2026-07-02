@@ -1,5 +1,6 @@
 import { money } from "../../../lib/format";
 import { rsi, range52w, peFlag, pegFlag } from "../lib/indicators";
+import BullBearCard from "./BullBearCard";
 import Section from "./Section";
 
 const badge = (kind, text) => {
@@ -63,9 +64,10 @@ function ValuationFlags({ ratios }) {
   );
 }
 
-export default function AnalysisTab({ aggregates, ratios }) {
+export default function AnalysisTab({ symbol, aggregates, ratios }) {
   return (
     <div>
+      <BullBearCard symbol={symbol} />
       <div className="card-sub" style={{ marginBottom: 8 }}>Valuation</div>
       <Section section={ratios} isEmpty={(d) => !d || !d.length}>
         {(data) => <ValuationFlags ratios={data} />}

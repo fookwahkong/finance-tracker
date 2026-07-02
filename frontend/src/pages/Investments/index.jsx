@@ -7,6 +7,7 @@ import { guidanceMessages } from "./lib/guidance";
 import AllocationDonut from "./components/AllocationDonut";
 import { useQuotes } from "./hooks/useQuotes";
 import HoldingsTable from "./components/HoldingsTable";
+import HoldingsNews from "./components/HoldingsNews";
 import TradeForm from "./components/TradeForm";
 
 export default function Investments() {
@@ -125,6 +126,8 @@ export default function Investments() {
           </div>
         </>
       )}
+
+      <HoldingsNews tickers={positions.map((p) => p.ticker)} />
 
       <Link to="/investment/news" style={{ fontSize: 13, color: "var(--teal)", fontWeight: 600 }}>
         Market news →
