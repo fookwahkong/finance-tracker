@@ -53,6 +53,14 @@ class FinnhubClient:
             86400,
         )
 
+    def quote(self, symbol: str) -> dict:
+        symbol = symbol.upper()
+        return cache.get_or_fetch(
+            f"{symbol}:quote",
+            lambda: self._get("/quote", {"symbol": symbol}),
+            30,
+        )
+
     def earnings_calendar(self, symbol: str) -> dict:
         symbol = symbol.upper()
         return cache.get_or_fetch(

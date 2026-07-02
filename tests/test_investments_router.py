@@ -20,6 +20,27 @@ def client(monkeypatch, fake_polygon):
     return TestClient(app)
 
 
+@pytest.fixture
+def fake_finnhub():
+    svc = MagicMock()
+    svc.quote.return_value = {"c": 190.5, "pc": 188.0, "d": 2.5, "dp": 1.33}
+    return svc
+
+
+@pytest.fixture
+def client_fh(monkeypatch, fake_polygon, fake_finnhub):
+    monkeypatch.setattr("backend.routers.investments.market.client", fake_polygon)
+    monkeypatch.setattr("backend.routers.investments.market.finnhub", fake_finnhub)
+    from backend.main import app
+    return TestClient(app)
+
+
+def test_quote_endpoint_returns_raw_payload(client_fh):
+    resp = client_fh.get("/api/investments/market/quote/AAPL")
+    assert resp.status_code == 200
+    assert resp.json()["c"] == 190.5
+
+
 def test_ticker_endpoint_returns_raw_payload(client):
     resp = client.get("/api/investments/market/ticker/aapl")
     assert resp.status_code == 200

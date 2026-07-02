@@ -2,10 +2,20 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException, Query
 
+from core.investments.providers.finnhub import FinnhubClient
 from core.investments.providers.polygon import PolygonClient
 
 router = APIRouter()
 client = PolygonClient()
+finnhub = FinnhubClient()
+
+
+@router.get("/quote/{symbol}")
+def get_quote(symbol: str):
+    try:
+        return finnhub.quote(symbol)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
 
 
 @router.get("/ticker/{symbol}")

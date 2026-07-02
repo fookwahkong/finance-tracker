@@ -68,6 +68,21 @@ def test_company_news_passes_date_range_and_returns_list():
     assert seen["to"] == "2026-06-29"
 
 
+def test_quote_hits_endpoint_and_uppercases():
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["symbol"] = request.url.params.get("symbol")
+        return httpx.Response(200, json={"c": 190.5, "pc": 188.0})
+
+    client = _client_with_transport(handler)
+    data = client.quote("aapl")
+    assert data == {"c": 190.5, "pc": 188.0}
+    assert seen["path"] == "/api/v1/quote"
+    assert seen["symbol"] == "AAPL"
+
+
 def test_earnings_calendar_hits_endpoint():
     seen = {}
 
