@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from core.db import supabase
-from core.models import InvestTransactionUpsert
+from core.models import InvestTransactionUpsert, WatchlistAdd
 
 router = APIRouter()
 
@@ -51,3 +51,27 @@ def delete_transaction(tx_id: str):
     result = supabase.table("invest_transactions").delete().eq("id", tx_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Transaction not found")
+
+
+@router.get("/watchlist")
+def list_watchlist():
+    return (
+        supabase.table("watchlist").select("*").order("added_at").execute().data
+    )
+
+
+@router.post("/watchlist")
+def add_watchlist(entry: WatchlistAdd):
+    result = (
+        supabase.table("watchlist")
+        .upsert({"ticker": entry.ticker.upper()}, on_conflict="ticker")
+        .execute()
+    )
+    return result.data[0]
+
+
+@router.delete("/watchlist/{ticker}", status_code=204)
+def remove_watchlist(ticker: str):
+    result = supabase.table("watchlist").delete().eq("ticker", ticker.upper()).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Ticker not on watchlist")

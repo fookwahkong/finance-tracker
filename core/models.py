@@ -96,3 +96,7 @@ class InvestTransactionUpsert(BaseModel):
     quantity: float
     price_per_share: float
     purchase_date: str
+
+
+class WatchlistAdd(BaseModel):
+    ticker: str

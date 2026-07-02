@@ -93,6 +93,13 @@ create index if not exists claim_credits_credit_tx_id_idx on claim_credits (cred
 -- ── Investment transactions ─────────────────────────────────────────
 -- Single source of holdings; shares owned and average cost basis are
 -- derived from it client-side. Never written to the cash `transactions`.
+-- ── Watchlist ────────────────────────────────────────────────────────
+create table if not exists watchlist (
+  id uuid primary key default gen_random_uuid(),
+  ticker text not null unique,
+  added_at timestamptz not null default now()
+);
+
 create table if not exists invest_transactions (
   id uuid primary key default gen_random_uuid(),
   ticker text not null,
