@@ -36,3 +36,15 @@ def generate_bull_bear(symbol: str):
 def peek_bull_bear(symbol: str):
     data = cache.peek(f"{symbol.upper()}:bullbear", BULL_BEAR_TTL)
     return {"cached": data is not None, "data": data}
+
+
+@router.get("/news-summary")
+def news_summary(tickers: str):
+    symbols = sorted({t.strip().upper() for t in tickers.split(",") if t.strip()})
+    if not symbols:
+        raise HTTPException(status_code=422, detail="tickers query param is required")
+    try:
+        news_by_ticker = {s: _recent_news(s) for s in symbols}
+        return ai.news_summary(news_by_ticker)
+    except (RuntimeError, ValueError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc))

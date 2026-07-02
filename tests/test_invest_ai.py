@@ -58,3 +58,18 @@ def test_get_bull_bear_empty_cache(client, monkeypatch):
     monkeypatch.setattr("backend.routers.investments.ai.cache.peek", lambda key, ttl: None)
     resp = client.get("/api/investments/ai/bull-bear/AAPL")
     assert resp.json() == {"cached": False, "data": None}
+
+
+def test_news_summary_fans_out_per_ticker(client, fakes):
+    ai = fakes
+    ai.news_summary.return_value = [{"ticker": "AAPL", "summary": "Calm quarter."}]
+    resp = client.get("/api/investments/ai/news-summary", params={"tickers": "aapl,msft"})
+    assert resp.status_code == 200
+    assert resp.json()[0]["ticker"] == "AAPL"
+    news_by = ai.news_summary.call_args[0][0]
+    assert set(news_by.keys()) == {"AAPL", "MSFT"}
+
+
+def test_news_summary_requires_tickers(client):
+    resp = client.get("/api/investments/ai/news-summary", params={"tickers": ""})
+    assert resp.status_code == 422
