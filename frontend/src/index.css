@@ -742,3 +742,19 @@ a { color: inherit; }
 .budget-tbl th, .budget-tbl td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); }
 .budget-tbl th:first-child, .budget-tbl td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
 .budget-tbl .over-cell { color: var(--red); font-weight: 700; }
+
+/* ── Investment watchlist sidebar ──────────────────────────────── */
+.watchlist {
+  width: 72px;
+  flex-shrink: 0;
+  transition: width 0.18s ease;
+  overflow: hidden;
+}
+.watchlist:hover { width: 240px; }
+.watchlist .wl-full { display: none; }
+.watchlist:hover .wl-full { display: block; }
+.watchlist:hover .wl-mini { display: none; }
+.wl-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 4px; font-size: 13px; border-bottom: 1px solid var(--line);
+}

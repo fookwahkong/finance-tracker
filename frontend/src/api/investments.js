@@ -52,6 +52,16 @@ export const updateInvestTransaction = (id, data) =>
 export const deleteInvestTransaction = (id) =>
   api.delete(`/api/investments/portfolio/transactions/${id}`);
 
+// Watchlist (Supabase CRUD)
+export const getWatchlist = () =>
+  api.get("/api/investments/portfolio/watchlist").then((r) => r.data);
+
+export const addToWatchlist = (ticker) =>
+  api.post("/api/investments/portfolio/watchlist", { ticker }).then((r) => r.data);
+
+export const removeFromWatchlist = (ticker) =>
+  api.delete(`/api/investments/portfolio/watchlist/${ticker}`);
+
 // Market-wide (Finnhub via backend)
 export const getMarketNews = () =>
   api.get("/api/investments/market/news").then((r) => r.data);
