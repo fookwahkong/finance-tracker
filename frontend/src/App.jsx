@@ -7,6 +7,7 @@ import Settings from "./pages/Settings";
 import Import from "./pages/Import";
 import Budget from "./pages/Budget";
 import Investments from "./pages/Investments";
+import StockRoute from "./pages/Investments/StockRoute";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/report" element={<Report />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/investment" element={<Investments />} />
+          <Route path="/investment/stock/:symbol" element={<StockRoute />} />
           <Route path="/budget" element={<Budget />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>

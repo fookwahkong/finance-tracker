@@ -35,6 +35,23 @@ export const getNews = (symbol) =>
 export const getEarnings = (symbol) =>
   api.get(`/api/investments/company/earnings/${symbol}`).then((r) => r.data);
 
+// Live quote (Finnhub via backend, server-cached 30s)
+export const getQuote = (symbol) =>
+  api.get(`/api/investments/market/quote/${symbol}`).then((r) => r.data);
+
+// Portfolio transactions (Supabase CRUD)
+export const getInvestTransactions = () =>
+  api.get("/api/investments/portfolio/transactions").then((r) => r.data);
+
+export const createInvestTransaction = (data) =>
+  api.post("/api/investments/portfolio/transactions", data).then((r) => r.data);
+
+export const updateInvestTransaction = (id, data) =>
+  api.put(`/api/investments/portfolio/transactions/${id}`, data).then((r) => r.data);
+
+export const deleteInvestTransaction = (id) =>
+  api.delete(`/api/investments/portfolio/transactions/${id}`);
+
 // Financials (FMP) — annual only in v1
 export const getIncome = (symbol) =>
   api.get(`/api/investments/financials/income/${symbol}`).then((r) => r.data);
