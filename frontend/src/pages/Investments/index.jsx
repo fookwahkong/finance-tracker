@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getInvestTransactions } from "../../api/investments";
+import { money, signed } from "../../lib/format";
+import { buildPositions, enrichPositions, portfolioTotals } from "./lib/portfolio";
+import { useQuotes } from "./hooks/useQuotes";
+import HoldingsTable from "./components/HoldingsTable";
 import TradeForm from "./components/TradeForm";
 
 export default function Investments() {
@@ -16,6 +20,11 @@ export default function Investments() {
       .catch((e) => setTxError(e?.response?.data?.detail || e.message));
   }
   useEffect(() => { loadTransactions(); }, []);
+
+  const positions = useMemo(() => buildPositions(transactions), [transactions]);
+  const quotes = useQuotes(positions.map((p) => p.ticker));
+  const enriched = useMemo(() => enrichPositions(positions, quotes), [positions, quotes]);
+  const totals = useMemo(() => portfolioTotals(enriched), [enriched]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -44,6 +53,28 @@ export default function Investments() {
       </div>
 
       {txError && <p style={{ color: "var(--red)" }}>{txError}</p>}
+      {positions.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 18 }}>
+          <div className="stat">
+            <div className="stat-label">Total value</div>
+            <div className="stat-value">{totals.complete ? money(totals.value) : "—"}</div>
+            <div className="stat-note">cost basis {money(totals.costBasis)}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-label">Day change</div>
+            <div className="stat-value" style={{ color: totals.dayChange >= 0 ? "var(--green)" : "var(--red)" }}>
+              {totals.complete ? `${signed(totals.dayChange)} (${totals.dayChangePct.toFixed(2)}%)` : "—"}
+            </div>
+          </div>
+          <div className="stat">
+            <div className="stat-label">Total return</div>
+            <div className="stat-value" style={{ color: totals.totalReturn >= 0 ? "var(--green)" : "var(--red)" }}>
+              {totals.complete ? `${signed(totals.totalReturn)} (${totals.totalReturnPct.toFixed(2)}%)` : "—"}
+            </div>
+          </div>
+        </div>
+      )}
+      <HoldingsTable enriched={enriched} onOpen={(t) => navigate(`/investment/stock/${t}`)} />
       {!txError && transactions.length === 0 && (
         <p style={{ color: "var(--muted)" }}>No trades yet — add your first buy with “+ Trade”.</p>
       )}
