@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getInvestTransactions } from "../../api/investments";
 import { money, signed } from "../../lib/format";
-import { buildPositions, enrichPositions, portfolioTotals } from "./lib/portfolio";
+import { buildPositions, enrichPositions, portfolioTotals, allocations as buildAllocations } from "./lib/portfolio";
 import { guidanceMessages } from "./lib/guidance";
+import AllocationDonut from "./components/AllocationDonut";
 import { useQuotes } from "./hooks/useQuotes";
 import HoldingsTable from "./components/HoldingsTable";
 import TradeForm from "./components/TradeForm";
@@ -30,6 +31,7 @@ export default function Investments() {
     () => (totals.complete ? guidanceMessages(enriched, totals) : []),
     [enriched, totals]
   );
+  const allocs = useMemo(() => buildAllocations(enriched), [enriched]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -92,6 +94,7 @@ export default function Investments() {
           ))}
         </div>
       )}
+      <AllocationDonut allocations={allocs} />
       <HoldingsTable enriched={enriched} onOpen={(t) => navigate(`/investment/stock/${t}`)} />
       {!txError && transactions.length === 0 && (
         <p style={{ color: "var(--muted)" }}>No trades yet — add your first buy with “+ Trade”.</p>
