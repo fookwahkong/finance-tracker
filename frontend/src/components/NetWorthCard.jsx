@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { getNetWorth, upsertNetWorth, deleteNetWorth } from "../api/client";
+import { getFxUsdSgd } from "../api/investments";
 import { cashForMonth, netFlowMap } from "../lib/aggregate";
 import { money, currentMonth, monthLabel } from "../lib/format";
-
-// Demo placeholder until the investment subsystem is built.
-const DEMO_INVESTMENT = 2450;
+import { usePortfolioValue } from "../pages/Investments/hooks/usePortfolioValue";
 
 export default function NetWorthCard({ transactions }) {
   const [month, setMonth] = useState(currentMonth());
@@ -29,7 +28,13 @@ export default function NetWorthCard({ transactions }) {
     () => cashForMonth(anchors, flowMap, month),
     [anchors, flowMap, month],
   );
-  const netWorth = (cash || 0) + DEMO_INVESTMENT;
+
+  const { valueUsd } = usePortfolioValue();
+  const [fxRate, setFxRate] = useState(null);
+  useEffect(() => { getFxUsdSgd().then((fx) => setFxRate(fx.rate)).catch(() => {}); }, []);
+  const investment = valueUsd != null && fxRate != null ? valueUsd * fxRate : null;
+
+  const netWorth = (cash || 0) + (investment || 0);
 
   function openCash() {
     const existing = anchors.find((a) => a.month === month);
@@ -89,8 +94,9 @@ export default function NetWorthCard({ transactions }) {
           <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 4 }}>Tap to set this month</div>
         </button>
         <div style={{ background: "#f6f8f8", borderRadius: 14, padding: 16 }}>
-          <div className="stat-label">Investment <span className="demo-tag" title="Sample data — not yet wired to a backend">DEMO</span></div>
-          <div style={{ fontSize: 22, fontWeight: 800 }}>{money(DEMO_INVESTMENT)}</div>
+          <div className="stat-label">Investment</div>
+          <div style={{ fontSize: 22, fontWeight: 800 }}>{investment == null ? "—" : money(investment)}</div>
+          <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 4 }}>USD holdings × daily SGD rate</div>
         </div>
       </div>
 

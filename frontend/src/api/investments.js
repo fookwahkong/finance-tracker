@@ -52,6 +52,10 @@ export const updateInvestTransaction = (id, data) =>
 export const deleteInvestTransaction = (id) =>
   api.delete(`/api/investments/portfolio/transactions/${id}`);
 
+// FX (frankfurter via backend, server-cached 24h)
+export const getFxUsdSgd = () =>
+  api.get("/api/investments/fx/usd-sgd").then((r) => r.data);
+
 // Financials (FMP) — annual only in v1
 export const getIncome = (symbol) =>
   api.get(`/api/investments/financials/income/${symbol}`).then((r) => r.data);
