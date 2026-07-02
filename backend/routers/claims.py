@@ -12,6 +12,7 @@ router = APIRouter()
 
 
 def _one(table: str, row_id: str):
+    # read one row of data
     rows = supabase.table(table).select("*").eq("id", row_id).execute().data
     return rows[0] if rows else None
 
@@ -35,6 +36,9 @@ def create_claim(claim: ClaimCreate):
     debit = _one("transactions", claim.debit_tx_id)
     if not debit:
         raise ValidationError("Debit transaction not found.")
+    
+    # only support the scenario where you paid on behalf of others
+    # does not support the scenario where people gave you extra for you to pay others
     if debit["amount"] >= 0:
         raise ValidationError("Claims can only be created from debit transactions.")
 
