@@ -65,3 +65,6 @@ export const getBalance = (symbol) =>
 
 export const getCashflow = (symbol) =>
   api.get(`/api/investments/financials/cashflow/${symbol}`).then((r) => r.data);
+
+export const getRatios = (symbol) =>
+  api.get(`/api/investments/financials/ratios/${symbol}`).then((r) => r.data);

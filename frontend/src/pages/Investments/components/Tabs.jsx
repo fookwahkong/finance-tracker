@@ -1,6 +1,6 @@
 const TABS = [
   { key: "overview", label: "Overview" },
-  { key: "analysis", label: "Analysis", soon: true },
+  { key: "analysis", label: "Analysis" },
   { key: "earnings", label: "Earnings" },
   { key: "financials", label: "Financials" },
 ];

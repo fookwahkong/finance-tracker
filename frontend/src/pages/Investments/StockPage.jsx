@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import {
   getTicker, getAggregates, getDividends, getProfile, getNews,
-  getEarnings, getIncome, getBalance, getCashflow,
+  getEarnings, getIncome, getBalance, getCashflow, getRatios,
 } from "../../api/investments";
+import AnalysisTab from "./components/AnalysisTab";
 import PriceHeader from "./components/PriceHeader";
 import PriceChart from "./components/PriceChart";
 import Tabs from "./components/Tabs";
@@ -27,6 +28,7 @@ const SECTIONS = {
   ticker: getTicker, aggregates: getAggregates, dividends: getDividends,
   profile: getProfile, news: getNews, earnings: getEarnings,
   income: getIncome, balance: getBalance, cashflow: getCashflow,
+  ratios: getRatios,
 };
 
 export default function StockPage({ symbol }) {
@@ -56,7 +58,7 @@ export default function StockPage({ symbol }) {
           news={sections.news}
         />
       )}
-      {tab === "analysis" && <p style={{ color: "#888" }}>Soon</p>}
+      {tab === "analysis" && <AnalysisTab aggregates={sections.aggregates} ratios={sections.ratios} />}
       {tab === "earnings" && <EarningsTab earnings={sections.earnings} />}
       {tab === "financials" && (
         <FinancialsTab
