@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { getInvestTransactions } from "../../api/investments";
 import { money, signed } from "../../lib/format";
 import { buildPositions, enrichPositions, portfolioTotals } from "./lib/portfolio";
+import { guidanceMessages } from "./lib/guidance";
 import { useQuotes } from "./hooks/useQuotes";
 import HoldingsTable from "./components/HoldingsTable";
 import TradeForm from "./components/TradeForm";
@@ -25,6 +26,10 @@ export default function Investments() {
   const quotes = useQuotes(positions.map((p) => p.ticker));
   const enriched = useMemo(() => enrichPositions(positions, quotes), [positions, quotes]);
   const totals = useMemo(() => portfolioTotals(enriched), [enriched]);
+  const guidance = useMemo(
+    () => (totals.complete ? guidanceMessages(enriched, totals) : []),
+    [enriched, totals]
+  );
 
   const submit = (e) => {
     e.preventDefault();
@@ -72,6 +77,19 @@ export default function Investments() {
               {totals.complete ? `${signed(totals.totalReturn)} (${totals.totalReturnPct.toFixed(2)}%)` : "—"}
             </div>
           </div>
+        </div>
+      )}
+      {guidance.length > 0 && (
+        <div style={{ display: "grid", gap: 8, marginBottom: 18 }}>
+          {guidance.map((g) => (
+            <div key={g.id} style={{
+              background: "var(--amber-soft)", color: "var(--amber)",
+              borderRadius: "var(--radius-sm)", padding: "10px 14px",
+              fontSize: 13, fontWeight: 600,
+            }}>
+              {g.text}
+            </div>
+          ))}
         </div>
       )}
       <HoldingsTable enriched={enriched} onOpen={(t) => navigate(`/investment/stock/${t}`)} />
