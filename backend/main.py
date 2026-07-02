@@ -12,6 +12,7 @@ from backend.routers.investments import (
     company as investments_company,
     portfolio as investments_portfolio,
     fx as investments_fx,
+    ai as investments_ai,
 )
 from core.validation import ValidationError
 
@@ -50,6 +51,7 @@ app.include_router(investments_financials.router, prefix="/api/investments/finan
 app.include_router(investments_company.router, prefix="/api/investments/company", tags=["investments"])
 app.include_router(investments_portfolio.router, prefix="/api/investments/portfolio", tags=["investments"])
 app.include_router(investments_fx.router, prefix="/api/investments/fx", tags=["investments"])
+app.include_router(investments_ai.router, prefix="/api/investments/ai", tags=["investments"])
 
 
 @app.get("/")

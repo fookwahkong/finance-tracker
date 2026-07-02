@@ -13,6 +13,24 @@ from core.db import supabase
 Payload = dict | list
 
 
+def peek(key: str, ttl_seconds: int) -> Payload | None:
+    """Return the cached payload if present and fresh; never fetches."""
+    result = (
+        supabase.table("investment_cache")
+        .select("data,fetched_at")
+        .eq("key", key)
+        .maybe_single()
+        .execute()
+    )
+    row = result.data if result else None
+    if not row:
+        return None
+    fetched_at = datetime.fromisoformat(row["fetched_at"])
+    if (datetime.now(timezone.utc) - fetched_at).total_seconds() >= ttl_seconds:
+        return None
+    return row["data"]
+
+
 def get_or_fetch(key: str, fetch_fn: Callable[[], Payload], ttl_seconds: int) -> Payload:
     result = (
         supabase.table("investment_cache")
