@@ -53,6 +53,20 @@ class FinnhubClient:
             86400,
         )
 
+    def market_news(self) -> list:
+        return cache.get_or_fetch(
+            "market:news",
+            lambda: self._get("/news", {"category": "general"}),
+            3600,
+        )
+
+    def earnings_calendar_range(self, from_date: str, to_date: str) -> dict:
+        return cache.get_or_fetch(
+            f"earnings-calendar:{from_date}:{to_date}",
+            lambda: self._get("/calendar/earnings", {"from": from_date, "to": to_date}),
+            86400,
+        )
+
     def quote(self, symbol: str) -> dict:
         symbol = symbol.upper()
         return cache.get_or_fetch(

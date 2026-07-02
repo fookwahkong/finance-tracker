@@ -68,6 +68,37 @@ def test_company_news_passes_date_range_and_returns_list():
     assert seen["to"] == "2026-06-29"
 
 
+def test_market_news_uses_general_category():
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["category"] = request.url.params.get("category")
+        return httpx.Response(200, json=[{"headline": "Markets rally"}])
+
+    client = _client_with_transport(handler)
+    data = client.market_news()
+    assert data == [{"headline": "Markets rally"}]
+    assert seen["path"] == "/api/v1/news"
+    assert seen["category"] == "general"
+
+
+def test_earnings_calendar_range_passes_dates():
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["from"] = request.url.params.get("from")
+        seen["to"] = request.url.params.get("to")
+        return httpx.Response(200, json={"earningsCalendar": []})
+
+    client = _client_with_transport(handler)
+    client.earnings_calendar_range("2026-07-02", "2026-07-16")
+    assert seen["path"] == "/api/v1/calendar/earnings"
+    assert seen["from"] == "2026-07-02"
+    assert seen["to"] == "2026-07-16"
+
+
 def test_quote_hits_endpoint_and_uppercases():
     seen = {}
 

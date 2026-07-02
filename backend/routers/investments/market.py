@@ -18,6 +18,24 @@ def get_quote(symbol: str):
         raise HTTPException(status_code=502, detail=str(exc))
 
 
+@router.get("/news")
+def get_market_news():
+    try:
+        return finnhub.market_news()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+
+@router.get("/earnings-calendar")
+def get_earnings_calendar():
+    from_ = date.today().isoformat()
+    to = (date.today() + timedelta(days=14)).isoformat()
+    try:
+        return finnhub.earnings_calendar_range(from_, to)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+
 @router.get("/ticker/{symbol}")
 def get_ticker(symbol: str):
     try:

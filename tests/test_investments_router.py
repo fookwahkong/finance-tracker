@@ -24,6 +24,8 @@ def client(monkeypatch, fake_polygon):
 def fake_finnhub():
     svc = MagicMock()
     svc.quote.return_value = {"c": 190.5, "pc": 188.0, "d": 2.5, "dp": 1.33}
+    svc.market_news.return_value = [{"headline": "Markets rally"}]
+    svc.earnings_calendar_range.return_value = {"earningsCalendar": [{"symbol": "AAPL"}]}
     return svc
 
 
@@ -39,6 +41,19 @@ def test_quote_endpoint_returns_raw_payload(client_fh):
     resp = client_fh.get("/api/investments/market/quote/AAPL")
     assert resp.status_code == 200
     assert resp.json()["c"] == 190.5
+
+
+def test_market_news_endpoint(client_fh):
+    resp = client_fh.get("/api/investments/market/news")
+    assert resp.status_code == 200
+    assert resp.json()[0]["headline"] == "Markets rally"
+
+
+def test_earnings_calendar_endpoint_defaults_to_next_two_weeks(client_fh, fake_finnhub):
+    resp = client_fh.get("/api/investments/market/earnings-calendar")
+    assert resp.status_code == 200
+    args = fake_finnhub.earnings_calendar_range.call_args[0]
+    assert len(args[0]) == 10 and len(args[1]) == 10  # two ISO dates
 
 
 def test_ticker_endpoint_returns_raw_payload(client):
