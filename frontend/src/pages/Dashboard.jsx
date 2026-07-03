@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  ResponsiveContainer, AreaChart, Area, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+} from "recharts";
 import { getMonthlyReport, getTransactions, getBudgets } from "../api/client";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../lib/format";
 import { emojiFor } from "../lib/categories";
 import { lastSixMonths, monthlyTotals } from "../lib/aggregate";
 import UpcomingBills from "../components/UpcomingBills";
 import NetWorthCard from "../components/NetWorthCard";
+import { usePortfolioValue } from "./Investments/hooks/usePortfolioValue";
+import { usePortfolioHistory } from "./Investments/hooks/usePortfolioHistory";
+
+const shortMonth = (ym) => monthLabel(ym).split(" ")[0];
 
 // Static sample data for widgets that have no backend yet.
 const DEMO_GOALS = [
@@ -24,6 +32,8 @@ export default function Dashboard() {
   const [allTx, setAllTx] = useState([]);
   const [report, setReport] = useState(null);
   const [recent, setRecent] = useState([]);
+  const { valueUsd: portfolioValue, totals: portfolioTotalsData } = usePortfolioValue();
+  const { series: portfolioHistory } = usePortfolioHistory(120);
 
   useEffect(() => {
     getMonthlyReport(month).then(setReport).catch(() => setReport(null));
@@ -34,6 +44,17 @@ export default function Dashboard() {
   useEffect(() => { getTransactions().then(setAllTx).catch(() => setAllTx([])); }, []);
 
   const sixMonth = useMemo(() => monthlyTotals(allTx, lastSixMonths()), [allTx]);
+  const cashFlowData = useMemo(
+    () => sixMonth.map((d) => ({ ...d, label: shortMonth(d.month) })),
+    [sixMonth]
+  );
+  const portfolioChartData = useMemo(
+    () => portfolioHistory.map((d) => ({
+      date: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      value: d.value,
+    })),
+    [portfolioHistory]
+  );
 
   // Real budget status for the selected month.
   const spendByCatMonth = useMemo(() => {
@@ -105,24 +126,17 @@ export default function Dashboard() {
             <div className="card-title">Cash Flow Overview</div>
             <span className="pill" style={{ marginLeft: "auto" }}>Last 6 months</span>
           </div>
-          {(() => {
-            const max = Math.max(1, ...sixMonth.map((d) => Math.max(d.spending, d.income)));
-            const pts = (key) => sixMonth.map((d, i) => {
-              const x = 20 + (i * 580) / 5;
-              const y = 180 - (d[key] / max) * 150;
-              return `${x.toFixed(0)},${y.toFixed(0)}`;
-            }).join(" ");
-            return (
-              <svg viewBox="0 0 620 200" style={{ width: "100%", height: 200 }}>
-                <polyline points={pts("income")} fill="none" stroke="var(--teal-3)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                <polyline points={pts("spending")} fill="none" stroke="var(--teal)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            );
-          })()}
-          <div style={{ display: "flex", gap: 16, fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-            <span><span className="legend-dot" style={{ background: "var(--teal)" }} /> Spending</span>
-            <span><span className="legend-dot" style={{ background: "var(--teal-3)" }} /> Income</span>
-          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={cashFlowData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => money(v).replace(/\.\d+$/, "")} width={64} />
+              <Tooltip formatter={(v) => money(v)} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Line type="monotone" dataKey="income" name="Income" stroke="var(--teal-3)" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+              <Line type="monotone" dataKey="spending" name="Spending" stroke="var(--teal)" strokeWidth={3.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </section>
 
         <section className="card">
@@ -159,21 +173,46 @@ export default function Dashboard() {
         </section>
       </div>
 
-      {/* Investment (demo) + Upcoming bills (demo) */}
+      {/* Investment (real) + Upcoming bills (demo) */}
       <div className="grid-2">
         <section className="card">
           <div className="card-head">
-            <div className="card-title">Investment Performance <Demo /></div>
+            <div className="card-title">Investment Performance</div>
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "6px 0 14px" }}>
-            <div style={{ fontSize: 30, fontWeight: 800 }}>$2,450</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--green)" }}>↑ 12% <span style={{ color: "var(--muted-2)", fontWeight: 500 }}>vs last week</span></div>
-          </div>
-          <svg viewBox="0 0 620 150" style={{ width: "100%", height: 150 }}>
-            <defs><linearGradient id="invFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#138a86" stopOpacity="0.18" /><stop offset="1" stopColor="#138a86" stopOpacity="0" /></linearGradient></defs>
-            <polygon points="24,110 100,95 176,100 252,70 328,84 404,76 480,58 556,66 596,40 596,130 24,130" fill="url(#invFill)" />
-            <polyline points="24,110 100,95 176,100 252,70 328,84 404,76 480,58 556,66 596,40" fill="none" stroke="var(--teal)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          {portfolioValue == null ? (
+            <div className="empty">No holdings yet — add trades on the Investment page.</div>
+          ) : (
+            <>
+              <Link to="/investment" style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "6px 0 14px", textDecoration: "none", color: "inherit" }}>
+                <div style={{ fontSize: 30, fontWeight: 800 }}>{money(portfolioValue)}</div>
+                {portfolioTotalsData?.complete && (
+                  <div style={{ fontSize: 12, fontWeight: 700, color: portfolioTotalsData.dayChange >= 0 ? "var(--green)" : "var(--red)" }}>
+                    {portfolioTotalsData.dayChange >= 0 ? "↑" : "↓"} {Math.abs(portfolioTotalsData.dayChangePct).toFixed(2)}%
+                    <span style={{ color: "var(--muted-2)", fontWeight: 500 }}> today</span>
+                  </div>
+                )}
+              </Link>
+              {portfolioChartData.length > 1 ? (
+                <ResponsiveContainer width="100%" height={150}>
+                  <AreaChart data={portfolioChartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="invFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stopColor="#138a86" stopOpacity="0.18" />
+                        <stop offset="1" stopColor="#138a86" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} minTickGap={40} />
+                    <YAxis domain={["auto", "auto"]} tick={{ fontSize: 12 }}
+                      tickFormatter={(v) => money(v).replace(/\.\d+$/, "")} width={64} />
+                    <Tooltip formatter={(v) => money(v)} />
+                    <Area type="monotone" dataKey="value" stroke="var(--teal)" fill="url(#invFill)" strokeWidth={2.5} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="empty">Building portfolio history…</div>
+              )}
+            </>
+          )}
         </section>
 
         <UpcomingBills />

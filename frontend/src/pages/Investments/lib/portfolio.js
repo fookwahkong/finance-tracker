@@ -25,6 +25,23 @@ export function buildPositions(transactions) {
     .map((p) => ({ ...p, avgCost: p.costBasis / p.shares }));
 }
 
+// Shares held per ticker as of a given time (ms epoch), for reconstructing
+// historical portfolio value from price history.
+export function positionsAsOf(transactions, asOfMs) {
+  const sorted = transactions
+    .filter((t) => new Date(t.purchase_date).getTime() <= asOfMs)
+    .sort((a, b) => (a.purchase_date < b.purchase_date ? -1 : 1));
+  const map = new Map();
+  for (const t of sorted) {
+    const p = map.get(t.ticker) || { ticker: t.ticker, shares: 0 };
+    const qty = Number(t.quantity);
+    p.shares += t.type === "BUY" ? qty : -qty;
+    if (p.shares <= 1e-9) p.shares = 0;
+    map.set(t.ticker, p);
+  }
+  return [...map.values()].filter((p) => p.shares > 0);
+}
+
 export function enrichPositions(positions, quotes) {
   return positions.map((p) => {
     const q = quotes[p.ticker];

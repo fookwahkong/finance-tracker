@@ -49,7 +49,6 @@ export default function StockPage({ symbol }) {
     <div>
       <PriceHeader
         symbol={symbol}
-        profile={sections.profile}
         aggregates={sections.aggregates}
         range={range}
         onRange={setRange}

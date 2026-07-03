@@ -18,21 +18,21 @@ export default function HoldingsNews({ tickers }) {
 
   if (!key) return null;
   return (
-    <div style={{ marginTop: 18 }}>
-      <div className="card-sub" style={{ marginBottom: 8 }}>News for your holdings</div>
-      {state.status === "loading" && <p style={{ color: "var(--muted)" }}>Summarising…</p>}
-      {state.status === "error" && <p style={{ color: "var(--red)", fontSize: 13 }}>{state.error}</p>}
+    <div className="invest-card">
+      <div className="invest-card-head">News for your holdings</div>
+      {state.status === "loading" && <div style={{ padding: "12px 16px", color: "var(--muted)" }}>Summarising…</div>}
+      {state.status === "error" && <div style={{ padding: "12px 16px", color: "var(--red)", fontSize: 13 }}>{state.error}</div>}
       {state.status === "ok" && (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
           {(state.data || []).map((item) => (
-            <div key={item.ticker} style={{ fontSize: 13 }}>
+            <div key={item.ticker} style={{ fontSize: 13, padding: "12px 16px", borderTop: "1px solid var(--line)", lineHeight: 1.5 }}>
               <Link to={`/investment/stock/${item.ticker}`} style={{ fontWeight: 700, color: "var(--teal)" }}>
                 {item.ticker}
               </Link>{" "}
               {item.summary}
             </div>
           ))}
-          <div style={{ fontSize: 11, color: "var(--muted-2)" }}>{CAVEAT}</div>
+          <div className="invest-card-foot">{CAVEAT}</div>
         </div>
       )}
     </div>

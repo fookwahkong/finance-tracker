@@ -1,4 +1,4 @@
-"""frankfurter.app FX client (free, no API key).
+"""frankfurter.dev FX client (free, no API key).
 
 Returns {"rate": float, "date": str} for USD->SGD, cached 24h — the rate only
 feeds the net-worth asset line, so daily freshness is plenty.
@@ -7,7 +7,7 @@ import httpx
 
 from core.investments import cache
 
-BASE_URL = "https://api.frankfurter.app"
+BASE_URL = "https://api.frankfurter.dev/v1"
 
 
 class FxClient:

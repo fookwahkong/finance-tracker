@@ -34,9 +34,11 @@ export default function WatchlistSidebar() {
     <aside className="watchlist" aria-label="Watchlist">
       <div>
         <div className="stat-label" style={{ marginBottom: 0 }}>Portfolio</div>
-        <div className="wl-port-pct" style={pctTone(totals?.dayChangePct)}>
-          {totals?.complete ? fmtPct(totals.dayChangePct) : "—"}
+        <div className="wl-port-pct" style={pctTone(totals?.totalReturnPct)}>
+          {totals?.complete ? fmtPct(totals.totalReturnPct) : "—"} 
+          
         </div>
+        
         <div className="wl-port-val">{valueUsd == null ? "—" : money(valueUsd)}</div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { getInvestTransactions } from "../../api/investments";
 import { money, signed } from "../../lib/format";
@@ -18,6 +18,11 @@ export default function Investments() {
   const [txError, setTxError] = useState(null);
   const [modal, setModal] = useState(null); // null | {editing: row|null}
 
+  // Cap the holdings card to the donut card's height so it scrolls internally
+  // once the holdings list grows taller than the donut.
+  const donutRef = useRef(null);
+  const [donutH, setDonutH] = useState(null);
+
   function loadTransactions() {
     getInvestTransactions()
       .then((rows) => { setTransactions(rows); setTxError(null); })
@@ -34,6 +39,16 @@ export default function Investments() {
     [enriched, totals]
   );
   const allocs = useMemo(() => buildAllocations(enriched), [enriched]);
+
+  useLayoutEffect(() => {
+    const el = donutRef.current;
+    if (!el) { setDonutH(null); return; }
+    const measure = () => setDonutH(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [allocs.length]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -104,10 +119,10 @@ export default function Investments() {
 
       {positions.length > 0 && (
         <div className="portfolio-grid">
-          <div className="invest-card donut-card">
+          <div className="invest-card donut-card" ref={donutRef}>
             <AllocationDonut allocations={allocs} compact />
           </div>
-          <div className="invest-card">
+          <div className="invest-card holdings-card" style={donutH ? { maxHeight: donutH } : undefined}>
             <HoldingsTable enriched={enriched} onOpen={(t) => navigate(`/investment/stock/${t}`)} />
             <div className="invest-card-foot">↑ click ticker symbol to open Stock Detail page</div>
           </div>

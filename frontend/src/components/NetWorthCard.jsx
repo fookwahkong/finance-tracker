@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { getNetWorth, upsertNetWorth, deleteNetWorth } from "../api/client";
 import { getFxUsdSgd } from "../api/investments";
 import { cashForMonth, netFlowMap } from "../lib/aggregate";
@@ -32,7 +33,10 @@ export default function NetWorthCard({ transactions }) {
   const { valueUsd } = usePortfolioValue();
   const [fxRate, setFxRate] = useState(null);
   useEffect(() => { getFxUsdSgd().then((fx) => setFxRate(fx.rate)).catch(() => {}); }, []);
-  const investment = valueUsd != null && fxRate != null ? valueUsd * fxRate : null;
+  const investmentSgd = valueUsd != null && fxRate != null ? valueUsd * fxRate : null;
+  // Show the raw USD portfolio value as soon as it's known, rather than a
+  // "—" while the FX rate is still loading.
+  const investment = investmentSgd ?? valueUsd;
 
   const netWorth = (cash || 0) + (investment || 0);
 
@@ -83,7 +87,7 @@ export default function NetWorthCard({ transactions }) {
         <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-1px" }}>{money(netWorth)}</div>
         <div style={{ fontSize: 12, color: "var(--muted)" }}>{monthLabel(month)}</div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div className="networth-split" style={{ display: "grid", gap: 14 }}>
         <button
           type="button"
           onClick={openCash}
@@ -91,13 +95,18 @@ export default function NetWorthCard({ transactions }) {
         >
           <div className="stat-label">Cash</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{cash === null ? "—" : (cash < 0 ? "-": "") + money(cash)}</div>
-          <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 4 }}>Tap to set this month</div>
+          <div style={{ fontSize: 14, color: "var(--muted-2)", marginTop: 4 }}>Tap to set this month</div>
         </button>
-        <div style={{ background: "#f6f8f8", borderRadius: 14, padding: 16 }}>
+        <Link
+          to="/investment"
+          style={{ textAlign: "left", background: "#f6f8f8", borderRadius: 14, padding: 16, textDecoration: "none", color: "inherit", display: "block" }}
+        >
           <div className="stat-label">Investment</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{investment == null ? "—" : money(investment)}</div>
-          <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 4 }}>USD holdings × daily SGD rate</div>
-        </div>
+          <div style={{ fontSize: 14, color: "var(--muted-2)", marginTop: 4 }}>
+            {investmentSgd != null ? "USD holdings × daily SGD rate" : "USD holdings (converting…)"} {`(1 USD = ${fxRate} SGD)`}
+          </div>
+        </Link>
       </div>
 
       {open && createPortal(
