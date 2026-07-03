@@ -66,8 +66,9 @@ export const removeFromWatchlist = (ticker) =>
 export const getMarketNews = () =>
   api.get("/api/investments/market/news").then((r) => r.data);
 
-export const getEarningsCalendar = () =>
-  api.get("/api/investments/market/earnings-calendar").then((r) => r.data);
+// params: optional { from, to } (ISO dates) for the visible month range.
+export const getEarningsCalendar = (params) =>
+  api.get("/api/investments/market/earnings-calendar", { params }).then((r) => r.data);
 
 // AI (Claude via backend, cached and caveated)
 export const peekBullBear = (symbol) =>

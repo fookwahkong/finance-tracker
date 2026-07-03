@@ -33,10 +33,6 @@ export function buildStatGrid({ bars, profile, dividends }) {
     row("Volume", last ? num(last.v) : null),
     row("Mkt. cap", profile && profile.marketCapitalization != null
       ? "$" + num(profile.marketCapitalization) + "M" : null),
-    row("Shares outstanding", profile && profile.shareOutstanding != null
-      ? num(profile.shareOutstanding) + "M" : null),
-    row("No. of employees", profile && profile.employeeTotal != null
-      ? num(profile.employeeTotal) : null),
     row("Dividend (yield)", div ? yieldVal : null),
     row("Quarterly dividend", div && div.cash_amount != null ? money(div.cash_amount) : null),
     row("Ex dividend date", div && div.ex_dividend_date ? div.ex_dividend_date : null),

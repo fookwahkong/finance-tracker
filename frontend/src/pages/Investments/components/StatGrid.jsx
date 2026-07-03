@@ -1,11 +1,12 @@
-// Three-column label/value grid. Rows come preformatted from buildStatGrid.
+// 4-column key-stats card. Rows come preformatted from buildStatGrid (8 fields,
+// laid out 4 columns × 2 rows).
 export default function StatGrid({ grid }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem 1.5rem" }}>
+    <div className="invest-card statgrid">
       {grid.map((r) => (
-        <div key={r.label} style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={{ color: "#888" }}>{r.label}</span>
-          <span style={{ fontWeight: 600 }}>{r.value}</span>
+        <div key={r.label} className="statgrid-cell">
+          <div className="statgrid-label">{r.label}</div>
+          <div className="statgrid-value">{r.value}</div>
         </div>
       ))}
     </div>

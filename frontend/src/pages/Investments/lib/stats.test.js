@@ -28,13 +28,13 @@ describe("latestBar", () => {
 });
 
 describe("buildStatGrid", () => {
-  it("renders missing sources as em dash but keeps all 10 rows", () => {
+  it("renders missing sources as em dash but keeps all 8 rows", () => {
     const grid = buildStatGrid({ bars: [], profile: null, dividends: null });
-    expect(grid).toHaveLength(10);
+    expect(grid).toHaveLength(8);
     expect(grid.every((r) => r.value === DASH)).toBe(true);
     expect(grid.map((r) => r.label)).toEqual([
-      "Open", "High", "Low", "Volume", "Mkt. cap", "Shares outstanding",
-      "No. of employees", "Dividend (yield)", "Quarterly dividend", "Ex dividend date",
+      "Open", "High", "Low", "Volume", "Mkt. cap",
+      "Dividend (yield)", "Quarterly dividend", "Ex dividend date",
     ]);
   });
 

@@ -744,17 +744,147 @@ a { color: inherit; }
 .budget-tbl .over-cell { color: var(--red); font-weight: 700; }
 
 /* ── Investment watchlist sidebar ──────────────────────────────── */
+.invest-shell { padding: 0; overflow: hidden; }
+
+.invest-topnav {
+  display: flex; align-items: center; gap: 4px;
+  height: 52px; padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+.invest-brand {
+  font-size: 16px; font-weight: 800; color: var(--teal-ink);
+  margin-right: 24px; white-space: nowrap;
+}
+.invest-tabs { display: flex; height: 52px; }
+.invest-tab {
+  display: flex; align-items: center; padding: 0 16px;
+  font-size: 15px; font-weight: 600; color: var(--muted);
+  text-decoration: none; border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.invest-tab:hover { color: var(--ink); }
+.invest-tab.is-active { color: var(--ink); font-weight: 700; border-bottom-color: var(--teal); }
+.invest-navextra { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.invest-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--teal-soft); border: 1px solid var(--teal);
+  color: var(--teal-ink); border-radius: 8px;
+  padding: 5px 12px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+
+.invest-body { display: flex; align-items: stretch; min-height: 620px; }
+.invest-main {
+  flex: 1; min-width: 0; padding: 20px 22px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* Inner bordered boxes (holdings, trades, calendar, stat grid…) */
+.invest-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); overflow: hidden;
+}
+.invest-card-head {
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+  font-size: 14px; font-weight: 700;
+}
+.invest-card-foot {
+  padding: 8px 14px; font-size: 11px; color: var(--muted-2);
+  border-top: 1px solid var(--line); background: #fafbfb;
+}
+
+/* Watchlist sidebar — always expanded, compact */
 .watchlist {
-  width: 72px;
-  flex-shrink: 0;
-  transition: width 0.18s ease;
-  overflow: hidden;
+  width: 144px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  display: flex; flex-direction: column; gap: 14px;
 }
-.watchlist:hover { width: 240px; }
-.watchlist .wl-full { display: none; }
-.watchlist:hover .wl-full { display: block; }
-.watchlist:hover .wl-mini { display: none; }
+.wl-port-pct { font-size: 20px; font-weight: 800; }
+.wl-port-val { font-size: 12px; color: var(--muted-2); }
+.wl-divider { height: 1px; background: var(--line); }
+.wl-heading { font-size: 12px; color: var(--muted); margin-bottom: 9px; }
 .wl-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 4px; font-size: 13px; border-bottom: 1px solid var(--line);
+  position: relative;
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 5px 6px; margin-bottom: 6px;
+  border-radius: 6px; cursor: pointer; background: #f6f7f7;
 }
+.wl-row:hover { background: #eef0f0; }
+.wl-ticker { font-size: 13px; font-weight: 700; }
+.wl-price { font-size: 12px; color: var(--muted); }
+.wl-remove {
+  position: absolute; top: 3px; right: 3px; visibility: hidden;
+  border: none; background: transparent; color: var(--muted);
+  cursor: pointer; font-size: 12px; line-height: 1; padding: 2px;
+}
+.wl-row:hover .wl-remove { visibility: visible; }
+.wl-add { display: flex; gap: 6px; margin-top: auto; }
+.wl-add .input { font-size: 12px; padding: 6px 8px; min-width: 0; }
+
+/* Portfolio: donut + holdings side by side */
+.portfolio-grid {
+  display: grid; grid-template-columns: 220px 1fr; gap: 14px; align-items: start;
+}
+.donut-card {
+  padding: 16px; display: flex; flex-direction: column;
+  align-items: center; gap: 12px;
+}
+
+/* Stock detail: price-range tab buttons in the header */
+.range-tabs { display: flex; gap: 5px; }
+.range-tab {
+  appearance: none; border: none; cursor: pointer;
+  font-size: 12px; border-radius: 4px; padding: 4px 10px;
+  background: var(--line); color: var(--muted); font-weight: 600;
+}
+.range-tab.is-active { background: var(--teal); color: #fff; }
+
+/* Stock detail: 4-column key-stats grid */
+.statgrid { display: grid; grid-template-columns: repeat(4, 1fr); }
+.statgrid-cell {
+  padding: 12px 16px;
+  border-right: 1px solid var(--line); border-top: 1px solid var(--line);
+}
+.statgrid-cell:nth-child(4n) { border-right: none; }
+.statgrid-cell:nth-child(-n+4) { border-top: none; }
+.statgrid-label { font-size: 11px; color: var(--muted); }
+.statgrid-value { font-size: 16px; font-weight: 700; }
+
+/* Market news: earnings month-grid calendar */
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-title { font-size: 17px; font-weight: 700; }
+.cal-nav { display: flex; gap: 14px; }
+.cal-nav button {
+  appearance: none; border: none; background: transparent;
+  color: var(--teal); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.cal-dow { text-align: center; font-size: 11px; color: var(--muted); padding-bottom: 5px; }
+.cal-cell {
+  border: 1px solid var(--line); border-radius: 5px;
+  padding: 5px; min-height: 64px; background: #fafbfb;
+}
+.cal-cell.is-muted { background: #f5f6f6; }
+.cal-cell.is-today { border: 2px solid var(--teal); background: var(--teal-soft); }
+.cal-cell.has-watch { border-color: var(--teal); }
+.cal-date { font-size: 11px; color: var(--ink-2); margin-bottom: 3px; }
+.cal-cell.is-muted .cal-date { color: var(--muted-2); }
+.cal-cell.is-today .cal-date { color: var(--teal); font-weight: 700; }
+.cal-pill {
+  display: block; border-radius: 3px; padding: 1px 5px;
+  font-size: 10px; margin-bottom: 2px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  text-decoration: none; cursor: pointer;
+}
+.cal-pill.bmo { background: #d4f0ed; color: #1a7a70; }
+.cal-pill.amc { background: #fcddd0; color: #8c3300; }
+.cal-pill.watch { background: var(--teal); color: #fff; font-weight: 700; }
+.cal-more { font-size: 9px; color: var(--muted-2); }
+.cal-badge {
+  display: inline-block; background: var(--teal); color: #fff;
+  border-radius: 3px; padding: 1px 6px; font-size: 9px; margin-top: 3px;
+}
+.cal-closed { font-size: 9px; color: var(--muted-2); margin-top: 2px; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 10px; }
+.cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.cal-legend-sw { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }

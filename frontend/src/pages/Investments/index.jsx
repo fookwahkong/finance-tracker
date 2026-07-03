@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { getInvestTransactions } from "../../api/investments";
 import { money, signed } from "../../lib/format";
 import { buildPositions, enrichPositions, portfolioTotals, allocations as buildAllocations } from "./lib/portfolio";
@@ -12,6 +12,7 @@ import TradeForm from "./components/TradeForm";
 
 export default function Investments() {
   const navigate = useNavigate();
+  const setNavExtra = useOutletContext();
   const [draft, setDraft] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [txError, setTxError] = useState(null);
@@ -40,29 +41,34 @@ export default function Investments() {
     if (next) navigate(`/investment/stock/${next}`);
   };
 
-  return (
-    <div className="card">
-      <div className="card-head">
-        <div className="card-title">Portfolio</div>
-        <form onSubmit={submit} style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+  // Register the nav-extra slot (search + Trade). Re-runs on draft change so
+  // the controlled input stays in sync with page state.
+  useEffect(() => {
+    setNavExtra(
+      <>
+        <form onSubmit={submit} style={{ display: "flex" }}>
           <input
             className="input"
-            style={{ width: 180 }}
+            style={{ width: 210 }}
             value={draft}
             onChange={(e) => setDraft(e.target.value.toUpperCase())}
             placeholder="Search ticker (e.g. AAPL)"
             aria-label="Ticker symbol"
           />
-          <button type="submit" className="btn btn-primary">Search</button>
         </form>
-        <button type="button" className="btn btn-outline" onClick={() => setModal({ editing: null })}>
+        <button type="button" className="btn btn-primary" onClick={() => setModal({ editing: null })}>
           + Trade
         </button>
-      </div>
+      </>
+    );
+    return () => setNavExtra(null);
+  }, [draft]);
 
+  return (
+    <>
       {txError && <p style={{ color: "var(--red)" }}>{txError}</p>}
       {positions.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
           <div className="stat">
             <div className="stat-label">Total value</div>
             <div className="stat-value">{totals.complete ? money(totals.value) : "—"}</div>
@@ -83,7 +89,7 @@ export default function Investments() {
         </div>
       )}
       {guidance.length > 0 && (
-        <div style={{ display: "grid", gap: 8, marginBottom: 18 }}>
+        <div style={{ display: "grid", gap: 8 }}>
           {guidance.map((g) => (
             <div key={g.id} style={{
               background: "var(--amber-soft)", color: "var(--amber)",
@@ -95,14 +101,25 @@ export default function Investments() {
           ))}
         </div>
       )}
-      <AllocationDonut allocations={allocs} />
-      <HoldingsTable enriched={enriched} onOpen={(t) => navigate(`/investment/stock/${t}`)} />
+
+      {positions.length > 0 && (
+        <div className="portfolio-grid">
+          <div className="invest-card donut-card">
+            <AllocationDonut allocations={allocs} compact />
+          </div>
+          <div className="invest-card">
+            <HoldingsTable enriched={enriched} onOpen={(t) => navigate(`/investment/stock/${t}`)} />
+            <div className="invest-card-foot">↑ click ticker symbol to open Stock Detail page</div>
+          </div>
+        </div>
+      )}
+
       {!txError && transactions.length === 0 && (
         <p style={{ color: "var(--muted)" }}>No trades yet — add your first buy with “+ Trade”.</p>
       )}
       {transactions.length > 0 && (
-        <>
-          <div className="card-sub" style={{ margin: "18px 0 8px" }}>Trades</div>
+        <div className="invest-card">
+          <div className="invest-card-head">Trades</div>
           <div className="table-scroll">
             <table>
               <thead>
@@ -124,14 +141,10 @@ export default function Investments() {
               </tbody>
             </table>
           </div>
-        </>
+        </div>
       )}
 
       <HoldingsNews tickers={positions.map((p) => p.ticker)} />
-
-      <Link to="/investment/news" style={{ fontSize: 13, color: "var(--teal)", fontWeight: 600 }}>
-        Market news →
-      </Link>
 
       <TradeForm
         open={modal !== null}
@@ -139,6 +152,6 @@ export default function Investments() {
         onClose={() => setModal(null)}
         onSaved={loadTransactions}
       />
-    </div>
+    </>
   );
 }

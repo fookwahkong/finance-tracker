@@ -36,6 +36,7 @@ export default function StockPage({ symbol }) {
     Object.fromEntries(Object.keys(SECTIONS).map((k) => [k, LOADING]))
   );
   const [tab, setTab] = useState("overview");
+  const [range, setRange] = useState("6M");
 
   useEffect(() => {
     // allSettled semantics: each section resolves independently.
@@ -46,8 +47,14 @@ export default function StockPage({ symbol }) {
 
   return (
     <div>
-      <PriceHeader profile={sections.profile} aggregates={sections.aggregates} />
-      <PriceChart aggregates={sections.aggregates} />
+      <PriceHeader
+        symbol={symbol}
+        profile={sections.profile}
+        aggregates={sections.aggregates}
+        range={range}
+        onRange={setRange}
+      />
+      <PriceChart aggregates={sections.aggregates} range={range} />
       <Tabs active={tab} onChange={setTab} />
       {tab === "overview" && (
         <OverviewTab

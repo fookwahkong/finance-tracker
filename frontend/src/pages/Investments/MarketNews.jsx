@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { getMarketNews, getEarningsCalendar } from "../../api/investments";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import { getMarketNews } from "../../api/investments";
+import EarningsCalendar from "./components/EarningsCalendar";
 
 const LOADING = { status: "loading", data: null, error: null };
 
@@ -14,65 +15,61 @@ function useFetch(fn) {
   return state;
 }
 
-function EarningsGrid({ calendar }) {
-  const rows = calendar?.earningsCalendar || [];
-  if (!rows.length) return <p style={{ color: "var(--muted)" }}>No earnings in the next two weeks.</p>;
-  return (
-    <div className="table-scroll">
-      <table>
-        <thead>
-          <tr><th>Date</th><th>Symbol</th><th>EPS est.</th><th>Revenue est.</th><th>When</th></tr>
-        </thead>
-        <tbody>
-          {rows.slice(0, 40).map((r, i) => (
-            <tr key={`${r.symbol}-${r.date}-${i}`}>
-              <td>{r.date}</td>
-              <td><Link to={`/investment/stock/${r.symbol}`} style={{ color: "var(--teal)", fontWeight: 700 }}>{r.symbol}</Link></td>
-              <td>{r.epsEstimate ?? "—"}</td>
-              <td>{r.revenueEstimate ? Number(r.revenueEstimate).toLocaleString("en-US") : "—"}</td>
-              <td>{r.hour || "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 export default function MarketNews() {
+  const navigate = useNavigate();
+  const setNavExtra = useOutletContext();
+  const [draft, setDraft] = useState("");
   const news = useFetch(getMarketNews);
-  const calendar = useFetch(getEarningsCalendar);
+
+  const submit = (e) => {
+    e.preventDefault();
+    const next = draft.trim().toUpperCase();
+    if (next) navigate(`/investment/stock/${next}`);
+  };
+
+  useEffect(() => {
+    setNavExtra(
+      <form onSubmit={submit} style={{ display: "flex" }}>
+        <input
+          className="input"
+          style={{ width: 210 }}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.toUpperCase())}
+          placeholder="Search ticker (e.g. AAPL)"
+          aria-label="Ticker symbol"
+        />
+      </form>
+    );
+    return () => setNavExtra(null);
+  }, [draft]);
 
   return (
-    <div className="card">
-      <div className="card-head">
-        <div className="card-title">Market News</div>
-        <Link to="/investment" style={{ marginLeft: "auto", fontSize: 13, color: "var(--teal)", fontWeight: 600 }}>
-          ← Portfolio
-        </Link>
+    <>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+        <span className="card-title">Market News</span>
+        <span style={{ fontSize: 14, color: "var(--muted)" }}>Upcoming earnings</span>
       </div>
 
-      <div className="card-sub" style={{ marginBottom: 8 }}>Upcoming earnings (14 days)</div>
-      {calendar.status === "loading" && <p style={{ color: "var(--muted)" }}>Loading…</p>}
-      {calendar.status === "error" && <p style={{ color: "var(--red)" }}>{calendar.error}</p>}
-      {calendar.status === "ok" && <EarningsGrid calendar={calendar.data} />}
+      <EarningsCalendar />
 
-      <div className="card-sub" style={{ margin: "18px 0 8px" }}>Headlines</div>
-      {news.status === "loading" && <p style={{ color: "var(--muted)" }}>Loading…</p>}
-      {news.status === "error" && <p style={{ color: "var(--red)" }}>{news.error}</p>}
-      {news.status === "ok" && (
-        <div style={{ display: "grid", gap: 10 }}>
-          {(news.data || []).slice(0, 30).map((n) => (
-            <a key={n.id || n.url} href={n.url} target="_blank" rel="noreferrer"
-               style={{ textDecoration: "none", color: "var(--ink)" }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{n.headline}</div>
-              <div style={{ fontSize: 12, color: "var(--muted-2)" }}>
-                {n.source} · {n.datetime ? new Date(n.datetime * 1000).toLocaleDateString() : ""}
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
+      <div className="invest-card">
+        <div className="invest-card-head">Headlines</div>
+        {news.status === "loading" && <div style={{ padding: "10px 16px", color: "var(--muted)" }}>Loading…</div>}
+        {news.status === "error" && <div style={{ padding: "10px 16px", color: "var(--red)" }}>{news.error}</div>}
+        {news.status === "ok" && (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {(news.data || []).slice(0, 30).map((n) => (
+              <a key={n.id || n.url} href={n.url} target="_blank" rel="noreferrer"
+                 style={{ textDecoration: "none", color: "var(--ink)", padding: "10px 16px", borderTop: "1px solid var(--line)" }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{n.headline}</div>
+                <div style={{ fontSize: 12, color: "var(--muted-2)" }}>
+                  {n.source} · {n.datetime ? new Date(n.datetime * 1000).toLocaleDateString() : ""}
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
