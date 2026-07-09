@@ -47,11 +47,13 @@ def fake_supabase():
 
 
 @pytest.fixture
-def client(monkeypatch, fake_supabase):
-    monkeypatch.setattr("backend.routers.subscriptions.supabase", fake_supabase)
+def client(fake_supabase):
+    from backend.deps import get_db
     from backend.main import app
 
-    return TestClient(app)
+    app.dependency_overrides[get_db] = lambda: fake_supabase
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 def test_list_subscriptions(client):

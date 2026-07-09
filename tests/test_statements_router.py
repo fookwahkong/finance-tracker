@@ -18,11 +18,14 @@ def fake_supabase():
 
 
 @pytest.fixture
-def client(monkeypatch, fake_supabase):
-    monkeypatch.setattr("backend.routers.statements.supabase", fake_supabase)
+def client(fake_supabase):
+    from backend.deps import enforce_ai_limit, get_db
     from backend.main import app
 
-    return TestClient(app)
+    app.dependency_overrides[get_db] = lambda: fake_supabase
+    app.dependency_overrides[enforce_ai_limit] = lambda: None
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 # --- /parse ---

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from supabase import Client
 
-from core.db import supabase
+from backend.deps import enforce_ai_limit, get_db
 from core.models import ImportRequest
 from core.statement import categorize_rows, extract_rows
 from core.validation import ValidationError, validate_transaction
@@ -8,12 +9,16 @@ from core.validation import ValidationError, validate_transaction
 router = APIRouter()
 
 
-def _known_categories() -> list[str]:
-    return [c["name"] for c in supabase.table("categories").select("name").execute().data]
+def _known_categories(db: Client) -> list[str]:
+    return [c["name"] for c in db.table("categories").select("name").execute().data]
 
 
 @router.post("/parse")
-async def parse_statement(file: UploadFile = File(...)):
+async def parse_statement(
+    file: UploadFile = File(...),
+    _: None = Depends(enforce_ai_limit),
+    db: Client = Depends(get_db),
+):
     data = await file.read()
     try:
         rows = extract_rows(data)
@@ -26,7 +31,7 @@ async def parse_statement(file: UploadFile = File(...)):
             detail="Couldn't find a transaction table in this statement.",
         )
 
-    categories = _known_categories()
+    categories = _known_categories(db)
     cats = categorize_rows([r["item"] for r in rows], categories)
 
     out = []
@@ -51,12 +56,12 @@ async def parse_statement(file: UploadFile = File(...)):
 
 
 @router.post("/import")
-def import_statement(req: ImportRequest):
-    known = _known_categories()
+def import_statement(req: ImportRequest, db: Client = Depends(get_db)):
+    known = _known_categories(db)
     inserted = 0
     for row in req.rows:
         if row.category and row.category not in known:
-            supabase.table("categories").insert({"name": row.category}).execute()
+            db.table("categories").insert({"name": row.category}).execute()
             known.append(row.category)
         try:
             validated = validate_transaction(row.model_dump(), known)
@@ -64,6 +69,6 @@ def import_statement(req: ImportRequest):
             raise HTTPException(status_code=422, detail=str(exc))
         payload = validated.model_dump()
         payload["date"] = payload["date"].isoformat()
-        supabase.table("transactions").insert(payload).execute()
+        db.table("transactions").insert(payload).execute()
         inserted += 1
     return {"inserted": inserted}

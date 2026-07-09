@@ -10,13 +10,13 @@ def fake_supabase():
 
 
 @pytest.fixture
-def client(monkeypatch, fake_supabase):
-    import backend.routers.claims as claims_router
-
-    monkeypatch.setattr(claims_router, "supabase", fake_supabase)
+def client(fake_supabase):
+    from backend.deps import get_db
     from backend.main import app
 
-    return TestClient(app)
+    app.dependency_overrides[get_db] = lambda: fake_supabase
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 def _tx(amount, tx_id="d1", category="Groceries"):

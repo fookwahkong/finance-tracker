@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from supabase import Client
 
-from core.db import supabase
+from backend.deps import get_db
 from core.models import InvestTransactionUpsert, WatchlistAdd
 
 router = APIRouter()
@@ -17,48 +18,47 @@ def _payload(entry: InvestTransactionUpsert) -> dict:
 
 
 @router.get("/transactions")
-def list_transactions():
-    return supabase.table("invest_transactions").select("*").order("purchase_date").execute().data
+def list_transactions(db: Client = Depends(get_db)):
+    return db.table("invest_transactions").select("*").order("purchase_date").execute().data
 
 
 @router.post("/transactions")
-def create_transaction(entry: InvestTransactionUpsert):
-    result = supabase.table("invest_transactions").insert(_payload(entry)).execute()
-    return result.data[0]
+def create_transaction(entry: InvestTransactionUpsert, db: Client = Depends(get_db)):
+    return db.table("invest_transactions").insert(_payload(entry)).execute().data[0]
 
 
 @router.put("/transactions/{tx_id}")
-def update_transaction(tx_id: str, entry: InvestTransactionUpsert):
-    result = supabase.table("invest_transactions").update(_payload(entry)).eq("id", tx_id).execute()
+def update_transaction(tx_id: str, entry: InvestTransactionUpsert, db: Client = Depends(get_db)):
+    result = db.table("invest_transactions").update(_payload(entry)).eq("id", tx_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return result.data[0]
 
 
 @router.delete("/transactions/{tx_id}", status_code=204)
-def delete_transaction(tx_id: str):
-    result = supabase.table("invest_transactions").delete().eq("id", tx_id).execute()
+def delete_transaction(tx_id: str, db: Client = Depends(get_db)):
+    result = db.table("invest_transactions").delete().eq("id", tx_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
 
 @router.get("/watchlist")
-def list_watchlist():
-    return supabase.table("watchlist").select("*").order("added_at").execute().data
+def list_watchlist(db: Client = Depends(get_db)):
+    return db.table("watchlist").select("*").order("added_at").execute().data
 
 
 @router.post("/watchlist")
-def add_watchlist(entry: WatchlistAdd):
+def add_watchlist(entry: WatchlistAdd, db: Client = Depends(get_db)):
     result = (
-        supabase.table("watchlist")
-        .upsert({"ticker": entry.ticker.upper()}, on_conflict="ticker")
+        db.table("watchlist")
+        .upsert({"ticker": entry.ticker.upper()}, on_conflict="user_id,ticker")
         .execute()
     )
     return result.data[0]
 
 
 @router.delete("/watchlist/{ticker}", status_code=204)
-def remove_watchlist(ticker: str):
-    result = supabase.table("watchlist").delete().eq("ticker", ticker.upper()).execute()
+def remove_watchlist(ticker: str, db: Client = Depends(get_db)):
+    result = db.table("watchlist").delete().eq("ticker", ticker.upper()).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Ticker not on watchlist")
