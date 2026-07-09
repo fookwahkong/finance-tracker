@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 
-from backend.demo_seed import seed_rows
+from backend.demo_seed import build_claims, seed_rows
 from core.db import supabase
 
 router = APIRouter()
@@ -30,9 +30,17 @@ def reset_demo(_=Depends(_verify_cron_secret)):
     today = datetime.now(timezone.utc).date()
     rows = seed_rows(demo_id, today)
     counts = {}
+    inserted_transactions = []
     for table, items in rows.items():
         if items:
-            supabase.table(table).insert(items).execute()
+            result = supabase.table(table).insert(items).execute()
+            if table == "transactions":
+                inserted_transactions = result.data
         counts[table] = len(items)
+
+    claims = build_claims(inserted_transactions)
+    if claims:
+        supabase.table("claims").insert(claims).execute()
+    counts["claims"] = len(claims)
 
     return {"reset": True, "counts": counts}

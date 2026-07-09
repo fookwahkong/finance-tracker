@@ -1,5 +1,7 @@
 """Deterministic-ish fake data for the public demo account."""
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone, datetime
+
+from core.claims import expected_amount
 
 CANONICAL_CATEGORIES = [
     "Groceries", "Food & Drink", "Transport", "Personal", "Pets", "Gym",
@@ -84,3 +86,39 @@ def seed_rows(user_id: str, today: date) -> dict[str, list[dict]]:
         "invest_transactions": invest_transactions,
         "watchlist": watchlist,
     }
+
+
+def build_claims(inserted_transactions: list[dict]) -> list[dict]:
+    """Given the *inserted* transaction rows (post-insert, so they carry `id`),
+    turn the two most recent "Dinner with friends" debits into split-expense
+    claims — one still open, one already settled — so the claims feature
+    isn't empty for demo visitors."""
+    dinners = sorted(
+        (t for t in inserted_transactions if t["item"] == "Dinner with friends"),
+        key=lambda t: t["date"],
+        reverse=True,
+    )
+    if len(dinners) < 2:
+        return []
+
+    def claim(debit: dict, counterparty: str, status: str) -> dict:
+        total = abs(debit["amount"])
+        my_share = round(total / 2, 2)
+        row = {
+            "user_id": debit["user_id"],
+            "debit_tx_id": debit["id"],
+            "total": total,
+            "my_share": my_share,
+            "expected": expected_amount(total, my_share),
+            "category": debit["category"],
+            "counterparty": counterparty,
+            "status": status,
+        }
+        if status == "settled":
+            row["settled_at"] = datetime.now(timezone.utc).isoformat()
+        return row
+
+    return [
+        claim(dinners[0], "Priya", "open"),
+        claim(dinners[1], "Alex", "settled"),
+    ]
