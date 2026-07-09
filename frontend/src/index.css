@@ -874,6 +874,57 @@ a { color: inherit; }
 .statgrid-label { font-size: 13px; color: var(--muted); }
 .statgrid-value { font-size: 18px; font-weight: 700; }
 
+/* ── Login page ── */
+.login-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+.login-card {
+  width: min(420px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  padding: 32px;
+}
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.login-brand .brand-mark { font-size: 18px; }
+.login-brand-name { font-weight: 800; font-size: 20px; letter-spacing: -0.3px; }
+.login-tagline { color: var(--muted); font-size: 15px; margin-bottom: 24px; }
+.login-form { display: flex; flex-direction: column; gap: 14px; }
+.login-submit { width: 100%; padding: 10px; margin-top: 4px; }
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--muted-2);
+  font-size: 13px;
+}
+.login-divider::before, .login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.login-demo-btn { width: 100%; padding: 10px; }
+.login-demo-hint {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted-2);
+  line-height: 1.5;
+}
+.login-demo-hint strong { color: var(--muted); font-weight: 700; }
+
 /* Market news: earnings month-grid calendar */
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .cal-title { font-size: 19px; font-weight: 700; }
