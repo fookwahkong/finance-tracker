@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
+import Login from "./pages/Login";
+import { useAuth } from "./auth/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import Spending from "./pages/Spending";
 import Report from "./pages/Report";
@@ -13,6 +15,11 @@ import MarketNews from "./pages/Investments/MarketNews";
 import InvestLayout from "./pages/Investments/InvestLayout";
 
 export default function App() {
+  const { session, loading } = useAuth();
+
+  if (loading) return null;
+  if (!session) return <Login />;
+
   return (
     <ErrorBoundary>
       <BrowserRouter>
