@@ -39,7 +39,7 @@ Because it's a learning project, **not every stage of a production end-to-end li
 | Frontend (React SPA) | ✅ Done |
 | Backend / REST API (FastAPI) | ✅ Done |
 | Database design (Postgres schema + constraints) | ✅ Done |
-| Authentication & user accounts | 🚧 Placeholder — currently single-user; endpoints are secret/API-key gated, no multi-user auth |
+| Authentication & user accounts | ✅ Supabase Auth — personal + shared demo account, Postgres RLS isolation |
 | Automated testing | ✅ Backend (pytest) · 🚧 Placeholder — no frontend / end-to-end UI tests |
 | Code quality (lint, formatting, type checks) | 🚧 Placeholder — no enforced linter/formatter config yet |
 | CI/CD pipeline | 🚧 Placeholder — no automated build/test/deploy pipeline yet |
@@ -50,6 +50,12 @@ Because it's a learning project, **not every stage of a production end-to-end li
 | Documentation | ✅ Done — this README |
 
 > **Supplements beyond core end-to-end:** AI/LLM integration, a pluggable provider seam, serverless deployment, and four independent ingestion channels.
+
+---
+
+## 🔐 Two-account model
+
+This is a single-tenant app with exactly two accounts: **personal** (yours, private) and **demo** (public, shared). Hit "Try the demo" on the login page to sign in as the demo account instantly — no signup needed. Postgres row-level security keeps every table isolated per account, so demo visitors never see personal data and vice versa. Demo data resets to a fresh seeded baseline every night via a cron job, and AI-powered features (statement parsing, bull/bear analysis, news summaries) are capped at 5 calls/day on the demo account to control cost; the personal account is unlimited.
 
 ---
 
