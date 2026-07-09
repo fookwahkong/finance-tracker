@@ -4,6 +4,7 @@ Exactly two jobs — bull/bear cases and holdings-news summaries. Both are
 cached in investment_cache and must always render behind a visible
 "AI-generated, not financial advice" caveat in the UI.
 """
+
 import json
 import os
 
@@ -73,8 +74,7 @@ class InvestAI:
 
         def generate():
             trimmed = {
-                t: [n.get("headline", "") for n in items[:6]]
-                for t, items in news_by_ticker.items()
+                t: [n.get("headline", "") for n in items[:6]] for t, items in news_by_ticker.items()
             }
             return _extract_json(self._complete(_NEWS_SYSTEM, json.dumps(trimmed)))
 

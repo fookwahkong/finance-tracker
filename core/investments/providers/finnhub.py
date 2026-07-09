@@ -4,6 +4,7 @@ Returns raw parsed JSON exactly as Finnhub sends it. company-news returns a
 JSON array; profile and earnings return objects. Auth is the X-Finnhub-Token
 header. Mirrors the httpx + cache pattern in polygon.py.
 """
+
 import os
 
 import httpx
@@ -49,7 +50,9 @@ class FinnhubClient:
         symbol = symbol.upper()
         return cache.get_or_fetch(
             f"{symbol}:news:{from_date}",
-            lambda: self._get("/company-news", {"symbol": symbol, "from": from_date, "to": to_date}),
+            lambda: self._get(
+                "/company-news", {"symbol": symbol, "from": from_date, "to": to_date}
+            ),
             86400,
         )
 

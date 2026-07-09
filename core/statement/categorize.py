@@ -1,5 +1,6 @@
 from core.parsing import _get_provider
 from core.parsing.extract import extract_json
+
 from .prompt import BATCH_SYSTEM_PROMPT
 
 # The shared provider caps output at ~512 tokens, so categorize in small
@@ -10,10 +11,7 @@ _CHUNK_SIZE = 25
 
 def _build_user(items: list[str], categories: list[str]) -> str:
     numbered = "\n".join(f"{i + 1}. {it}" for i, it in enumerate(items))
-    return (
-        f"Existing categories: {', '.join(categories)}\n\n"
-        f"Merchants:\n{numbered}"
-    )
+    return f"Existing categories: {', '.join(categories)}\n\nMerchants:\n{numbered}"
 
 
 def _categorize_chunk(items: list[str], categories: list[str]) -> list[str | None]:
@@ -34,7 +32,7 @@ def categorize_rows(items: list[str], categories: list[str]) -> list[dict]:
     unique = list(dict.fromkeys(items))
     mapping: dict[str, str | None] = {}
     for start in range(0, len(unique), _CHUNK_SIZE):
-        chunk = unique[start:start + _CHUNK_SIZE]
+        chunk = unique[start : start + _CHUNK_SIZE]
         for item, category in zip(chunk, _categorize_chunk(chunk, categories)):
             mapping[item] = category
 
@@ -42,8 +40,10 @@ def categorize_rows(items: list[str], categories: list[str]) -> list[dict]:
     out = []
     for item in items:
         category = mapping.get(item)
-        out.append({
-            "category": category,
-            "is_new": bool(category) and category not in known,
-        })
+        out.append(
+            {
+                "category": category,
+                "is_new": bool(category) and category not in known,
+            }
+        )
     return out

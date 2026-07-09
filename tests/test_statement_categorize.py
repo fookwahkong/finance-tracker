@@ -49,5 +49,6 @@ def test_bad_json_falls_back_to_none(monkeypatch):
 def test_empty_input_skips_model(monkeypatch):
     def _boom():
         raise AssertionError("provider should not be called for empty input")
+
     monkeypatch.setattr(parsing, "_get_provider", _boom)
     assert categorize_rows([], ["Food"]) == []

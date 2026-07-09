@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const api = axios.create({ baseURL: import.meta.env.VITE_BACKEND_URL || "" });
+import api from "./http";
 
 export const getClaims = (status) =>
   api.get("/api/claims", { params: status ? { status } : {} }).then((r) => r.data);

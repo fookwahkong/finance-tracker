@@ -1,8 +1,4 @@
-import axios from "axios";
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || "",
-});
+import api from "./http";
 
 const iso = (d) => d.toISOString().slice(0, 10);
 

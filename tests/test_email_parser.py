@@ -27,9 +27,7 @@ _PAYLAH_SAMPLE = (
 
 # Synthetic comma-amount variant to cover thousands separators.
 _SCANPAY_SAMPLE = (
-    "Date & Time:    23 Jun 07:22 (SGT)\n"
-    "Amount:    SGD1,025.00\n"
-    "To:    CHXX CHXX HEXX REGINXXX\n"
+    "Date & Time:    23 Jun 07:22 (SGT)\nAmount:    SGD1,025.00\nTo:    CHXX CHXX HEXX REGINXXX\n"
 )
 
 # Real DBS GIRO deduction format: distinct labels ("Payment amount", "Paying to",

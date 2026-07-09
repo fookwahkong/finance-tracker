@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -14,6 +15,7 @@ def fake_fx():
 def client(monkeypatch, fake_fx):
     monkeypatch.setattr("backend.routers.investments.fx.client", fake_fx)
     from backend.main import app
+
     return TestClient(app)
 
 

@@ -20,9 +20,7 @@ def _get_provider():
 
             _provider = OllamaProvider()
         else:
-            raise ValueError(
-                f"Unknown LLM_PROVIDER: {name!r} (expected 'claude' or 'ollama')"
-            )
+            raise ValueError(f"Unknown LLM_PROVIDER: {name!r} (expected 'claude' or 'ollama')")
     return _provider
 
 

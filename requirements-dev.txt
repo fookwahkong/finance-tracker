@@ -2,3 +2,4 @@
 pytest
 mangum
 google-auth-oauthlib
+ruff

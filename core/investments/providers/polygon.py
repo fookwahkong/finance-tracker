@@ -3,6 +3,7 @@
 Returns raw parsed JSON exactly as Polygon sends it (feature 1 displays all
 fields untouched). Follows the httpx error pattern in core/parsing/ollama.py.
 """
+
 import os
 
 import httpx
@@ -47,7 +48,9 @@ class PolygonClient:
     def aggregates(self, symbol: str, from_date: str, to_date: str) -> dict:
         symbol = symbol.upper()
         path = f"/v2/aggs/ticker/{symbol}/range/1/day/{from_date}/{to_date}"
-        return cache.get_or_fetch(f"{symbol}:aggs:{from_date}:{to_date}", lambda: self._get(path), 21600)
+        return cache.get_or_fetch(
+            f"{symbol}:aggs:{from_date}:{to_date}", lambda: self._get(path), 21600
+        )
 
     def dividends(self, symbol: str) -> dict:
         symbol = symbol.upper()

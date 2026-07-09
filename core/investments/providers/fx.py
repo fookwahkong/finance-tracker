@@ -3,6 +3,7 @@
 Returns {"rate": float, "date": str} for USD->SGD, cached 24h — the rate only
 feeds the net-worth asset line, so daily freshness is plenty.
 """
+
 import httpx
 
 from core.investments import cache

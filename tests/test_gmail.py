@@ -3,14 +3,19 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 import core.gmail as gmail_module
 
-
-_FAKE_CREDS_JSON = json.dumps({
-    "token": "x", "refresh_token": "y", "client_id": "z",
-    "client_secret": "w", "token_uri": "https://oauth2.googleapis.com/token",
-    "scopes": ["https://www.googleapis.com/auth/gmail.modify"],
-})
+_FAKE_CREDS_JSON = json.dumps(
+    {
+        "token": "x",
+        "refresh_token": "y",
+        "client_id": "z",
+        "client_secret": "w",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "scopes": ["https://www.googleapis.com/auth/gmail.modify"],
+    }
+)
 
 
 def _encoded(text: str) -> str:
