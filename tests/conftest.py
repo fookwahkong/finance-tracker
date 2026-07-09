@@ -9,7 +9,6 @@ os.environ.setdefault("DEMO_USER_ID", "00000000-0000-0000-0000-000000000002")
 os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "test-token")
 os.environ.setdefault("LLM_PROVIDER", "claude")
-os.environ.setdefault("SHORTCUT_API_KEY", "test-shortcut-key")
 os.environ.setdefault("CRON_SECRET", "test-cron-secret")
 os.environ.setdefault("GMAIL_QUERY", "is:unread from:donotreply@dbs.com")
 os.environ.setdefault(

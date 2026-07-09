@@ -18,7 +18,7 @@ def fake_supabase():
             "category": "Transport",
             "amount": -12.5,
             "date": "2026-06-23",
-            "source": "shortcut",
+            "source": "paynow",
         }
     ]
     return svc
@@ -26,68 +26,12 @@ def fake_supabase():
 
 @pytest.fixture
 def client(monkeypatch, fake_supabase):
-    monkeypatch.setenv("SHORTCUT_API_KEY", "test-shortcut-key")
     monkeypatch.setenv("CRON_SECRET", "test-cron-secret")
     monkeypatch.setenv("GMAIL_QUERY", "is:unread from:donotreply@dbs.com")
     monkeypatch.setattr("backend.routers.ingest.supabase", fake_supabase)
     from backend.main import app
 
     return TestClient(app)
-
-
-# --- Shortcut endpoint ---
-
-
-def test_shortcut_missing_api_key_returns_422(client):
-    resp = client.post("/api/ingest/shortcut", json={"merchant": "Grab", "amount": 12.5})
-    assert resp.status_code == 422
-
-
-def test_shortcut_wrong_api_key_returns_401(client):
-    resp = client.post(
-        "/api/ingest/shortcut",
-        json={"merchant": "Grab", "amount": 12.5},
-        headers={"X-API-Key": "wrong"},
-    )
-    assert resp.status_code == 401
-
-
-def test_shortcut_saves_parsed_transaction(client, monkeypatch, fake_supabase):
-    # LLM returns a positive amount; Apple Pay is always a spend, so it must
-    # be stored negative regardless.
-    monkeypatch.setattr(
-        "backend.routers.ingest.parse_transaction",
-        lambda text, cats: {
-            "item": "Grab",
-            "category": "Transport",
-            "amount": 12.5,
-            "date": "2026-06-23",
-        },
-    )
-    resp = client.post(
-        "/api/ingest/shortcut",
-        json={"merchant": "Grab", "amount": 12.5},
-        headers={"X-API-Key": "test-shortcut-key"},
-    )
-    assert resp.status_code == 201
-    assert resp.json()["item"] == "Grab"
-    # Apple Pay shortcut transactions are tagged as card payments, stored negative.
-    inserted = fake_supabase.table.return_value.insert.call_args[0][0]
-    assert inserted["source"] == "card"
-    assert inserted["amount"] == -12.5
-
-
-def test_shortcut_falls_back_on_parse_failure(client, monkeypatch):
-    def _fail(text, cats):
-        raise ValueError("LLM error")
-
-    monkeypatch.setattr("backend.routers.ingest.parse_transaction", _fail)
-    resp = client.post(
-        "/api/ingest/shortcut",
-        json={"merchant": "Grab", "amount": 12.5},
-        headers={"X-API-Key": "test-shortcut-key"},
-    )
-    assert resp.status_code == 201
 
 
 # --- Email endpoint ---

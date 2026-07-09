@@ -9,7 +9,7 @@ url: str = os.environ["SUPABASE_URL"]
 _service_key: str = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_KEY"]
 
 # Service-role client: bypasses RLS. Used only by trusted server jobs
-# (email cron, Telegram, iOS shortcut, demo reset) and readiness checks.
+# (email cron, Telegram, demo reset) and readiness checks.
 service_client: Client = create_client(url, _service_key)
 
 # Backwards-compatible alias so trusted routers can keep `from core.db import supabase`.

@@ -113,9 +113,9 @@ This is a single-tenant app with exactly two accounts: **personal** (yours, priv
 ## 🏗️ Architecture
 
 ```
-[Telegram Bot]   [React SPA]   [Statement PDF]   [Gmail Alerts]   [iOS Shortcut]
-       │              │              │                 │                │
-       └──────────────┴──────────────┴────────┬────────┴────────────────┘
+[Telegram Bot]   [React SPA]   [Statement PDF]   [Gmail Alerts]
+       │              │              │                 │
+       └──────────────┴──────────────┴────────┬────────┘
                                                ▼
                           [ FastAPI app · Vercel serverless ]
                           transactions · categories · reports
@@ -180,7 +180,7 @@ All routes are prefixed with `/api`.
 | **Subscriptions** | `GET/POST/DELETE /subscriptions` — recurring bills & income |
 | **Net worth** | `GET/POST /networth` — monthly cash anchors |
 | **Statements** | `POST /statements/parse` — upload a PDF, get extracted + categorised rows |
-| **Ingest** | `POST /ingest/*` — email/shortcut ingestion (API-key / cron-secret gated) |
+| **Ingest** | `GET /ingest/email` — scheduled email ingestion (cron-secret gated) |
 | **Investments** | `GET /investments/market/*` — ticker, prev close, aggregates, dividends, SMA |
 | **Telegram** | `POST /webhook` — bot webhook (secret-token verified) |
 
@@ -214,7 +214,7 @@ Full DDL in [`db/schema.sql`](db/schema.sql).
 | `OLLAMA_HOST` / `OLLAMA_MODEL` | Local LLM (when `LLM_PROVIDER=ollama`) |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_WEBHOOK_SECRET` | Telegram bot |
 | `GMAIL_CREDENTIALS` / `GMAIL_QUERY` | Email ingestion |
-| `SHORTCUT_API_KEY` / `CRON_SECRET` | Ingest auth |
+| `CRON_SECRET` | Ingest auth |
 | `POLYGON_API_KEY` | Investments |
 | `ALLOWED_ORIGINS` | CORS allow-list |
 

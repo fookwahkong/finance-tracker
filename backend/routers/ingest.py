@@ -2,7 +2,6 @@ import os
 from datetime import date
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from pydantic import BaseModel
 
 import core.email_parser as email_parser
 import core.gmail as gmail
@@ -14,11 +13,6 @@ router = APIRouter()
 
 def _known_categories() -> list[str]:
     return [c["name"] for c in supabase.table("categories").select("name").execute().data]
-
-
-def _verify_shortcut_key(x_api_key: str = Header(...)):
-    if x_api_key != os.environ.get("SHORTCUT_API_KEY", ""):
-        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 def _verify_cron_secret(authorization: str = Header(...)):
@@ -44,27 +38,6 @@ def _insert(item: str, category: str, amount: float, tx_date: str, source: str) 
         "user_id": os.environ["PERSONAL_USER_ID"],
     }
     return supabase.table("transactions").insert(payload).execute().data[0]
-
-
-class ShortcutPayload(BaseModel):
-    merchant: str
-    amount: float
-
-
-@router.post("/shortcut", status_code=201)
-def ingest_shortcut(payload: ShortcutPayload, _=Depends(_verify_shortcut_key)):
-    categories = _known_categories()
-    try:
-        parsed = parse_transaction(f"{payload.merchant} ${payload.amount}", categories)
-    except Exception:
-        parsed = {}
-    return _insert(
-        item=parsed.get("item") or payload.merchant,
-        category=parsed.get("category") or "Uncategorized",
-        amount=-abs(payload.amount),
-        tx_date=parsed.get("date") or date.today().isoformat(),
-        source="card",
-    )
 
 
 @router.get("/email", status_code=200)
