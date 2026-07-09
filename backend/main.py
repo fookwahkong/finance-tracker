@@ -52,6 +52,16 @@ async def _validation_error_handler(request: Request, exc: ValidationError):
     return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception):
+    request_id = structlog.contextvars.get_contextvars().get("request_id", "")
+    logger.error("unhandled_exception", exc_info=exc, path=request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal error", "request_id": request_id},
+    )
+
+
 app.include_router(transactions.router, prefix="/api/transactions", tags=["transactions"])
 app.include_router(categories.router, prefix="/api/categories", tags=["categories"])
 app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
