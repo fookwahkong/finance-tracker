@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { getCategories, createCategory, deleteCategory } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 
 export default function Settings() {
+  const { signOut } = useAuth();
   const [categories, setCategories] = useState([]);
   const [newName, setNewName] = useState("");
   const [error, setError] = useState("");
@@ -36,6 +38,14 @@ export default function Settings() {
   }
 
   return (
+    <>
+    <section className="card" style={{ maxWidth: 560 }}>
+      <div className="card-head"><div className="card-title">Account</div></div>
+      <button type="button" className="btn btn-outline" onClick={signOut}>
+        Sign out
+      </button>
+    </section>
+
     <section className="card" style={{ maxWidth: 560 }}>
       <div className="card-head"><div className="card-title">Categories</div></div>
 
@@ -69,5 +79,6 @@ export default function Settings() {
         ))
       )}
     </section>
+    </>
   );
 }
