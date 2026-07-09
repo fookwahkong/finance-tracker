@@ -1,9 +1,11 @@
 import os
+import uuid
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import structlog
 
 from backend.routers import transactions, categories, reports, telegram, ingest, statements, budgets, subscriptions, networth, claims
 from backend.routers.investments import (
@@ -14,12 +16,16 @@ from backend.routers.investments import (
     fx as investments_fx,
     ai as investments_ai,
 )
+from core.logging import configure_logging, get_logger
 from core.validation import ValidationError
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 _raw_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173")
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+configure_logging()
+logger = get_logger("app")
 
 app = FastAPI(title="Finance Tracker API")
 
@@ -29,6 +35,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(request_id=request_id)
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 
 @app.exception_handler(ValidationError)
