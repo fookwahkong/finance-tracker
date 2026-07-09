@@ -1,7 +1,8 @@
 from datetime import date, timedelta
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from backend.deps import enforce_ai_limit
 from core.investments import cache
 from core.investments.ai import BULL_BEAR_TTL, InvestAI
 from core.investments.providers.finnhub import FinnhubClient
@@ -20,7 +21,7 @@ def _recent_news(symbol: str) -> list:
 
 
 @router.post("/bull-bear/{symbol}")
-def generate_bull_bear(symbol: str):
+def generate_bull_bear(symbol: str, _: None = Depends(enforce_ai_limit)):
     symbol = symbol.upper()
     try:
         profile = finnhub.company_profile(symbol)
@@ -39,7 +40,7 @@ def peek_bull_bear(symbol: str):
 
 
 @router.get("/news-summary")
-def news_summary(tickers: str):
+def news_summary(tickers: str, _: None = Depends(enforce_ai_limit)):
     symbols = sorted({t.strip().upper() for t in tickers.split(",") if t.strip()})
     if not symbols:
         raise HTTPException(status_code=422, detail="tickers query param is required")

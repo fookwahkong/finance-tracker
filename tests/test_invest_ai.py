@@ -32,9 +32,12 @@ def fakes(monkeypatch):
 
 @pytest.fixture
 def client(fakes):
+    from backend.deps import enforce_ai_limit
     from backend.main import app
 
-    return TestClient(app)
+    app.dependency_overrides[enforce_ai_limit] = lambda: None
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 def test_post_bull_bear_generates(client, fakes):
