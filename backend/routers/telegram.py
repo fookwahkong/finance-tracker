@@ -39,6 +39,7 @@ async def telegram_webhook(request: Request):
         validated = validate_transaction(parsed, cats)
         payload = validated.model_dump()
         payload["date"] = payload["date"].isoformat()
+        payload["user_id"] = os.environ["PERSONAL_USER_ID"]
         tx = supabase.table("transactions").insert(payload).execute().data[0]
         sign = "+" if tx["amount"] > 0 else ""
         reply = (

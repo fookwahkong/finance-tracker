@@ -41,6 +41,7 @@ def _insert(item: str, category: str, amount: float, tx_date: str, source: str) 
         "category": category,
         "amount": amount,
         "source": source,
+        "user_id": os.environ["PERSONAL_USER_ID"],
     }
     return supabase.table("transactions").insert(payload).execute().data[0]
 

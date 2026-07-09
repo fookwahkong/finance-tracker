@@ -262,3 +262,26 @@ def test_email_falls_back_on_parse_transaction_failure(client, monkeypatch, fake
     assert resp.json() == {"processed": 1}
     inserted = fake_supabase.table.return_value.insert.call_args[0][0]
     assert inserted["category"] == "Uncategorized"
+
+
+def test_insert_stamps_personal_user_id(monkeypatch):
+    import backend.routers.ingest as ingest
+
+    monkeypatch.setenv("PERSONAL_USER_ID", "personal-uuid")
+    captured = {}
+
+    class FakeTable:
+        def insert(self, payload):
+            captured["payload"] = payload
+            return self
+
+        def execute(self):
+            class R:
+                data = [{"id": "t1"}]
+            return R()
+
+    monkeypatch.setattr(ingest.supabase, "table", lambda name: FakeTable())
+
+    ingest._insert("Lunch", "Food & Drink", -12.5, "2026-07-09", "card")
+
+    assert captured["payload"]["user_id"] == "personal-uuid"
