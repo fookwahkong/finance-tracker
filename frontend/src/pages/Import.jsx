@@ -43,7 +43,11 @@ export default function Import() {
         include: true,
       })));
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to parse statement.");
+      setError(
+        err.status === 429
+          ? err.message
+          : err.message || "Failed to parse statement."
+      );
       setRows([]);
     } finally {
       setBusy(false);

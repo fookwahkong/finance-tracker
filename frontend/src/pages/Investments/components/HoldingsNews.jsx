@@ -13,7 +13,7 @@ export default function HoldingsNews({ tickers }) {
     setState({ status: "loading", data: null, error: null });
     getNewsSummary(key.split(","))
       .then((data) => setState({ status: "ok", data, error: null }))
-      .catch((e) => setState({ status: "error", data: null, error: e?.response?.data?.detail || e.message }));
+      .catch((e) => setState({ status: "error", data: null, error: e.message }));
   }, [key]);
 
   if (!key) return null;

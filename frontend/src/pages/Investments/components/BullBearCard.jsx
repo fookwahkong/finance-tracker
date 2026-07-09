@@ -18,7 +18,7 @@ export default function BullBearCard({ symbol }) {
     try {
       setData(await generateBullBear(symbol));
     } catch (e) {
-      setError(e?.response?.data?.detail || e.message);
+      setError(e.message);
     } finally {
       setBusy(false);
     }
