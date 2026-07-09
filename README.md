@@ -239,6 +239,13 @@ pytest
 
 ---
 
+## Observability
+Logging, health checks, and optional error tracking are documented in
+[docs/observability.md](docs/observability.md). Nothing is sent externally
+unless you set `SENTRY_DSN` / `VITE_SENTRY_DSN`.
+
+---
+
 ## 🗺️ Roadmap
 
 - **LLM confidence layer** — return a confidence score + flagged ambiguities; below threshold, ask a clarifying question instead of auto-saving.
