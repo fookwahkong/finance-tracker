@@ -18,13 +18,7 @@ def _payload(entry: InvestTransactionUpsert) -> dict:
 
 @router.get("/transactions")
 def list_transactions():
-    return (
-        supabase.table("invest_transactions")
-        .select("*")
-        .order("purchase_date")
-        .execute()
-        .data
-    )
+    return supabase.table("invest_transactions").select("*").order("purchase_date").execute().data
 
 
 @router.post("/transactions")
@@ -35,12 +29,7 @@ def create_transaction(entry: InvestTransactionUpsert):
 
 @router.put("/transactions/{tx_id}")
 def update_transaction(tx_id: str, entry: InvestTransactionUpsert):
-    result = (
-        supabase.table("invest_transactions")
-        .update(_payload(entry))
-        .eq("id", tx_id)
-        .execute()
-    )
+    result = supabase.table("invest_transactions").update(_payload(entry)).eq("id", tx_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return result.data[0]
@@ -55,9 +44,7 @@ def delete_transaction(tx_id: str):
 
 @router.get("/watchlist")
 def list_watchlist():
-    return (
-        supabase.table("watchlist").select("*").order("added_at").execute().data
-    )
+    return supabase.table("watchlist").select("*").order("added_at").execute().data
 
 
 @router.post("/watchlist")

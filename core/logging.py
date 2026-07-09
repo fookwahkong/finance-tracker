@@ -22,11 +22,7 @@ def configure_logging() -> None:
         handlers=[logging.StreamHandler()],
     )
 
-    renderer = (
-        structlog.dev.ConsoleRenderer()
-        if is_dev
-        else structlog.processors.JSONRenderer()
-    )
+    renderer = structlog.dev.ConsoleRenderer() if is_dev else structlog.processors.JSONRenderer()
 
     structlog.configure(
         processors=[

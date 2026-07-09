@@ -36,7 +36,7 @@ def create_claim(claim: ClaimCreate):
     debit = _one("transactions", claim.debit_tx_id)
     if not debit:
         raise ValidationError("Debit transaction not found.")
-    
+
     # only support the scenario where you paid on behalf of others
     # does not support the scenario where people gave you extra for you to pay others
     if debit["amount"] >= 0:
@@ -46,7 +46,9 @@ def create_claim(claim: ClaimCreate):
     if claim.my_share < 0 or claim.my_share >= total:
         raise ValidationError("My share must be at least 0 and less than the debit total.")
 
-    existing = supabase.table("claims").select("*").eq("debit_tx_id", claim.debit_tx_id).execute().data
+    existing = (
+        supabase.table("claims").select("*").eq("debit_tx_id", claim.debit_tx_id).execute().data
+    )
     if existing:
         raise ValidationError("A claim already exists for this debit.")
 
@@ -84,7 +86,14 @@ def link_credit(claim_id: str, credit: ClaimCreditCreate):
     if tx["amount"] <= 0:
         raise ValidationError("Only credit transactions can be linked to claims.")
 
-    existing = supabase.table("claim_credits").select("*").eq("credit_tx_id", credit.credit_tx_id).execute().data or []
+    existing = (
+        supabase.table("claim_credits")
+        .select("*")
+        .eq("credit_tx_id", credit.credit_tx_id)
+        .execute()
+        .data
+        or []
+    )
     already_allocated = claim_math.received_total(existing)
     if already_allocated + credit.allocated_amount > tx["amount"]:
         raise ValidationError("Allocated amount exceeds the credit transaction amount.")

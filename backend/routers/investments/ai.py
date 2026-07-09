@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from fastapi import APIRouter, HTTPException
 
 from core.investments import cache
-from core.investments.ai import InvestAI, BULL_BEAR_TTL
+from core.investments.ai import BULL_BEAR_TTL, InvestAI
 from core.investments.providers.finnhub import FinnhubClient
 from core.investments.providers.fmp import FMPClient
 

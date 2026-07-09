@@ -5,6 +5,7 @@ stored payload is returned; on a miss or stale entry, fetch_fn is called and
 the result is upserted. Validation is the provider's responsibility — fetch_fn
 must return valid data or raise; this layer never inspects the payload.
 """
+
 from datetime import datetime, timezone
 from typing import Callable
 

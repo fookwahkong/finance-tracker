@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -16,6 +17,7 @@ def fake_finnhub():
 def client(monkeypatch, fake_finnhub):
     monkeypatch.setattr("backend.routers.investments.company.client", fake_finnhub)
     from backend.main import app
+
     return TestClient(app)
 
 

@@ -1,4 +1,5 @@
 import pytest
+
 import core.parsing as parsing
 from core.parsing.extract import extract_json
 

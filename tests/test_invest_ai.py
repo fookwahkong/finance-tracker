@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 
 from core.investments.ai import _extract_json
@@ -32,6 +33,7 @@ def fakes(monkeypatch):
 @pytest.fixture
 def client(fakes):
     from backend.main import app
+
     return TestClient(app)
 
 

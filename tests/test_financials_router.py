@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -17,6 +18,7 @@ def fake_fmp():
 def client(monkeypatch, fake_fmp):
     monkeypatch.setattr("backend.routers.investments.financials.client", fake_fmp)
     from backend.main import app
+
     return TestClient(app)
 
 

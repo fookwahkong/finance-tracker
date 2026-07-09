@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -22,6 +23,7 @@ def fake_supabase():
 def client(monkeypatch, fake_supabase):
     monkeypatch.setattr("backend.routers.networth.supabase", fake_supabase)
     from backend.main import app
+
     return TestClient(app)
 
 

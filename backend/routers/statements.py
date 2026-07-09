@@ -37,14 +37,16 @@ async def parse_statement(file: UploadFile = File(...)):
             suggested_category, is_new = "Food & Drink", False
         else:
             suggested_category, is_new = cat["category"], cat["is_new"]
-        out.append({
-            "date": row["date"],
-            "item": row["item"],
-            "amount": amount,
-            "source": row["source"],
-            "suggested_category": suggested_category,
-            "is_new": is_new,
-        })
+        out.append(
+            {
+                "date": row["date"],
+                "item": row["item"],
+                "amount": amount,
+                "source": row["source"],
+                "suggested_category": suggested_category,
+                "is_new": is_new,
+            }
+        )
     return {"rows": out}
 
 

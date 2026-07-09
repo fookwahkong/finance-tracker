@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from backend.main import app
 
+
 # Register a route that always raises, for testing the global handler.
 @app.get("/api/_boom_test")
 def _boom():

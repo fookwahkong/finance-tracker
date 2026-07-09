@@ -74,5 +74,6 @@ def test_checksum_failure_raises():
         "SOMETHING SGP",
     ]
     import pytest
+
     with pytest.raises(ValueError):
         _parse_lines(bad)

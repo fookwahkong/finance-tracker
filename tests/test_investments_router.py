@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -17,6 +18,7 @@ def fake_polygon():
 def client(monkeypatch, fake_polygon):
     monkeypatch.setattr("backend.routers.investments.market.client", fake_polygon)
     from backend.main import app
+
     return TestClient(app)
 
 
@@ -34,6 +36,7 @@ def client_fh(monkeypatch, fake_polygon, fake_finnhub):
     monkeypatch.setattr("backend.routers.investments.market.client", fake_polygon)
     monkeypatch.setattr("backend.routers.investments.market.finnhub", fake_finnhub)
     from backend.main import app
+
     return TestClient(app)
 
 

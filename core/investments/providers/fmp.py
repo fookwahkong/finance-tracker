@@ -4,6 +4,7 @@ Returns raw parsed JSON exactly as FMP sends it. Statement endpoints return a
 JSON array. Auth is an `apikey` query param. Mirrors the httpx + cache pattern
 in polygon.py.
 """
+
 import os
 
 import httpx
@@ -36,16 +37,28 @@ class FMPClient:
 
     def income_statement(self, symbol: str) -> list:
         symbol = symbol.upper()
-        return cache.get_or_fetch(f"{symbol}:income", lambda: self._get("/income-statement", {"symbol": symbol}), 604800)
+        return cache.get_or_fetch(
+            f"{symbol}:income", lambda: self._get("/income-statement", {"symbol": symbol}), 604800
+        )
 
     def balance_sheet(self, symbol: str) -> list:
         symbol = symbol.upper()
-        return cache.get_or_fetch(f"{symbol}:balance", lambda: self._get("/balance-sheet-statement", {"symbol": symbol}), 604800)
+        return cache.get_or_fetch(
+            f"{symbol}:balance",
+            lambda: self._get("/balance-sheet-statement", {"symbol": symbol}),
+            604800,
+        )
 
     def cash_flow(self, symbol: str) -> list:
         symbol = symbol.upper()
-        return cache.get_or_fetch(f"{symbol}:cashflow", lambda: self._get("/cash-flow-statement", {"symbol": symbol}), 604800)
+        return cache.get_or_fetch(
+            f"{symbol}:cashflow",
+            lambda: self._get("/cash-flow-statement", {"symbol": symbol}),
+            604800,
+        )
 
     def ratios(self, symbol: str) -> list:
         symbol = symbol.upper()
-        return cache.get_or_fetch(f"{symbol}:ratios", lambda: self._get("/ratios", {"symbol": symbol, "limit": 5}), 86400)
+        return cache.get_or_fetch(
+            f"{symbol}:ratios", lambda: self._get("/ratios", {"symbol": symbol, "limit": 5}), 86400
+        )

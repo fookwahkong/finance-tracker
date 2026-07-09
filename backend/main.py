@@ -1,20 +1,31 @@
 import os
 import uuid
 
+import structlog
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import structlog
 
-from backend.routers import transactions, categories, reports, telegram, ingest, statements, budgets, subscriptions, networth, claims
+from backend.routers import (
+    budgets,
+    categories,
+    claims,
+    ingest,
+    networth,
+    reports,
+    statements,
+    subscriptions,
+    telegram,
+    transactions,
+)
 from backend.routers.investments import (
-    market as investments_market,
-    financials as investments_financials,
-    company as investments_company,
-    portfolio as investments_portfolio,
-    fx as investments_fx,
     ai as investments_ai,
+    company as investments_company,
+    financials as investments_financials,
+    fx as investments_fx,
+    market as investments_market,
+    portfolio as investments_portfolio,
 )
 from core.db import ping as db_ping
 from core.logging import configure_logging, get_logger
@@ -73,10 +84,18 @@ app.include_router(budgets.router, prefix="/api/budgets", tags=["budgets"])
 app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["subscriptions"])
 app.include_router(networth.router, prefix="/api/networth", tags=["networth"])
 app.include_router(claims.router, prefix="/api/claims", tags=["claims"])
-app.include_router(investments_market.router, prefix="/api/investments/market", tags=["investments"])
-app.include_router(investments_financials.router, prefix="/api/investments/financials", tags=["investments"])
-app.include_router(investments_company.router, prefix="/api/investments/company", tags=["investments"])
-app.include_router(investments_portfolio.router, prefix="/api/investments/portfolio", tags=["investments"])
+app.include_router(
+    investments_market.router, prefix="/api/investments/market", tags=["investments"]
+)
+app.include_router(
+    investments_financials.router, prefix="/api/investments/financials", tags=["investments"]
+)
+app.include_router(
+    investments_company.router, prefix="/api/investments/company", tags=["investments"]
+)
+app.include_router(
+    investments_portfolio.router, prefix="/api/investments/portfolio", tags=["investments"]
+)
 app.include_router(investments_fx.router, prefix="/api/investments/fx", tags=["investments"])
 app.include_router(investments_ai.router, prefix="/api/investments/ai", tags=["investments"])
 

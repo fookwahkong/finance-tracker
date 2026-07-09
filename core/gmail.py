@@ -25,11 +25,13 @@ def fetch_unread(query: str) -> list[dict]:
     out = []
     for msg in messages:
         full = svc.users().messages().get(userId="me", id=msg["id"], format="full").execute()
-        out.append({
-            "id": msg["id"],
-            "body": _extract_body(full),
-            "sender": _extract_sender(full),
-        })
+        out.append(
+            {
+                "id": msg["id"],
+                "body": _extract_body(full),
+                "sender": _extract_sender(full),
+            }
+        )
     return out
 
 
