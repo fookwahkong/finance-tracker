@@ -2,6 +2,10 @@ import os
 
 os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
 os.environ.setdefault("SUPABASE_KEY", "test-key")
+os.environ.setdefault("SUPABASE_ANON_KEY", "test-anon-key")
+os.environ.setdefault("SUPABASE_SERVICE_KEY", "test-service-key")
+os.environ.setdefault("PERSONAL_USER_ID", "00000000-0000-0000-0000-000000000001")
+os.environ.setdefault("DEMO_USER_ID", "00000000-0000-0000-0000-000000000002")
 os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "test-token")
 os.environ.setdefault("LLM_PROVIDER", "claude")
