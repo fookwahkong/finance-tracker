@@ -11,6 +11,7 @@ from backend.routers import (
     budgets,
     categories,
     claims,
+    demo,
     ingest,
     networth,
     reports,
@@ -84,6 +85,7 @@ app.include_router(budgets.router, prefix="/api/budgets", tags=["budgets"])
 app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["subscriptions"])
 app.include_router(networth.router, prefix="/api/networth", tags=["networth"])
 app.include_router(claims.router, prefix="/api/claims", tags=["claims"])
+app.include_router(demo.router, prefix="/api/demo", tags=["demo"])
 app.include_router(
     investments_market.router, prefix="/api/investments/market", tags=["investments"]
 )

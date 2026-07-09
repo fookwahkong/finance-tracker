@@ -7,6 +7,7 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/ingest/email", "schedule": "59 15 * * *" }
+    { "path": "/api/ingest/email", "schedule": "59 15 * * *" },
+    { "path": "/api/demo/reset", "schedule": "0 0 * * *" }
   ]
 }
