@@ -8,3 +8,12 @@ url: str = os.environ["SUPABASE_URL"]
 key: str = os.environ["SUPABASE_KEY"]
 
 supabase: Client = create_client(url, key)
+
+
+def ping() -> bool:
+    """Lightweight readiness check: can we reach Supabase?"""
+    try:
+        supabase.table("transactions").select("id").limit(1).execute()
+        return True
+    except Exception:
+        return False

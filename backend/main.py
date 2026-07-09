@@ -16,6 +16,7 @@ from backend.routers.investments import (
     fx as investments_fx,
     ai as investments_ai,
 )
+from core.db import ping as db_ping
 from core.logging import configure_logging, get_logger
 from core.validation import ValidationError
 
@@ -83,3 +84,15 @@ app.include_router(investments_ai.router, prefix="/api/investments/ai", tags=["i
 @app.get("/")
 def root():
     return {"status": "ok"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def health_ready():
+    if db_ping():
+        return {"status": "ready"}
+    return JSONResponse(status_code=503, content={"status": "unavailable"})
