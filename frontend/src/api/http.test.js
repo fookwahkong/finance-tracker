@@ -1,5 +1,15 @@
-import { describe, it, expect } from "vitest";
-import { normalizeError } from "./http";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("../lib/supabase", () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: "tok-1" } } }),
+      signOut: vi.fn(),
+    },
+  },
+}));
+
+import http, { normalizeError } from "./http";
 
 describe("normalizeError", () => {
   it("extracts message, status, and request id from an axios error", () => {
@@ -23,5 +33,12 @@ describe("normalizeError", () => {
     expect(norm.status).toBe(null);
     expect(norm.requestId).toBe(null);
     expect(norm.message).toBe("Network Error");
+  });
+});
+
+describe("http auth interceptor", () => {
+  it("attaches the bearer token from the session", async () => {
+    const config = await http.interceptors.request.handlers[0].fulfilled({ headers: {} });
+    expect(config.headers.Authorization).toBe("Bearer tok-1");
   });
 });
