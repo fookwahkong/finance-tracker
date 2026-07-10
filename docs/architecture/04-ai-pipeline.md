@@ -33,6 +33,16 @@ constructed singleton chosen once at first use (`core/parsing/__init__.py`).
 network), while production uses Claude for quality. Swapping providers, or adding
 a third, changes *one file* and touches *zero* callers.
 
+Two deliberate details:
+
+- **Hard-fail, no silent fallback.** If the selected provider is unreachable
+  (e.g. Ollama isn't running), the parse raises a clear error rather than
+  quietly falling back to Claude — which would mean surprise token spend during
+  development.
+- **Lazy imports.** `claude.py` imports the `anthropic` SDK and `ollama.py`
+  imports its client *inside* each provider, so production never loads the Ollama
+  path and dev never requires the Anthropic SDK.
+
 ## 1. Extraction pipeline (at data entry)
 
 This is the flow behind natural-language entry, Telegram messages, bank-statement
@@ -60,9 +70,12 @@ Three details make this reliable rather than flaky:
 - **Strict extraction.** `extract_json()` strips any markdown code fences and
   `json.loads()` the result; anything non-JSON raises rather than being guessed
   at. Ollama is additionally asked for `format: json` to keep it honest.
-- **Validation is not optional.** The model's output is treated as *untrusted
-  input*. It passes through `core/validation.py` (and ultimately DB constraints)
-  before it can be stored. The LLM is a component with a contract, not an
+- **Validation on both sides of the model.** A *pre-LLM* gate
+  (`validate_raw_text`) strips input, rejects empty strings, and caps length
+  before a token is ever spent. A *post-parse* gate (`validate_transaction`) then
+  treats the model's output as *untrusted input* — enforcing `amount ≠ 0`, a sane
+  date window, bounded fields, and coercing any invented category to null — before
+  anything reaches the database. The LLM is a component with a contract, not an
   authority.
 
 ### Statement extraction is a two-step variant

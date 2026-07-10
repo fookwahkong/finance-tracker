@@ -86,6 +86,26 @@ everything else small. → [repository structure](01-repository-structure.md#cor
 
 ---
 
+## Quality & continuous integration
+
+Correctness isn't left to hope. Three things enforce it automatically:
+
+- **Tests** — `pytest` covers parsing, validation, settlement math, and every
+  router; Vitest covers frontend logic (aggregation, claim math, error boundary).
+  The pure `core/` layer is testable without a server, DB, or LLM tokens (parsing
+  runs against a fake provider), which keeps the suite fast and deterministic.
+- **CI pipeline** — a GitHub Actions workflow (`.github/workflows/ci.yml`) runs on
+  every push to `master` and every pull request, in three jobs:
+  a **backend** job (`ruff` lint + `ruff format --check` + `pytest`), a
+  **frontend** job (`eslint` + `vitest` + `vite build` to catch build breaks), and
+  a **secret-scan** job (`gitleaks` — cheap insurance for a public, clone-me repo).
+- **Observability** — structured logging, fail-safe error handling, and health
+  checks make failures diagnosable in production. → [observability](07-observability.md)
+
+`ruff` was chosen deliberately: one fast tool replaces flake8 + black + isort.
+
+---
+
 ## Accepted trade-offs
 
 This is a learning project, and part of the learning was recognising what a
@@ -94,10 +114,10 @@ known, not oversights:
 
 | Not done (yet) | Why it's acceptable for now | Planned direction |
 |---|---|---|
-| **CI/CD pipeline** | Solo project; deploys are low-frequency and reviewed by hand. | Add GitHub Actions to run tests + lint on push before deploy. |
 | **Containerization** | Vercel's build handles the runtime; no orchestration need. | Dockerize the backend if it ever moves off serverless. |
-| **Structured monitoring** | Structured logging + health checks exist; no external aggregation. | Wire up error tracking (Sentry/GlitchTip DSNs are already stubbed). |
-| **Frontend/E2E tests** | Core logic (parsing, math, routers) is covered by pytest + Vitest. | Add Playwright coverage for the critical user flows. |
+| **External log aggregation** | Structured logs, request IDs, health checks, and opt-in error tracking already exist; logs stream to stdout. | Drain stdout to a log service on a server-hosted path. |
+| **Local / SQLite storage** | Ships on Supabase; the DB seam (`core/db.py`) is isolated but not yet swappable. | A true local-first storage backend for full self-hosting. |
+| **End-to-end (browser) tests** | Core logic and components are covered by pytest + Vitest; CI runs them on every push. | Add Playwright coverage for the critical user flows. |
 | **Conversational AI agent** | Extraction + analysis shipped first; an agent is a larger surface. | A Claude tool-use agent answering "how am I doing this month?" |
 
 Naming the gaps honestly — and knowing the next step for each — is itself part of

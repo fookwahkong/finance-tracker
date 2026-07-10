@@ -17,6 +17,13 @@ Read top-to-bottom for the full picture, or jump to a topic:
 4. [AI pipeline](04-ai-pipeline.md) — how the LLM turns text/PDFs into data.
 5. [Deployment](05-deployment.md) — GitHub → Vercel → cron → webhooks → DB.
 6. [Design decisions](06-design-decisions.md) — the trade-offs and the reasoning.
+7. [Observability](07-observability.md) — logging, health, and error handling.
+
+> **Built spec-first.** Every feature here began as a written design doc before
+> any code — the modular `core/` refactor, email ingestion, the statement
+> importer, investments, shared-expense claims, the multi-tenant demo, and the
+> observability/CI wrap-up. That design trail is why the accounts below can be
+> this specific about the *why*.
 
 ---
 
@@ -34,8 +41,9 @@ requirements to deployment. Each stage below links to where it's documented.
 | **Database** | Modeled financial data in Postgres with per-user ownership and row-level security. → [database](03-database-design.md) |
 | **AI integration** | Added a pluggable LLM layer for natural-language entry, statement parsing, and investment analysis. → [AI pipeline](04-ai-pipeline.md) |
 | **Deployment** | Deployed serverless on Vercel with two scheduled cron jobs and a Telegram webhook. → [deployment](05-deployment.md) |
-| **Testing** | Covered parsing, validation, settlement math, and every router with pytest + Vitest. |
-| **Future work** | Identified next steps: CI/CD, structured monitoring, containerization, an AI agent. → [decisions](06-design-decisions.md#accepted-trade-offs) |
+| **Testing & CI** | Covered parsing, validation, settlement math, and every router with pytest + Vitest, run on every push by GitHub Actions (lint, tests, build, secret scan). → [decisions](06-design-decisions.md#quality--continuous-integration) |
+| **Observability** | Structured logging with request correlation, fail-safe error handling, health checks, and opt-in error tracking. → [observability](07-observability.md) |
+| **Future work** | Identified next steps: containerization, external log aggregation, local/SQLite storage, an AI agent. → [decisions](06-design-decisions.md#accepted-trade-offs) |
 
 ---
 
@@ -101,3 +109,8 @@ can be logged from a phone. → [deployment](05-deployment.md#webhooks)
 **Deployment** — One FastAPI app runs locally under Uvicorn and on Vercel via a
 Mangum ASGI adapter; the frontend ships as static assets from the same build.
 → [deployment](05-deployment.md)
+
+**Observability** — Structured JSON logs with a request ID threaded through every
+request, a fail-safe global exception handler, `/health` + `/health/ready`
+endpoints, and error tracking that's off unless you opt in — all local-first.
+→ [observability](07-observability.md)

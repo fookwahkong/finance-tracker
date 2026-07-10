@@ -163,7 +163,10 @@ Isolation between the **personal** and **demo** accounts is enforced by the
 database itself, defined in [`db/002_multi_tenant.sql`](../../db/002_multi_tenant.sql):
 
 1. Every financial table has a `user_id uuid references auth.users(id)`, set to
-   **`default auth.uid()`** and `NOT NULL`.
+   **`default auth.uid()`** and `NOT NULL`. The migration rolled this out
+   backward-compatibly: add the column *nullable*, **backfill** existing rows to
+   the personal account, then flip it to `NOT NULL` — so live data was never
+   orphaned.
 2. Every table has **row-level security enabled** with a single owner policy:
 
    ```sql

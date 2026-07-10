@@ -26,6 +26,17 @@ business logic with no knowledge of HTTP, Vercel, or request objects.** Because
 it's decoupled from transport, four different ingestion channels reuse it, and it
 can be unit-tested without spinning up a server or a database.
 
+It exists because the opposite hurt. An earlier version had the LLM parser, the
+report math, and the Pydantic models **triplicated** across `backend/`, the
+Telegram bot, and the serverless entry — three copies to keep in sync, and one
+path that wrote raw model output to the database with no validation. Extracting a
+single `core/` collapsed those duplicates into one source of truth. The rule that
+keeps it clean is a **strictly one-directional dependency**:
+
+> `frontend → backend (HTTP) → core`
+>
+> `core` never imports `backend`; `backend` never imports `api/`.
+
 ```
 core/
 ├── parsing/        LLM seam: turn free text → structured transaction JSON
