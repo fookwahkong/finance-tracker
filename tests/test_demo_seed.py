@@ -3,16 +3,36 @@ from datetime import date
 from backend.demo_seed import build_claims, seed_rows
 
 CANONICAL = {
-    "Groceries", "Food & Drink", "Transport", "Personal", "Pets", "Gym",
-    "Shopping", "Education", "Car", "Housing", "Gifts", "Work",
-    "Sports & Hobby", "Beauty", "Others", "Travel",
+    "Groceries",
+    "Food & Drink",
+    "Transport",
+    "Personal",
+    "Pets",
+    "Gym",
+    "Shopping",
+    "Education",
+    "Car",
+    "Housing",
+    "Gifts",
+    "Work",
+    "Sports & Hobby",
+    "Beauty",
+    "Others",
+    "Travel",
 }
 
 
 def test_seed_covers_expected_tables():
     rows = seed_rows("demo-uid", date(2026, 7, 9))
-    for table in ["categories", "transactions", "budgets", "subscriptions",
-                  "net_worth", "invest_transactions", "watchlist"]:
+    for table in [
+        "categories",
+        "transactions",
+        "budgets",
+        "subscriptions",
+        "net_worth",
+        "invest_transactions",
+        "watchlist",
+    ]:
         assert rows[table], f"{table} should have seed rows"
 
 
@@ -57,8 +77,14 @@ def test_build_claims_picks_two_most_recent_dinners():
         _dinner("t1", "2026-07-01"),
         _dinner("t2", "2026-06-01"),
         _dinner("t3", "2026-05-01"),
-        {"id": "t4", "user_id": "demo-uid", "item": "Salary", "category": "Work",
-         "amount": 5200.0, "date": "2026-07-25"},
+        {
+            "id": "t4",
+            "user_id": "demo-uid",
+            "item": "Salary",
+            "category": "Work",
+            "amount": 5200.0,
+            "date": "2026-07-25",
+        },
     ]
     claims = build_claims(transactions)
     assert [c["debit_tx_id"] for c in claims] == ["t1", "t2"]

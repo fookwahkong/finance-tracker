@@ -47,9 +47,7 @@ def create_claim(claim: ClaimCreate, db: Client = Depends(get_db)):
     if claim.my_share < 0 or claim.my_share >= total:
         raise ValidationError("My share must be at least 0 and less than the debit total.")
 
-    existing = (
-        db.table("claims").select("*").eq("debit_tx_id", claim.debit_tx_id).execute().data
-    )
+    existing = db.table("claims").select("*").eq("debit_tx_id", claim.debit_tx_id).execute().data
     if existing:
         raise ValidationError("A claim already exists for this debit.")
 
@@ -88,11 +86,7 @@ def link_credit(claim_id: str, credit: ClaimCreditCreate, db: Client = Depends(g
         raise ValidationError("Only credit transactions can be linked to claims.")
 
     existing = (
-        db.table("claim_credits")
-        .select("*")
-        .eq("credit_tx_id", credit.credit_tx_id)
-        .execute()
-        .data
+        db.table("claim_credits").select("*").eq("credit_tx_id", credit.credit_tx_id).execute().data
         or []
     )
     already_allocated = claim_math.received_total(existing)

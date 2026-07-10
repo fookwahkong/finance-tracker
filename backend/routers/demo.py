@@ -10,8 +10,16 @@ router = APIRouter()
 
 # Delete children before parents to respect FK constraints.
 _WIPE_ORDER = [
-    "claim_credits", "claims", "transactions", "budgets", "subscriptions",
-    "net_worth", "invest_transactions", "watchlist", "categories", "ai_usage",
+    "claim_credits",
+    "claims",
+    "transactions",
+    "budgets",
+    "subscriptions",
+    "net_worth",
+    "invest_transactions",
+    "watchlist",
+    "categories",
+    "ai_usage",
 ]
 
 

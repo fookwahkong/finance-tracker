@@ -222,6 +222,7 @@ def test_insert_stamps_personal_user_id(monkeypatch):
         def execute(self):
             class R:
                 data = [{"id": "t1"}]
+
             return R()
 
     monkeypatch.setattr(ingest.supabase, "table", lambda name: FakeTable())

@@ -13,7 +13,7 @@ def bearer_token(authorization: str = Header(default="")) -> str:
     prefix = "Bearer "
     if not authorization.startswith(prefix):
         raise HTTPException(status_code=401, detail="Missing bearer token")
-    token = authorization[len(prefix):].strip()
+    token = authorization[len(prefix) :].strip()
     if not token:
         raise HTTPException(status_code=401, detail="Missing bearer token")
     return token

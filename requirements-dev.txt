@@ -2,4 +2,4 @@
 pytest
 mangum
 google-auth-oauthlib
-ruff
+ruff==0.15.20

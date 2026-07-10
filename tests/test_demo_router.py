@@ -14,10 +14,22 @@ def fake_service(monkeypatch):
             tbl = MagicMock()
             if name == "transactions":
                 tbl.insert.return_value.execute.return_value.data = [
-                    {"id": "t1", "user_id": "demo-uid", "item": "Dinner with friends",
-                     "category": "Food & Drink", "amount": -42.0, "date": "2026-07-01"},
-                    {"id": "t2", "user_id": "demo-uid", "item": "Dinner with friends",
-                     "category": "Food & Drink", "amount": -42.0, "date": "2026-06-01"},
+                    {
+                        "id": "t1",
+                        "user_id": "demo-uid",
+                        "item": "Dinner with friends",
+                        "category": "Food & Drink",
+                        "amount": -42.0,
+                        "date": "2026-07-01",
+                    },
+                    {
+                        "id": "t2",
+                        "user_id": "demo-uid",
+                        "item": "Dinner with friends",
+                        "category": "Food & Drink",
+                        "amount": -42.0,
+                        "date": "2026-06-01",
+                    },
                 ]
             tables[name] = tbl
         return tables[name]
@@ -32,6 +44,7 @@ def client(fake_service, monkeypatch):
     monkeypatch.setenv("CRON_SECRET", "test-cron-secret")
     monkeypatch.setenv("DEMO_USER_ID", "demo-uid")
     from backend.main import app
+
     return TestClient(app)
 
 

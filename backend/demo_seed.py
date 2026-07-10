@@ -1,12 +1,26 @@
 """Deterministic-ish fake data for the public demo account."""
-from datetime import date, timedelta, timezone, datetime
+
+from datetime import date, datetime, timedelta, timezone
 
 from core.claims import expected_amount
 
 CANONICAL_CATEGORIES = [
-    "Groceries", "Food & Drink", "Transport", "Personal", "Pets", "Gym",
-    "Shopping", "Education", "Car", "Housing", "Gifts", "Work",
-    "Sports & Hobby", "Beauty", "Others", "Travel",
+    "Groceries",
+    "Food & Drink",
+    "Transport",
+    "Personal",
+    "Pets",
+    "Gym",
+    "Shopping",
+    "Education",
+    "Car",
+    "Housing",
+    "Gifts",
+    "Work",
+    "Sports & Hobby",
+    "Beauty",
+    "Others",
+    "Travel",
 ]
 
 # (item, category, amount, source) templates spread across each month.
@@ -46,34 +60,74 @@ def seed_rows(user_id: str, today: date) -> dict[str, list[dict]]:
             )
     transactions = owned(transactions)
 
-    budgets = owned([
-        {"category": "Groceries", "amount": 500.0},
-        {"category": "Food & Drink", "amount": 350.0},
-        {"category": "Transport", "amount": 120.0},
-        {"category": "Shopping", "amount": 200.0},
-    ])
+    budgets = owned(
+        [
+            {"category": "Groceries", "amount": 500.0},
+            {"category": "Food & Drink", "amount": 350.0},
+            {"category": "Transport", "amount": 120.0},
+            {"category": "Shopping", "amount": 200.0},
+        ]
+    )
 
-    subscriptions = owned([
-        {"type": "bill", "item": "Netflix", "amount": 19.98, "category": "Personal",
-         "source": "giro", "day_of_month": 5},
-        {"type": "bill", "item": "Gym", "amount": 95.0, "category": "Gym",
-         "source": "giro", "day_of_month": 1},
-        {"type": "income", "item": "Salary", "amount": 5200.0, "category": "Work",
-         "source": "giro", "day_of_month": 25},
-    ])
+    subscriptions = owned(
+        [
+            {
+                "type": "bill",
+                "item": "Netflix",
+                "amount": 19.98,
+                "category": "Personal",
+                "source": "giro",
+                "day_of_month": 5,
+            },
+            {
+                "type": "bill",
+                "item": "Gym",
+                "amount": 95.0,
+                "category": "Gym",
+                "source": "giro",
+                "day_of_month": 1,
+            },
+            {
+                "type": "income",
+                "item": "Salary",
+                "amount": 5200.0,
+                "category": "Work",
+                "source": "giro",
+                "day_of_month": 25,
+            },
+        ]
+    )
 
-    net_worth = owned([
-        {"month": (date(today.year, today.month, 1) - timedelta(days=30 * n)).strftime("%Y-%m"),
-         "cash": 12000.0 + 800 * (5 - n)}
-        for n in range(6)
-    ])
+    net_worth = owned(
+        [
+            {
+                "month": (date(today.year, today.month, 1) - timedelta(days=30 * n)).strftime(
+                    "%Y-%m"
+                ),
+                "cash": 12000.0 + 800 * (5 - n),
+            }
+            for n in range(6)
+        ]
+    )
 
-    invest_transactions = owned([
-        {"ticker": "AAPL", "type": "BUY", "quantity": 10, "price_per_share": 180.0,
-         "purchase_date": (today - timedelta(days=120)).isoformat()},
-        {"ticker": "VOO", "type": "BUY", "quantity": 5, "price_per_share": 430.0,
-         "purchase_date": (today - timedelta(days=60)).isoformat()},
-    ])
+    invest_transactions = owned(
+        [
+            {
+                "ticker": "AAPL",
+                "type": "BUY",
+                "quantity": 10,
+                "price_per_share": 180.0,
+                "purchase_date": (today - timedelta(days=120)).isoformat(),
+            },
+            {
+                "ticker": "VOO",
+                "type": "BUY",
+                "quantity": 5,
+                "price_per_share": 430.0,
+                "purchase_date": (today - timedelta(days=60)).isoformat(),
+            },
+        ]
+    )
 
     watchlist = owned([{"ticker": "AAPL"}, {"ticker": "VOO"}, {"ticker": "NVDA"}])
 
