@@ -198,3 +198,11 @@ cd frontend && npm test                          # frontend
 - **Prompt design is engineering.** Reliable structured-JSON extraction needed
   explicit date and category context in the prompt and strict validation on the way
   out — the model is a component with a contract, not magic.
+- **Pin dependencies, and test against public contracts.** Unpinned `fastapi` let
+  CI install a newer version whose `include_router()` puts lazy `_IncludedRouter`
+  wrappers in `app.routes`, so a smoke test doing `route.path for route in app.routes`
+  crashed with `AttributeError` — even though the app served fine. The real fault was
+  the test reaching into framework internals; switching it to the stable public schema
+  (`app.openapi()["paths"]`) fixed it across versions. Lesson: assert on public
+  contracts, not internals, and pin deps so CI drift is a deliberate upgrade, not a
+  surprise.

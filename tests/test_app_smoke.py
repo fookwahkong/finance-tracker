@@ -12,7 +12,7 @@ def test_root_health():
 
 
 def test_api_routes_are_mounted():
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi()["paths"])
     assert "/api/transactions" in paths
     assert "/api/categories" in paths
     assert "/api/reports/monthly" in paths
