@@ -36,6 +36,7 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
-docs/
+docs/*
+!docs/architecture/
 .worktrees/
 graphify-out/
