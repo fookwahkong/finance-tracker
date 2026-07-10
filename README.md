@@ -182,26 +182,30 @@ cd frontend && npm test                          # frontend
 
 ## 9. Lessons Learned
 
-- **Design a seam before you need one.** Putting Anthropic Claude and local Ollama
-  behind a single `LLM_PROVIDER` interface meant I could develop offline and swap
-  providers with zero changes to callers — a small abstraction that paid for itself.
-- **Keep business logic transport-agnostic.** Isolating pure logic in `core/`
-  (settlement math, validation, aggregation) made four different ingestion channels
-  reuse the same rules — and made that logic trivial to unit-test without a database.
-- **Serverless changes how you architect.** Adapting one FastAPI app to run both
-  locally (Uvicorn) and on Vercel (Mangum) taught me about cold starts, statelessness,
-  and pushing scheduled work into cron rather than long-running processes.
+**Architecture**
+- **Design a seam before you need one.** One `LLM_PROVIDER` interface over Claude and
+  Ollama let me develop offline and swap providers with zero caller changes.
+- **Keep business logic transport-agnostic.** Pure logic in `core/` (settlement,
+  validation, aggregation) let four ingestion channels share one rulebook — and made it
+  trivial to unit-test without a database.
+- **Serverless reshapes design.** Running one FastAPI app under both Uvicorn and
+  Vercel/Mangum meant designing for cold starts, statelessness, and cron instead of
+  long-running processes.
+
+**Data & AI**
 - **Multi-tenancy belongs in the database.** Postgres row-level security enforces
-  personal/demo isolation at the source, so I don't have to remember to filter by
-  user in every query — the database refuses to leak.
-- **Prompt design is engineering.** Reliable structured-JSON extraction needed
-  explicit date and category context in the prompt and strict validation on the way
-  out — the model is a component with a contract, not magic.
-- **Pin dependencies, and test against public contracts.** Unpinned `fastapi` let
-  CI install a newer version whose `include_router()` puts lazy `_IncludedRouter`
-  wrappers in `app.routes`, so a smoke test doing `route.path for route in app.routes`
-  crashed with `AttributeError` — even though the app served fine. The real fault was
-  the test reaching into framework internals; switching it to the stable public schema
-  (`app.openapi()["paths"]`) fixed it across versions. Lesson: assert on public
-  contracts, not internals, and pin deps so CI drift is a deliberate upgrade, not a
-  surprise.
+  personal/demo isolation at the source, so no query can forget to filter by user.
+- **Prompt design is engineering.** Reliable structured-JSON extraction needed explicit
+  date/category context in the prompt and strict validation on the way out — the model is
+  a component with a contract, not magic.
+
+**Shipping & operations**
+- **Know which process reads each config value, and when.** Frontend and backend are
+  separate programs: Vite inlines only `VITE_`-prefixed vars into the browser bundle *at
+  build time*, while the backend reads un-prefixed vars *at request time*. A shared value
+  lives twice (`VITE_SUPABASE_URL` vs `SUPABASE_URL`), and a single local `.env` masks the
+  split until deploy — where a missing one surfaces as either a blank screen or a 500.
+- **Assert on public contracts, and pin dependencies.** An unpinned `fastapi` upgrade
+  broke a smoke test that reached into framework internals (`app.routes`); switching to
+  `app.openapi()["paths"]` fixed it across versions. Pin deps so upgrades are deliberate,
+  not surprise CI drift.
