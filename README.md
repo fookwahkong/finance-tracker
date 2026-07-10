@@ -52,13 +52,12 @@ in place.
 
 ## 3. Live Demo
 
-🔗 **[Try the live demo →](https://your-app.vercel.app)** &nbsp;·&nbsp; click **"Try the demo"** on the login page — no signup required.
+🔗 **[Try the live demo →](https://finance-tracker-three-lac-93.vercel.app)** &nbsp;·&nbsp; click **"Try the demo"** on the login page — no signup required.
 
 The public **demo account** is fully isolated from personal data via Postgres
 row-level security, reseeds to a fresh baseline every night, and caps AI calls at
 5/day to control cost.
 
-> _Replace `https://your-app.vercel.app` with your deployed Vercel URL._
 
 ---
 
