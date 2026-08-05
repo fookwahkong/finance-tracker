@@ -1106,6 +1106,38 @@ a { color: inherit; }
 .eyebrow { color: var(--teal); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; }
 .claims-list { display: grid; gap: 18px; }
 
+.claim-credit-tray {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.claim-credit-tray > div:first-child { display: flex; flex-direction: column; gap: 3px; }
+.claim-credit-tray > div:first-child span { color: var(--muted); font-size: 12px; }
+.claim-credit-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.claim-credit-item {
+  display: grid;
+  grid-template-columns: auto minmax(110px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-width: 220px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fbfcfc;
+  cursor: grab;
+}
+.claim-credit-item:active { cursor: grabbing; }
+.claim-credit-item > span { color: var(--teal); font-weight: 800; }
+.claim-credit-item > div { display: flex; min-width: 0; flex-direction: column; }
+.claim-credit-item > div strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.claim-credit-item > div span { color: var(--muted); font-size: 11px; }
+.claim-credit-item > strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+
 .claim-card {
   overflow: hidden;
   background: var(--surface);
@@ -1197,6 +1229,8 @@ a { color: inherit; }
 
   .claims-page-head { align-items: flex-start; }
   .claims-page-head h1 { font-size: 26px; }
+  .claim-credit-list { display: grid; }
+  .claim-credit-item { min-width: 0; }
   .claim-card-head { flex-direction: column; padding: 18px; }
   .claim-card-head .btn { width: 100%; min-height: 44px; }
   .claim-summary { grid-template-columns: 1fr 1fr; }

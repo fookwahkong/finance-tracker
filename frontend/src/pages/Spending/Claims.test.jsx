@@ -70,10 +70,15 @@ describe("Claims", () => {
   it("opens the correct participant assignment when a credit is dropped", () => {
     render(<Claims claims={claims} transactions={transactions} onChanged={vi.fn()} />);
     const alex = screen.getByRole("article", { name: /alex repayment/i });
+    const draggedCredit = screen.getByLabelText(/drag available paynow repayment/i);
+    const dragData = new Map();
+    const dataTransfer = {
+      setData: (type, value) => dragData.set(type, value),
+      getData: (type) => dragData.get(type) || "",
+    };
 
-    fireEvent.drop(alex, {
-      dataTransfer: { getData: () => "credit-1" },
-    });
+    fireEvent.dragStart(draggedCredit, { dataTransfer });
+    fireEvent.drop(alex, { dataTransfer });
 
     expect(screen.getByRole("dialog", { name: /assign repayment from alex/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/credit transaction/i)).toHaveValue("credit-1");

@@ -6,6 +6,7 @@ export const participantNameKey = (name) => String(name)
   .normalize("NFKC")
   .toUpperCase()
   .toLowerCase()
+  .replaceAll("ß", "ss")
   .normalize("NFKC");
 
 function normalizedParticipant(participant, claimId) {

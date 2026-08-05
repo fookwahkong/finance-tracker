@@ -162,6 +162,34 @@ export default function Claims({ claims, transactions = [], onChanged }) {
 
       {actionError && <div className="form-error" role="alert">{actionError}</div>}
 
+      {availableCredits.length > 0 && (
+        <section className="claim-credit-tray" aria-labelledby="available-repayments-title">
+          <div>
+            <strong id="available-repayments-title">Available repayments</strong>
+            <span>Drag a credit onto the person who paid you, or use Assign repayment.</span>
+          </div>
+          <div className="claim-credit-list" role="list">
+            {availableCredits.map((credit) => (
+              <div
+                className="claim-credit-item"
+                role="listitem"
+                aria-label={`Drag ${credit.item} repayment`}
+                draggable
+                onDragStart={(event) => event.dataTransfer.setData("text/credit-id", credit.id)}
+                key={credit.id}
+              >
+                <span aria-hidden="true">↕</span>
+                <div>
+                  <strong>{credit.item}</strong>
+                  <span>{credit.date || "Credit transaction"}</span>
+                </div>
+                <strong>{money(credit.available)}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="claims-list">
         {openClaims.map((claim) => {
           const transaction = txById[claim.debit_tx_id];
