@@ -7,7 +7,8 @@ import { createClaim, linkCredit, settleClaim, reopenClaim, deleteClaim, unlinkC
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
 import { yearsInData, applyAdjustmentsToMonth } from "../../lib/aggregate";
-import { claimAdjustments, receivedTotal, remaining, variance, allocatedByCredit } from "../../lib/claims";
+import { claimAdjustments, receivedTotal, remaining, variance, allocatedByCredit, claimCreatePayload } from "../../lib/claims";
+import ClaimSplitDialog from "./ClaimSplitDialog";
 
 const METHODS = [
   { value: "cash", label: "Cash" },
@@ -42,7 +43,6 @@ export default function Overview({ transactions, categories, claims = [], claimL
   const [submitError, setSubmitError] = useState("");
   const [menuFor, setMenuFor] = useState(null);
   const [shareFor, setShareFor] = useState(null);
-  const [shareForm, setShareForm] = useState({ my_share: "", counterparty: "" });
   const [shareError, setShareError] = useState("");
   const [sharing, setSharing] = useState(false);
   const [expandedClaims, setExpandedClaims] = useState({});
@@ -186,20 +186,14 @@ export default function Overview({ transactions, categories, claims = [], claimL
 
   function openShareDialog(t) {
     setShareFor(t);
-    setShareForm({ my_share: "", counterparty: "" });
     setShareError("");
   }
 
-  async function submitShare(e) {
-    e.preventDefault();
+  async function submitShare(split) {
     setSharing(true);
     setShareError("");
     try {
-      await createClaim({
-        debit_tx_id: shareFor.id,
-        my_share: Number(shareForm.my_share),
-        counterparty: shareForm.counterparty || null,
-      });
+      await createClaim(claimCreatePayload(shareFor.id, split));
       setShareFor(null);
       reloadClaims?.();
     } catch (err) {
@@ -383,40 +377,13 @@ export default function Overview({ transactions, categories, claims = [], claimL
 
       {shareFor && createPortal(
         <div className="modal-backdrop" role="presentation" onMouseDown={() => !sharing && setShareFor(null)}>
-          <div className="modal-panel" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="modal-head">
-              <div>
-                <div className="modal-title">Shared expense</div>
-                <div className="modal-sub">Total paid {money(Math.abs(shareFor.amount))} - {shareFor.item}</div>
-              </div>
-              <button type="button" className="btn btn-ghost btn-icon" aria-label="Close" onClick={() => setShareFor(null)} disabled={sharing}>x</button>
-            </div>
-            <form onSubmit={submitShare}>
-              {shareError && <div className="form-error" role="alert">{shareError}</div>}
-              <div className="form-grid modal-form-grid">
-                <div className="field">
-                  <label className="field-label">My share</label>
-                  <input className="input" type="number" step="0.01" min="0" required
-                    placeholder="25" value={shareForm.my_share}
-                    onChange={(e) => setShareForm({ ...shareForm, my_share: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label className="field-label">Owed back</label>
-                  <input className="input" type="text" disabled
-                    value={shareForm.my_share ? money(Math.abs(shareFor.amount) - Number(shareForm.my_share)) : ""} />
-                </div>
-                <div className="field">
-                  <label className="field-label">Who owes you</label>
-                  <input className="input" type="text" placeholder="Friend" value={shareForm.counterparty}
-                    onChange={(e) => setShareForm({ ...shareForm, counterparty: e.target.value })} />
-                </div>
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setShareFor(null)} disabled={sharing}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={sharing}>{sharing ? "Saving..." : "Mark as shared"}</button>
-              </div>
-            </form>
-          </div>
+          <ClaimSplitDialog
+            transaction={shareFor}
+            saving={sharing}
+            serverError={shareError}
+            onClose={() => setShareFor(null)}
+            onSubmit={submitShare}
+          />
         </div>,
         document.body
       )}

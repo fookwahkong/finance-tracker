@@ -5,6 +5,7 @@ import Overview from "./Spending/Overview";
 import MonthVsMonth from "./Spending/MonthVsMonth";
 import Insights from "./Spending/Insights";
 import Claims from "./Spending/Claims";
+import { linksForClaims } from "../lib/claims";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -34,7 +35,7 @@ export default function Spending() {
   useEffect(() => { reloadClaims(); }, [reloadClaims]);
   useEffect(() => { getCategories().then(setCategories).catch(() => {}); }, []);
 
-  const claimLinks = claims.flatMap((c) => c.links || []);
+  const claimLinks = linksForClaims(claims);
 
   return (
     <>
@@ -64,7 +65,7 @@ export default function Spending() {
       {tab === "month" && <MonthVsMonth transactions={transactions} />}
       {tab === "insights" && <Insights />}
       {tab === "claims" && (
-        <Claims claims={claims} onChanged={() => { reload(); reloadClaims(); }} />
+        <Claims claims={claims} transactions={transactions} onChanged={() => { reload(); reloadClaims(); }} />
       )}
     </>
   );

@@ -38,5 +38,6 @@ Thumbs.db
 npm-debug.log*
 docs/*
 !docs/architecture/
+!docs/claims-participant-backend-guide.md
 .worktrees/
 graphify-out/

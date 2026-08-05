@@ -6,8 +6,14 @@ export const getClaims = (status) =>
 export const createClaim = (data) =>
   api.post("/api/claims", data).then((r) => r.data);
 
-export const linkCredit = (claimId, data) =>
-  api.post(`/api/claims/${claimId}/credits`, data).then((r) => r.data);
+export const linkCredit = (claimId, participantOrData, participantData) => {
+  if (typeof participantOrData === "string") {
+    return api
+      .post(`/api/claims/${claimId}/participants/${participantOrData}/credits`, participantData)
+      .then((r) => r.data);
+  }
+  return api.post(`/api/claims/${claimId}/credits`, participantOrData).then((r) => r.data);
+};
 
 export const unlinkCredit = (claimId, linkId) =>
   api.delete(`/api/claims/${claimId}/credits/${linkId}`);
