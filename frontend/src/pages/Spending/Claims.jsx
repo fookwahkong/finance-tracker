@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { money } from "../../lib/format";
 import { allocatedByCredit, linksForClaims, participantBalance, participantsForClaim } from "../../lib/claims";
 import { linkCredit, settleClaim, unlinkCredit } from "../../api/claims";
+import { useModalFocus } from "../../hooks/useModalFocus";
 
 const cents = (value) => Math.round(Number(value) * 100) / 100;
 
@@ -13,7 +14,15 @@ export default function Claims({ claims, transactions = [], onChanged }) {
   const [assignmentError, setAssignmentError] = useState("");
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState("");
+  const assignmentDialogRef = useRef(null);
+  const creditSelectRef = useRef(null);
   const openClaims = claims.filter((claim) => claim.status === "open");
+  useModalFocus(
+    assignmentDialogRef,
+    creditSelectRef,
+    () => setAssignment(null),
+    { open: Boolean(assignment), blocked: saving },
+  );
 
   const txById = useMemo(
     () => Object.fromEntries(transactions.map((transaction) => [transaction.id, transaction])),
@@ -44,12 +53,19 @@ export default function Claims({ claims, transactions = [], onChanged }) {
     return cents(Math.min(targetAmount, credit.available)).toFixed(2);
   }
 
-  function openAssignment(claim, participant) {
-    const firstCredit = availableCredits[0];
+  function openAssignment(claim, participant, preferredCreditId = null) {
+    const firstCredit = availableCredits.find((credit) => credit.id === preferredCreditId) || availableCredits[0];
     setAssignment({ claim, participant });
     setCreditId(firstCredit?.id || "");
     setAmount(firstCredit ? suggestedAmount(participant, firstCredit.id) : "");
     setAssignmentError("");
+  }
+
+  function dropOnParticipant(event, claim, participant) {
+    event.preventDefault();
+    const droppedCreditId = event.dataTransfer.getData("text/credit-id");
+    if (!availableCredits.some((credit) => credit.id === droppedCreditId)) return;
+    openAssignment(claim, participant, droppedCreditId);
   }
 
   function changeCredit(nextCreditId) {
@@ -180,7 +196,13 @@ export default function Claims({ claims, transactions = [], onChanged }) {
                   const balance = participantBalance(participant);
                   const percentage = Number(participant.sharePercent || 0).toFixed(2);
                   return (
-                    <article className="claim-person" aria-label={`${participant.name} repayment`} key={participant.id}>
+                    <article
+                      className="claim-person"
+                      aria-label={`${participant.name} repayment`}
+                      key={participant.id}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => dropOnParticipant(event, claim, participant)}
+                    >
                       <div className="claim-person-head">
                         <div className="split-avatar" aria-hidden="true">{participant.name.slice(0, 1).toUpperCase()}</div>
                         <div>
@@ -232,7 +254,7 @@ export default function Claims({ claims, transactions = [], onChanged }) {
 
       {assignment && createPortal(
         <div className="modal-backdrop" role="presentation" onMouseDown={() => !saving && setAssignment(null)}>
-          <div className="modal-panel repayment-modal" role="dialog" aria-modal="true" aria-labelledby="repayment-dialog-title" onMouseDown={(event) => event.stopPropagation()}>
+          <div ref={assignmentDialogRef} className="modal-panel repayment-modal" role="dialog" aria-modal="true" aria-labelledby="repayment-dialog-title" onMouseDown={(event) => event.stopPropagation()}>
             <div className="modal-head">
               <div>
                 <div className="modal-title" id="repayment-dialog-title">Assign repayment from {assignment.participant.name}</div>
@@ -249,7 +271,7 @@ export default function Claims({ claims, transactions = [], onChanged }) {
                 <div className="form-grid modal-form-grid">
                   <div className="field">
                     <label className="field-label" htmlFor="repayment-credit">Credit transaction</label>
-                    <select id="repayment-credit" className="select" value={creditId} onChange={(event) => changeCredit(event.target.value)}>
+                    <select ref={creditSelectRef} id="repayment-credit" className="select" value={creditId} onChange={(event) => changeCredit(event.target.value)}>
                       {availableCredits.map((credit) => (
                         <option value={credit.id} key={credit.id}>{credit.item} · {money(credit.available)} available</option>
                       ))}

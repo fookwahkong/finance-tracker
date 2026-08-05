@@ -72,4 +72,28 @@ describe("ClaimSplitDialog", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/valid percentage/i);
     expect(screen.getByRole("button", { name: /save shared expense/i })).toBeDisabled();
   });
+
+  it("manages focus, traps Tab, closes on Escape, and restores the trigger", () => {
+    const trigger = document.createElement("button");
+    document.body.appendChild(trigger);
+    trigger.focus();
+    const onClose = vi.fn();
+    const { unmount } = render(<ClaimSplitDialog transaction={transaction} onClose={onClose} onSubmit={vi.fn()} />);
+
+    const nameInput = screen.getByLabelText(/person's name/i);
+    expect(nameInput).toHaveFocus();
+
+    addPerson("Alex");
+    const lastButton = screen.getByRole("button", { name: /save shared expense/i });
+    lastButton.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(screen.getByRole("button", { name: /close shared expense/i })).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalled();
+
+    unmount();
+    expect(trigger).toHaveFocus();
+    trigger.remove();
+  });
 });

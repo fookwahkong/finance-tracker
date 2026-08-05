@@ -7,7 +7,7 @@ import { createClaim, linkCredit, settleClaim, reopenClaim, deleteClaim, unlinkC
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
 import { yearsInData, applyAdjustmentsToMonth } from "../../lib/aggregate";
-import { claimAdjustments, receivedTotal, remaining, variance, allocatedByCredit, claimCreatePayload } from "../../lib/claims";
+import { claimAdjustments, receivedTotal, remaining, variance, allocatedByCredit, claimCreatePayload, linksForClaims } from "../../lib/claims";
 import ClaimSplitDialog from "./ClaimSplitDialog";
 
 const METHODS = [
@@ -233,7 +233,7 @@ export default function Overview({ transactions, categories, claims = [], claimL
     if (!creditId) return;
     const credit = transactions.find((t) => t.id === creditId);
     if (!credit || credit.amount <= 0) return;
-    const links = claim.links || [];
+    const links = linksForClaims([claim]);
     const rem = remaining(claim.expected, links);
     const unallocated = credit.amount - (creditAllocations[creditId] || 0);
     if (unallocated <= 0) return;
@@ -489,9 +489,10 @@ export default function Overview({ transactions, categories, claims = [], claimL
                   {g.items.map((t) => {
                     const income = t.amount > 0;
                     const claim = claimByDebit[t.id];
+                    const claimLinks = claim ? linksForClaims([claim]) : [];
                     const creditAllocated = income ? (creditAllocations[t.id] || 0) : 0;
-                    const displayAmount = claim ? t.amount + receivedTotal(claim.links || []) : t.amount - creditAllocated;
-                    const v = claim ? variance(receivedTotal(claim.links || []), claim.expected) : 0;
+                    const displayAmount = claim ? t.amount + receivedTotal(claimLinks) : t.amount - creditAllocated;
+                    const v = claim ? variance(receivedTotal(claimLinks), claim.expected) : 0;
                     const settled = claim?.status === "settled";
                     return (
                       <div key={t.id}>
@@ -558,19 +559,21 @@ export default function Overview({ transactions, categories, claims = [], claimL
                         </div>
                         {claimByDebit[t.id] && (() => {
                           const claim = claimByDebit[t.id];
-                          const links = claim.links || [];
+                          const links = linksForClaims([claim]);
+                          const participantAware = Array.isArray(claim.participants) && claim.participants.length > 0;
                           const txById = Object.fromEntries(transactions.map((x) => [x.id, x]));
                           return (
                             <div
                               className="claim-nest"
                               style={{ marginLeft: 52, marginBottom: 8 }}
-                              onDragOver={!settled ? (e) => e.preventDefault() : undefined}
-                              onDrop={!settled ? (e) => { e.preventDefault(); onDropCredit(e, claim); } : undefined}
+                              onDragOver={!settled && !participantAware ? (e) => e.preventDefault() : undefined}
+                              onDrop={!settled && !participantAware ? (e) => { e.preventDefault(); onDropCredit(e, claim); } : undefined}
                             >
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <button type="button" className="btn btn-ghost btn-icon" onClick={() => toggleClaim(claim.id)} aria-label="Toggle linked credits">
                                   {expandedClaims[claim.id] ? "v" : ">"}
                                 </button>
+                                {participantAware && !settled && <span className="row-sub">Assign repayments to a person from the Claims tab.</span>}
                                 <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                                   {!settled && <button type="button" className="btn btn-outline" onClick={() => onSettle(claim.id)}>Close claim</button>}
                                   {settled && <button type="button" className="btn btn-ghost" onClick={() => onReopen(claim.id)}>Reopen</button>}

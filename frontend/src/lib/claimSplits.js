@@ -1,6 +1,13 @@
 const toCents = (value) => Math.round(Number(value) * 100);
 const fromCents = (value) => value / 100;
 
+export const participantNameKey = (name) => String(name)
+  .trim()
+  .normalize("NFKC")
+  .toUpperCase()
+  .toLowerCase()
+  .normalize("NFKC");
+
 function normalizedParticipant(participant, claimId) {
   return {
     id: participant.id,
@@ -29,9 +36,11 @@ export function calculateClaimSplit(total, names, ownerPercent = null) {
     errors.names = "Participant names cannot be blank.";
   }
 
-  const comparableNames = cleanNames.filter(Boolean).map((name) => name.toLocaleLowerCase());
+  const comparableNames = cleanNames.filter(Boolean).map(participantNameKey);
   if (new Set(comparableNames).size !== comparableNames.length) {
     errors.duplicates = "Each participant name must be unique.";
+  } else if (comparableNames.includes(participantNameKey("You"))) {
+    errors.duplicates = '"You" is already included as the payer.';
   }
 
   const mode = ownerPercent == null ? "equal" : "custom";

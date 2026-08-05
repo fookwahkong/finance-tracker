@@ -66,4 +66,26 @@ describe("Claims", () => {
     }));
     expect(onChanged).toHaveBeenCalled();
   });
+
+  it("opens the correct participant assignment when a credit is dropped", () => {
+    render(<Claims claims={claims} transactions={transactions} onChanged={vi.fn()} />);
+    const alex = screen.getByRole("article", { name: /alex repayment/i });
+
+    fireEvent.drop(alex, {
+      dataTransfer: { getData: () => "credit-1" },
+    });
+
+    expect(screen.getByRole("dialog", { name: /assign repayment from alex/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/credit transaction/i)).toHaveValue("credit-1");
+  });
+
+  it("focuses the repayment form and closes it with Escape", () => {
+    render(<Claims claims={claims} transactions={transactions} onChanged={vi.fn()} />);
+    const alex = screen.getByRole("article", { name: /alex repayment/i });
+    fireEvent.click(within(alex).getByRole("button", { name: /assign repayment/i }));
+
+    expect(screen.getByLabelText(/credit transaction/i)).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: /assign repayment from alex/i })).not.toBeInTheDocument();
+  });
 });

@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { money } from "../../lib/format";
-import { calculateClaimSplit } from "../../lib/claims";
+import { calculateClaimSplit, participantNameKey } from "../../lib/claims";
+import { useModalFocus } from "../../hooks/useModalFocus";
 
 export default function ClaimSplitDialog({ transaction, saving = false, serverError = "", onClose, onSubmit }) {
   const [names, setNames] = useState([]);
@@ -8,7 +9,10 @@ export default function ClaimSplitDialog({ transaction, saving = false, serverEr
   const [nameError, setNameError] = useState("");
   const [customMode, setCustomMode] = useState(false);
   const [customPercent, setCustomPercent] = useState("");
+  const dialogRef = useRef(null);
+  const nameInputRef = useRef(null);
   const total = Math.abs(Number(transaction.amount || 0));
+  useModalFocus(dialogRef, nameInputRef, onClose, { blocked: saving });
 
   const split = useMemo(
     () => calculateClaimSplit(
@@ -25,7 +29,11 @@ export default function ClaimSplitDialog({ transaction, saving = false, serverEr
       setNameError("Enter a name before adding this person.");
       return;
     }
-    if (names.some((name) => name.toLocaleLowerCase() === cleanName.toLocaleLowerCase())) {
+    if (participantNameKey(cleanName) === participantNameKey("You")) {
+      setNameError('"You" is already included as the payer.');
+      return;
+    }
+    if (names.some((name) => participantNameKey(name) === participantNameKey(cleanName))) {
       setNameError("Each participant name must be unique.");
       return;
     }
@@ -58,7 +66,7 @@ export default function ClaimSplitDialog({ transaction, saving = false, serverEr
   const splitErrors = Object.values(split.errors);
 
   return (
-    <div className="modal-panel claim-split-modal" role="dialog" aria-modal="true" aria-labelledby="claim-split-title" onMouseDown={(event) => event.stopPropagation()}>
+    <div ref={dialogRef} className="modal-panel claim-split-modal" role="dialog" aria-modal="true" aria-labelledby="claim-split-title" onMouseDown={(event) => event.stopPropagation()}>
       <div className="modal-head">
         <div>
           <div className="modal-title" id="claim-split-title">Split this expense</div>
@@ -123,6 +131,7 @@ export default function ClaimSplitDialog({ transaction, saving = false, serverEr
           <div className="field">
             <label className="field-label" htmlFor="claim-person-name">Person&apos;s name</label>
             <input
+              ref={nameInputRef}
               id="claim-person-name"
               className="input"
               type="text"

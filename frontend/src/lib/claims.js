@@ -2,7 +2,7 @@
 // subtracting min(received, expected) from both its category's spending and
 // from income, in the debit's month. See lib/aggregate.js for application.
 
-export { calculateClaimSplit, participantsForClaim, participantBalance, claimCreatePayload, linksForClaims } from "./claimSplits";
+export { calculateClaimSplit, participantsForClaim, participantBalance, claimCreatePayload, linksForClaims, participantNameKey } from "./claimSplits";
 
 export function receivedTotal(links) {
   return links.reduce((sum, l) => sum + Number(l.allocated_amount), 0);

@@ -114,6 +114,13 @@ describe("calculateClaimSplit", () => {
     expect(split.errors.duplicates).toMatch(/unique/i);
   });
 
+  it("reserves You for the payer participant", () => {
+    const split = claimMath.calculateClaimSplit(100, [" you "]);
+
+    expect(split.valid).toBe(false);
+    expect(split.errors.duplicates).toMatch(/already included/i);
+  });
+
   it("rejects custom owner percentages outside the claim range", () => {
     expect(claimMath.calculateClaimSplit(100, ["Alex"], 100).errors.ownerPercent).toMatch(/less than 100/i);
     expect(claimMath.calculateClaimSplit(100, ["Alex"], -1).errors.ownerPercent).toMatch(/at least 0/i);
