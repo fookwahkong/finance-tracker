@@ -4,6 +4,7 @@ import { money } from "../../lib/format";
 import { allocatedByCredit, linksForClaims, participantBalance, participantsForClaim } from "../../lib/claims";
 import { linkCredit, settleClaim, unlinkCredit } from "../../api/claims";
 import { useModalFocus } from "../../hooks/useModalFocus";
+import { dragPreviewPosition, useClaimDrag } from "../../hooks/useClaimDrag";
 
 const cents = (value) => Math.round(Number(value) * 100) / 100;
 
@@ -14,9 +15,11 @@ export default function Claims({ claims, transactions = [], onChanged }) {
   const [assignmentError, setAssignmentError] = useState("");
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [dropTargetId, setDropTargetId] = useState(null);
   const assignmentDialogRef = useRef(null);
   const creditSelectRef = useRef(null);
   const openClaims = claims.filter((claim) => claim.status === "open");
+  const { dragPreview, startDrag, moveDrag, endDrag } = useClaimDrag();
   useModalFocus(
     assignmentDialogRef,
     creditSelectRef,
@@ -64,6 +67,8 @@ export default function Claims({ claims, transactions = [], onChanged }) {
   function dropOnParticipant(event, claim, participant) {
     event.preventDefault();
     const droppedCreditId = event.dataTransfer.getData("text/credit-id");
+    setDropTargetId(null);
+    endDrag();
     if (!availableCredits.some((credit) => credit.id === droppedCreditId)) return;
     openAssignment(claim, participant, droppedCreditId);
   }
@@ -175,7 +180,12 @@ export default function Claims({ claims, transactions = [], onChanged }) {
                 role="listitem"
                 aria-label={`Drag ${credit.item} repayment`}
                 draggable
-                onDragStart={(event) => event.dataTransfer.setData("text/credit-id", credit.id)}
+                onDragStart={(event) => startDrag(event, credit)}
+                onDrag={moveDrag}
+                onDragEnd={() => {
+                  setDropTargetId(null);
+                  endDrag();
+                }}
                 key={credit.id}
               >
                 <span aria-hidden="true">↕</span>
@@ -223,12 +233,20 @@ export default function Claims({ claims, transactions = [], onChanged }) {
                 {people.map((participant) => {
                   const balance = participantBalance(participant);
                   const percentage = Number(participant.sharePercent || 0).toFixed(2);
+                  const participantTargetId = `${claim.id}:${participant.id}`;
                   return (
                     <article
-                      className="claim-person"
+                      className={`claim-person${dropTargetId === participantTargetId ? " is-drag-target" : ""}`}
                       aria-label={`${participant.name} repayment`}
                       key={participant.id}
                       onDragOver={(event) => event.preventDefault()}
+                      onDragEnter={(event) => {
+                        event.preventDefault();
+                        if (dragPreview) setDropTargetId(participantTargetId);
+                      }}
+                      onDragLeave={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget)) setDropTargetId(null);
+                      }}
                       onDrop={(event) => dropOnParticipant(event, claim, participant)}
                     >
                       <div className="claim-person-head">
@@ -279,6 +297,26 @@ export default function Claims({ claims, transactions = [], onChanged }) {
           );
         })}
       </div>
+
+      {dragPreview && createPortal(
+        <div
+          className="claim-drag-preview"
+          data-testid="claim-drag-preview"
+          aria-hidden="true"
+          style={dragPreviewPosition(
+            dragPreview.x,
+            dragPreview.y,
+            window.innerWidth,
+            window.innerHeight,
+          )}
+        >
+          <span>Repayment</span>
+          <strong>{dragPreview.credit.item}</strong>
+          <small>{dragPreview.credit.date || "Credit transaction"}</small>
+          <b>{money(dragPreview.credit.available)}</b>
+        </div>,
+        document.body,
+      )}
 
       {assignment && createPortal(
         <div className="modal-backdrop" role="presentation" onMouseDown={() => !saving && setAssignment(null)}>
