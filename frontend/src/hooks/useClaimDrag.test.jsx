@@ -1,0 +1,69 @@
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { edgeScrollSpeed, useClaimDrag } from "./useClaimDrag";
+
+describe("edgeScrollSpeed", () => {
+  it("returns proportional speed only inside viewport edge zones", () => {
+    expect(edgeScrollSpeed(200, 800)).toBe(0);
+    expect(edgeScrollSpeed(48, 800)).toBe(-9);
+    expect(edgeScrollSpeed(752, 800)).toBe(9);
+  });
+
+  it("ignores missing drag coordinates", () => {
+    expect(edgeScrollSpeed(0, 800)).toBe(0);
+    expect(edgeScrollSpeed(undefined, 800)).toBe(0);
+  });
+});
+
+describe("useClaimDrag", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("tracks a preview, scrolls at an edge, and clears everything on drag end", () => {
+    let frame;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frame = callback;
+      return 7;
+    });
+    const cancel = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    const scroll = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    const { result } = renderHook(() => useClaimDrag());
+    const setDragImage = vi.fn();
+    const setData = vi.fn();
+    const credit = { id: "credit-1", item: "PayNow", amount: 50 };
+
+    act(() => result.current.startDrag({
+      clientX: 120,
+      clientY: 100,
+      dataTransfer: { setData, setDragImage },
+    }, credit));
+
+    expect(result.current.dragPreview).toMatchObject({ credit, x: 120, y: 100 });
+    expect(setData).toHaveBeenCalledWith("text/credit-id", "credit-1");
+    expect(setDragImage).toHaveBeenCalled();
+
+    act(() => result.current.moveDrag({ clientX: 140, clientY: window.innerHeight - 10 }));
+    act(() => frame());
+    expect(scroll).toHaveBeenCalledWith(0, expect.any(Number));
+
+    act(() => result.current.endDrag());
+    expect(result.current.dragPreview).toBeNull();
+    expect(cancel).toHaveBeenCalledWith(7);
+  });
+
+  it("cancels scheduled edge scrolling when unmounted", () => {
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 9);
+    const cancel = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    const { result, unmount } = renderHook(() => useClaimDrag());
+
+    act(() => result.current.startDrag({
+      clientX: 80,
+      clientY: 80,
+      dataTransfer: { setData: vi.fn(), setDragImage: vi.fn() },
+    }, { id: "credit-1" }));
+    act(() => result.current.moveDrag({ clientX: 80, clientY: window.innerHeight - 5 }));
+    unmount();
+
+    expect(cancel).toHaveBeenCalledWith(9);
+  });
+});
