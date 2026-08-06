@@ -13,17 +13,20 @@ export function dragPreviewPosition(
   const maxLeft = Math.max(offset, viewportWidth - renderedWidth - offset);
   const left = Math.min(Math.max(offset, clientX + offset), maxLeft);
   const fitsBelow = clientY + offset + previewHeight <= viewportHeight - offset;
-  const top = fitsBelow ? clientY + offset : Math.max(offset, clientY - previewHeight - offset);
+  const top = fitsBelow
+    ? Math.max(offset, clientY + offset)
+    : Math.max(offset, clientY - previewHeight - offset);
   return { left, top };
 }
 
 export function edgeScrollSpeed(clientY, viewportHeight, edgeSize = 96, maxSpeed = 18) {
-  if (!(clientY > 0) || !(viewportHeight > 0)) return 0;
-  if (clientY < edgeSize) {
-    return -Math.round(maxSpeed * (edgeSize - clientY) / edgeSize);
+  if (!Number.isFinite(clientY) || clientY === 0 || !(viewportHeight > 0)) return 0;
+  const boundedY = Math.min(Math.max(clientY, 0), viewportHeight);
+  if (boundedY < edgeSize) {
+    return -Math.round(maxSpeed * (edgeSize - boundedY) / edgeSize);
   }
-  if (clientY > viewportHeight - edgeSize) {
-    return Math.round(maxSpeed * (clientY - (viewportHeight - edgeSize)) / edgeSize);
+  if (boundedY > viewportHeight - edgeSize) {
+    return Math.round(maxSpeed * (boundedY - (viewportHeight - edgeSize)) / edgeSize);
   }
   return 0;
 }
@@ -36,8 +39,21 @@ export function useClaimDrag() {
 
   const runScrollFrame = useCallback(function runScrollFrame() {
     frameRef.current = null;
-    if (!speedRef.current) return;
-    window.scrollBy(0, speedRef.current);
+    const speed = speedRef.current;
+    if (!speed) return;
+
+    const documentHeight = Math.max(
+      document.documentElement.scrollHeight,
+      document.body?.scrollHeight || 0,
+    );
+    const maxScrollY = Math.max(0, documentHeight - window.innerHeight);
+    const atBoundary = speed < 0 ? window.scrollY <= 0 : window.scrollY >= maxScrollY;
+    if (atBoundary) {
+      speedRef.current = 0;
+      return;
+    }
+
+    window.scrollBy(0, speed);
     frameRef.current = window.requestAnimationFrame(runScrollFrame);
   }, []);
 
@@ -51,7 +67,7 @@ export function useClaimDrag() {
 
   const moveDrag = useCallback((event) => {
     const { clientX, clientY } = event;
-    if (!activeRef.current || !(clientY > 0)) return;
+    if (!activeRef.current || !Number.isFinite(clientY) || clientY === 0) return;
 
     setDragPreview((current) => current ? { ...current, x: clientX, y: clientY } : current);
     const nextSpeed = edgeScrollSpeed(clientY, window.innerHeight);

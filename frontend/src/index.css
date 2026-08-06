@@ -1154,7 +1154,13 @@ a { color: inherit; }
   will-change: left, top;
 }
 .claim-drag-preview > span,
-.claim-drag-preview > small { color: var(--muted); font-size: 11px; }
+.claim-drag-preview > small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .claim-drag-preview > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .claim-drag-preview > b { grid-column: 2; grid-row: 1 / span 3; align-self: center; color: var(--teal); }
 

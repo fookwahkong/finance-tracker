@@ -6,6 +6,7 @@ describe("dragPreviewPosition", () => {
   it("keeps the preview visible and flips it above a bottom-edge pointer", () => {
     expect(dragPreviewPosition(120, 120, 1024, 768)).toEqual({ left: 134, top: 134 });
     expect(dragPreviewPosition(1000, 760, 1024, 768)).toEqual({ left: 730, top: 658 });
+    expect(dragPreviewPosition(-40, -40, 1024, 768)).toEqual({ left: 14, top: 14 });
   });
 });
 
@@ -20,6 +21,11 @@ describe("edgeScrollSpeed", () => {
     expect(edgeScrollSpeed(0, 800)).toBe(0);
     expect(edgeScrollSpeed(undefined, 800)).toBe(0);
   });
+
+  it("caps coordinates beyond the viewport at the maximum speed", () => {
+    expect(edgeScrollSpeed(-50, 800)).toBe(-18);
+    expect(edgeScrollSpeed(850, 800)).toBe(18);
+  });
 });
 
 describe("useClaimDrag", () => {
@@ -33,6 +39,7 @@ describe("useClaimDrag", () => {
     });
     const cancel = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
     const scroll = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    vi.spyOn(document.documentElement, "scrollHeight", "get").mockReturnValue(2000);
     const { result } = renderHook(() => useClaimDrag());
     const setDragImage = vi.fn();
     const setData = vi.fn();
@@ -72,5 +79,32 @@ describe("useClaimDrag", () => {
     unmount();
 
     expect(cancel).toHaveBeenCalledWith(9);
+  });
+
+  it.each([
+    { edge: "top", scrollY: 0, clientY: 1 },
+    { edge: "bottom", scrollY: 1232, clientY: 767 },
+  ])("stops scheduling frames at the document $edge boundary", ({ scrollY, clientY }) => {
+    let frame;
+    const requestFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frame = callback;
+      return 11;
+    });
+    const scroll = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(768);
+    vi.spyOn(window, "scrollY", "get").mockReturnValue(scrollY);
+    vi.spyOn(document.documentElement, "scrollHeight", "get").mockReturnValue(2000);
+    const { result } = renderHook(() => useClaimDrag());
+
+    act(() => result.current.startDrag({
+      clientX: 80,
+      clientY: 120,
+      dataTransfer: { setData: vi.fn(), setDragImage: vi.fn() },
+    }, { id: "credit-1" }));
+    act(() => result.current.moveDrag({ clientX: 80, clientY }));
+    act(() => frame());
+
+    expect(scroll).not.toHaveBeenCalled();
+    expect(requestFrame).toHaveBeenCalledTimes(1);
   });
 });
