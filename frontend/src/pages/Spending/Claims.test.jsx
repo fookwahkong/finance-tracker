@@ -1,14 +1,5 @@
-import { createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-
-const apiMocks = vi.hoisted(() => ({
-  settleClaim: vi.fn().mockResolvedValue({}),
-  linkCredit: vi.fn().mockResolvedValue({}),
-  unlinkCredit: vi.fn().mockResolvedValue({}),
-}));
-
-vi.mock("../../api/claims", () => apiMocks);
-
 import Claims from "./Claims";
 
 const claims = [{
@@ -47,77 +38,13 @@ describe("Claims", () => {
     expect(within(sam).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100");
   });
 
-  it("assigns a selected credit to a specific participant", async () => {
-    apiMocks.linkCredit.mockClear();
-    const onChanged = vi.fn();
-    render(<Claims claims={claims} transactions={transactions} onChanged={onChanged} />);
-
-    const alex = screen.getByRole("article", { name: /alex repayment/i });
-    fireEvent.click(within(alex).getByRole("button", { name: /assign repayment/i }));
-
-    expect(screen.getByRole("dialog", { name: /assign repayment from alex/i })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/credit transaction/i), { target: { value: "credit-1" } });
-    fireEvent.change(screen.getByLabelText(/amount to assign/i), { target: { value: "10" } });
-    fireEvent.click(screen.getByRole("button", { name: /assign \$10\.00/i }));
-
-    await waitFor(() => expect(apiMocks.linkCredit).toHaveBeenCalledWith("claim-1", "alex-1", {
-      credit_tx_id: "credit-1",
-      allocated_amount: 10,
-    }));
-    expect(onChanged).toHaveBeenCalled();
-  });
-
-  it("opens the correct participant assignment when a credit is dropped", () => {
+  it("does not expose repayment assignment or linked repayment controls", () => {
     render(<Claims claims={claims} transactions={transactions} onChanged={vi.fn()} />);
-    const alex = screen.getByRole("article", { name: /alex repayment/i });
-    const draggedCredit = screen.getByLabelText(/drag available paynow repayment/i);
-    const dragData = new Map();
-    const dataTransfer = {
-      setData: (type, value) => dragData.set(type, value),
-      getData: (type) => dragData.get(type) || "",
-      setDragImage: vi.fn(),
-    };
 
-    const dragStart = createEvent.dragStart(draggedCredit, { dataTransfer });
-    Object.defineProperties(dragStart, {
-      clientX: { value: 120 },
-      clientY: { value: 120 },
-    });
-    fireEvent(draggedCredit, dragStart);
-
-    const preview = screen.getByTestId("claim-drag-preview");
-    expect(within(preview).getByText("Available PayNow")).toBeInTheDocument();
-    expect(within(preview).getByText("2026-08-03")).toBeInTheDocument();
-    expect(within(preview).getByText("$50.00")).toBeInTheDocument();
-    expect(preview).toHaveStyle({ left: "134px", top: "134px" });
-
-    const dragMove = createEvent.drag(draggedCredit);
-    Object.defineProperties(dragMove, {
-      clientX: { value: 180 },
-      clientY: { value: 200 },
-    });
-    fireEvent(draggedCredit, dragMove);
-    expect(preview).toHaveStyle({ left: "194px", top: "214px" });
-
-    fireEvent.dragEnter(alex);
-    expect(alex).toHaveClass("is-drag-target");
-    fireEvent.dragLeave(alex, { relatedTarget: document.body });
-    expect(alex).not.toHaveClass("is-drag-target");
-
-    fireEvent.drop(alex, { dataTransfer });
-
+    expect(screen.queryByText(/available repayments/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /assign repayment/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Alex PayNow")).not.toBeInTheDocument();
     expect(screen.queryByTestId("claim-drag-preview")).not.toBeInTheDocument();
-    expect(screen.getByRole("dialog", { name: /assign repayment from alex/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/credit transaction/i)).toHaveValue("credit-1");
-  });
-
-  it("focuses the repayment form and closes it with Escape", () => {
-    render(<Claims claims={claims} transactions={transactions} onChanged={vi.fn()} />);
-    const alex = screen.getByRole("article", { name: /alex repayment/i });
-    fireEvent.click(within(alex).getByRole("button", { name: /assign repayment/i }));
-
-    expect(screen.getByLabelText(/credit transaction/i)).toHaveFocus();
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: /assign repayment from alex/i })).not.toBeInTheDocument();
   });
 });

@@ -79,15 +79,33 @@ create table if not exists claims (
 -- One claim per debit.
 create unique index if not exists claims_debit_tx_id_key on claims (debit_tx_id);
 
+-- Each person in a claim has an independently tracked share and repayment balance.
+create table if not exists claim_participants (
+  id uuid primary key default gen_random_uuid(),
+  claim_id uuid not null references claims(id) on delete cascade,
+  name text not null,
+  is_owner boolean not null default false,
+  share_amount numeric not null check (share_amount >= 0),
+  share_percent numeric not null check (share_percent >= 0 and share_percent < 100),
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists claim_participants_one_owner_idx
+  on claim_participants (claim_id) where is_owner;
+create unique index if not exists claim_participants_name_idx
+  on claim_participants (claim_id, lower(name));
+
 -- Many-to-many link between a claim and the reimbursement credits applied to it.
 create table if not exists claim_credits (
   id uuid primary key default gen_random_uuid(),
   claim_id uuid not null references claims(id) on delete cascade,
+  participant_id uuid not null references claim_participants(id) on delete cascade,
   credit_tx_id uuid not null references transactions(id) on delete cascade,
   allocated_amount numeric not null check (allocated_amount > 0)
 );
 
 create index if not exists claim_credits_claim_id_idx on claim_credits (claim_id);
+create index if not exists claim_credits_participant_id_idx on claim_credits (participant_id);
 create index if not exists claim_credits_credit_tx_id_idx on claim_credits (credit_tx_id);
 
 -- ── Investment transactions ─────────────────────────────────────────

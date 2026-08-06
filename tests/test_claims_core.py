@@ -83,3 +83,35 @@ def test_settlement_effects_multi_credit():
     eff = claims.settlement_effects(claim, _links(40, 35))
     assert eff["variance_line"] == 0
     assert eff["excluded_income"] == 75
+
+
+def test_participant_split_equal_preserves_each_cent():
+    participants = claims.participant_split(100, ["Alex", "Sam"], "equal")
+
+    assert participants == [
+        {"name": "You", "is_owner": True, "share_amount": 33.34, "share_percent": 100 / 3},
+        {"name": "Alex", "is_owner": False, "share_amount": 33.33, "share_percent": 100 / 3},
+        {"name": "Sam", "is_owner": False, "share_amount": 33.33, "share_percent": 100 / 3},
+    ]
+
+
+def test_participant_split_custom_owner_percentage():
+    participants = claims.participant_split(100, ["Alex", "Sam"], "custom", 40)
+
+    assert [participant["share_amount"] for participant in participants] == [40, 30, 30]
+    assert [participant["share_percent"] for participant in participants] == [40, 30, 30]
+
+
+def test_participant_split_rejects_invalid_names_and_percentages():
+    for names, mode, percentage in [
+        ([], "equal", None),
+        (["  "], "equal", None),
+        (["Alex", "alex"], "equal", None),
+        (["You"], "equal", None),
+        (["Alex"], "custom", 100),
+    ]:
+        try:
+            claims.participant_split(100, names, mode, percentage)
+        except ValueError:
+            continue
+        raise AssertionError("Expected invalid participant split to raise ValueError")

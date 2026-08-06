@@ -3,12 +3,14 @@ import { createPortal } from "react-dom";
 import {
   createTransaction, updateTransaction, deleteTransaction,
 } from "../../api/client";
-import { createClaim, linkCredit, settleClaim, reopenClaim, deleteClaim, unlinkCredit } from "../../api/claims";
+import { createClaim, linkCredit, settleClaim, reopenClaim, deleteClaim } from "../../api/claims";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
 import { yearsInData, applyAdjustmentsToMonth } from "../../lib/aggregate";
-import { claimAdjustments, receivedTotal, remaining, variance, allocatedByCredit, claimCreatePayload, linksForClaims } from "../../lib/claims";
+import { claimAdjustments, receivedTotal, variance, allocatedByCredit, claimCreatePayload, linksForClaims, participantBalance, participantsForClaim } from "../../lib/claims";
 import ClaimSplitDialog from "./ClaimSplitDialog";
+import ClaimRepaymentDialog from "./ClaimRepaymentDialog";
+import { dragPreviewPosition, useClaimDrag } from "../../hooks/useClaimDrag";
 
 const METHODS = [
   { value: "cash", label: "Cash" },
@@ -46,6 +48,11 @@ export default function Overview({ transactions, categories, claims = [], claimL
   const [shareError, setShareError] = useState("");
   const [sharing, setSharing] = useState(false);
   const [expandedClaims, setExpandedClaims] = useState({});
+  const [repayment, setRepayment] = useState(null);
+  const [repaymentSaving, setRepaymentSaving] = useState(false);
+  const [repaymentError, setRepaymentError] = useState("");
+  const [dropTargetId, setDropTargetId] = useState(null);
+  const { dragPreview, startDrag, moveDrag, endDrag } = useClaimDrag();
 
   const years = useMemo(() => yearsInData(transactions), [transactions]);
 
@@ -61,6 +68,14 @@ export default function Overview({ transactions, categories, claims = [], claimL
     () => allocatedByCredit(claimLinks),
     [claimLinks]
   )
+
+  const availableCredits = useMemo(() => transactions
+    .filter((transaction) => Number(transaction.amount) > 0)
+    .map((transaction) => ({
+      ...transaction,
+      available: Math.round((Number(transaction.amount) - (creditAllocations[transaction.id] || 0)) * 100) / 100,
+    }))
+    .filter((transaction) => transaction.available > 0), [transactions, creditAllocations]);
 
   const claimByDebit = useMemo(() => {
     const map = {};
@@ -224,29 +239,34 @@ export default function Overview({ transactions, categories, claims = [], claimL
     reloadClaims?.();
   }
 
-  async function onUnlink(claimId, linkId) {
-    await unlinkCredit(claimId, linkId);
-    reloadClaims?.();
+  function openRepayment(claim, participant, creditId) {
+    if (!availableCredits.some((credit) => credit.id === creditId)) return;
+    setRepayment({ claim, participant, creditId });
+    setRepaymentError("");
   }
-  async function onDropCredit(e, claim) {
-    const creditId = e.dataTransfer.getData("text/credit-id");
-    if (!creditId) return;
-    const credit = transactions.find((t) => t.id === creditId);
-    if (!credit || credit.amount <= 0) return;
-    const links = linksForClaims([claim]);
-    const rem = remaining(claim.expected, links);
-    const unallocated = credit.amount - (creditAllocations[creditId] || 0);
-    if (unallocated <= 0) return;
-    const suggested = rem > 0 ? Math.min(unallocated, rem) : unallocated;
-    const input = window.prompt(`How much of this ${money(credit.amount)} credit is for this claim? (${money(unallocated)} still unclaimed)`, String(suggested));
-    if (input == null) return;
-    const allocated = Number(input);
-    if (!(allocated > 0)) return;
+
+  function dropOnParticipant(event, claim, participant) {
+    event.preventDefault();
+    const creditId = event.dataTransfer.getData("text/credit-id");
+    setDropTargetId(null);
+    endDrag();
+    openRepayment(claim, participant, creditId);
+  }
+
+  async function submitRepayment(data) {
+    if (!repayment) return;
+    setRepaymentSaving(true);
+    setRepaymentError("");
     try {
-      await linkCredit(claim.id, { credit_tx_id: creditId, allocated_amount: allocated });
+      await linkCredit(repayment.claim.id, repayment.participant.id, data);
+      setRepayment(null);
       reloadClaims?.();
+      onChanged?.();
     } catch (err) {
-      window.alert(err?.response?.data?.detail || "Unable to link credit.");
+      const detail = err?.response?.data?.detail;
+      setRepaymentError(typeof detail === "string" ? detail : "Unable to assign this repayment.");
+    } finally {
+      setRepaymentSaving(false);
     }
   }
   async function handleDelete(id) {
@@ -462,20 +482,7 @@ export default function Overview({ transactions, categories, claims = [], claimL
           </section>
 
           {/* Transactions by date */}
-          <section
-            className="card"
-            onDragOver={(e) => { if (e.dataTransfer.types.includes("text/link-id")) e.preventDefault(); }}
-            onDrop={(e) => {
-              if (!e.dataTransfer.types.includes("text/link-id")) return;
-              if (e.target.closest(".claim-nest")) return;
-              e.preventDefault();
-              const linkId = e.dataTransfer.getData("text/link-id");
-              const claimId = e.dataTransfer.getData("text/claim-id");
-              if (!linkId || !claimId) return;
-              if (!window.confirm("Unlink this credit from the claim?")) return;
-              onUnlink(claimId, linkId);
-            }}
-          >
+          <section className="card">
             <div className="card-head">
               <div className="card-title">Transactions by Date</div>
               <span className="pill" style={{ marginLeft: "auto" }}>{monthLabel(month)} · {catFilter === "all" ? "All categories" : catFilter}</span>
@@ -498,8 +505,16 @@ export default function Overview({ transactions, categories, claims = [], claimL
                       <div key={t.id}>
                         <div
                           className="row"
-                          draggable={t.amount > 0}
-                          onDragStart={t.amount > 0 ? (e) => { e.dataTransfer.setData("text/credit-id", t.id); } : undefined}
+                          draggable={income && creditAllocated < t.amount}
+                          onDragStart={income && creditAllocated < t.amount ? (event) => startDrag(event, {
+                            ...t,
+                            available: Math.round((t.amount - creditAllocated) * 100) / 100,
+                          }) : undefined}
+                          onDrag={income ? moveDrag : undefined}
+                          onDragEnd={income ? () => {
+                            setDropTargetId(null);
+                            endDrag();
+                          } : undefined}
                         >
                           <div className="row-ico" style={{ background: income ? "var(--green-soft)" : "var(--teal-soft)" }}>
                             {emojiFor(t.category)}
@@ -559,45 +574,56 @@ export default function Overview({ transactions, categories, claims = [], claimL
                         </div>
                         {claimByDebit[t.id] && (() => {
                           const claim = claimByDebit[t.id];
-                          const links = linksForClaims([claim]);
-                          const participantAware = Array.isArray(claim.participants) && claim.participants.length > 0;
-                          const txById = Object.fromEntries(transactions.map((x) => [x.id, x]));
+                          const people = participantsForClaim(claim).filter((participant) => !participant.isOwner);
                           return (
-                            <div
-                              className="claim-nest"
-                              style={{ marginLeft: 52, marginBottom: 8 }}
-                              onDragOver={!settled && !participantAware ? (e) => e.preventDefault() : undefined}
-                              onDrop={!settled && !participantAware ? (e) => { e.preventDefault(); onDropCredit(e, claim); } : undefined}
-                            >
+                            <div className="claim-nest" style={{ marginLeft: 52, marginBottom: 8 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <button type="button" className="btn btn-ghost btn-icon" onClick={() => toggleClaim(claim.id)} aria-label="Toggle linked credits">
                                   {expandedClaims[claim.id] ? "v" : ">"}
                                 </button>
-                                {participantAware && !settled && <span className="row-sub">Assign repayments to a person from the Claims tab.</span>}
+                                {!settled && <span className="row-sub">Drag a repayment onto the person who paid you.</span>}
                                 <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                                   {!settled && <button type="button" className="btn btn-outline" onClick={() => onSettle(claim.id)}>Close claim</button>}
                                   {settled && <button type="button" className="btn btn-ghost" onClick={() => onReopen(claim.id)}>Reopen</button>}
                                   {!settled && <button type="button" className="btn btn-outline" onClick={() => onDelete(claim.id)}>Delete</button>}
                                 </span>
                               </div>
-                              {expandedClaims[claim.id] && links.map((l) => {
-                                const credit = txById[l.credit_tx_id];
+                              {expandedClaims[claim.id] && people.map((participant) => {
+                                const balance = participantBalance(participant);
+                                const participantTargetId = `${claim.id}:${participant.id}`;
                                 return (
-                                  <div
-                                    className="row"
-                                    key={l.id}
-                                    style={{ paddingLeft: 12 }}
-                                    draggable={!settled}
-                                    onDragStart={!settled ? (e) => {
-                                      e.dataTransfer.setData("text/link-id", l.id);
-                                      e.dataTransfer.setData("text/claim-id", claim.id);
+                                  <article
+                                    className={`claim-person claim-person-in-overview${dropTargetId === participantTargetId ? " is-drag-target" : ""}`}
+                                    aria-label={`${participant.name} repayment`}
+                                    key={participant.id}
+                                    onDragOver={!settled ? (event) => event.preventDefault() : undefined}
+                                    onDragEnter={!settled ? (event) => {
+                                      event.preventDefault();
+                                      if (dragPreview) setDropTargetId(participantTargetId);
                                     } : undefined}
+                                    onDragLeave={!settled ? (event) => {
+                                      if (!event.currentTarget.contains(event.relatedTarget)) setDropTargetId(null);
+                                    } : undefined}
+                                    onDrop={!settled ? (event) => dropOnParticipant(event, claim, participant) : undefined}
                                   >
-                                    <div style={{ minWidth: 0, flex: 1 }}>
-                                      <div className="row-name">{credit ? credit.item : "Linked credit"}</div>
-                                      <div className="row-sub">{credit ? credit.date : ""} - allocated {money(l.allocated_amount)}</div>
+                                    <div className="claim-person-head">
+                                      <div className="split-avatar" aria-hidden="true">{participant.name.slice(0, 1).toUpperCase()}</div>
+                                      <div>
+                                        <h3>{participant.name}</h3>
+                                        <span>{Number(participant.sharePercent || 0).toFixed(2)}% of this expense</span>
+                                      </div>
                                     </div>
-                                  </div>
+                                    <div className="claim-person-progress" role="progressbar" aria-label={`${participant.name} repayment progress`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(balance.progress * 100)}>
+                                      <span style={{ width: `${balance.progress * 100}%` }} />
+                                    </div>
+                                    <div className="claim-person-metrics">
+                                      <div><span>Owed</span><strong>{money(balance.owed)}</strong></div>
+                                      <div><span>Received</span><strong>{money(balance.received)}</strong></div>
+                                      {balance.overpaid > 0
+                                        ? <div className="is-overpaid"><span>Overpaid</span><strong>{money(balance.overpaid)}</strong></div>
+                                        : <div><span>Remaining</span><strong>{money(balance.remaining)}</strong></div>}
+                                    </div>
+                                  </article>
                                 );
                               })}
                             </div>
@@ -610,6 +636,36 @@ export default function Overview({ transactions, categories, claims = [], claimL
               ))
             )}
           </section>
+          {dragPreview && createPortal(
+            <div
+              className="claim-drag-preview"
+              data-testid="claim-drag-preview"
+              aria-hidden="true"
+              style={dragPreviewPosition(
+                dragPreview.x,
+                dragPreview.y,
+                window.innerWidth,
+                window.innerHeight,
+              )}
+            >
+              <span>Repayment</span>
+              <strong>{dragPreview.credit.item}</strong>
+              <small>{dragPreview.credit.date || "Credit transaction"}</small>
+              <b>{money(dragPreview.credit.available)}</b>
+            </div>,
+            document.body,
+          )}
+          {repayment && (
+            <ClaimRepaymentDialog
+              credits={availableCredits}
+              initialCreditId={repayment.creditId}
+              participant={repayment.participant}
+              saving={repaymentSaving}
+              serverError={repaymentError}
+              onClose={() => !repaymentSaving && setRepayment(null)}
+              onSubmit={submitRepayment}
+            />
+          )}
         </>
       )}
     </>

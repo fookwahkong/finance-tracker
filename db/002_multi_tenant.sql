@@ -11,6 +11,7 @@ alter table budgets            add column if not exists user_id uuid references 
 alter table subscriptions      add column if not exists user_id uuid references auth.users(id);
 alter table net_worth          add column if not exists user_id uuid references auth.users(id);
 alter table claims             add column if not exists user_id uuid references auth.users(id);
+alter table claim_participants add column if not exists user_id uuid references auth.users(id);
 alter table claim_credits      add column if not exists user_id uuid references auth.users(id);
 alter table invest_transactions add column if not exists user_id uuid references auth.users(id);
 alter table watchlist          add column if not exists user_id uuid references auth.users(id);
@@ -22,6 +23,7 @@ update budgets             set user_id = '5b71d84c-6fa3-4b2b-9b43-edb1813e53ed' 
 update subscriptions       set user_id = '5b71d84c-6fa3-4b2b-9b43-edb1813e53ed' where user_id is null;
 update net_worth           set user_id = '5b71d84c-6fa3-4b2b-9b43-edb1813e53ed' where user_id is null;
 update claims              set user_id = '5b71d84c-6fa3-4b2b-9b43-edb1813e53ed' where user_id is null;
+update claim_participants set user_id = '5b71d84c-6fa3-4b2b-9b43-edb1813e53ed' where user_id is null;
 update claim_credits       set user_id = '5b71d84c-6fa3-4b2b-9b43-edb1813e53ed' where user_id is null;
 update invest_transactions set user_id = '5b71d84c-6fa3-4b2b-9b43-edb1813e53ed' where user_id is null;
 update watchlist           set user_id = '5b71d84c-6fa3-4b2b-9b43-edb1813e53ed' where user_id is null;
@@ -33,7 +35,7 @@ declare t text;
 begin
   foreach t in array array[
     'transactions','budgets','subscriptions','net_worth','claims',
-    'claim_credits','invest_transactions','watchlist','categories'
+    'claim_participants','claim_credits','invest_transactions','watchlist','categories'
   ] loop
     execute format('alter table %I alter column user_id set not null', t);
     execute format('alter table %I alter column user_id set default auth.uid()', t);
@@ -59,7 +61,7 @@ declare t text;
 begin
   foreach t in array array[
     'transactions','budgets','subscriptions','net_worth','claims',
-    'claim_credits','invest_transactions','watchlist','categories'
+    'claim_participants','claim_credits','invest_transactions','watchlist','categories'
   ] loop
     execute format('alter table %I enable row level security', t);
     execute format('drop policy if exists %I_owner on %I', t, t);

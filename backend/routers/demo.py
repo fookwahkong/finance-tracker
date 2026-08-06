@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 
-from backend.demo_seed import build_claims, seed_rows
+from backend.demo_seed import build_claim_participants, build_claims, seed_rows
 from core.db import supabase
 
 router = APIRouter()
@@ -11,6 +11,7 @@ router = APIRouter()
 # Delete children before parents to respect FK constraints.
 _WIPE_ORDER = [
     "claim_credits",
+    "claim_participants",
     "claims",
     "transactions",
     "budgets",
@@ -48,7 +49,10 @@ def reset_demo(_=Depends(_verify_cron_secret)):
 
     claims = build_claims(inserted_transactions)
     if claims:
-        supabase.table("claims").insert(claims).execute()
+        inserted_claims = supabase.table("claims").insert(claims).execute().data or []
+        participants = build_claim_participants(inserted_claims)
+        if participants:
+            supabase.table("claim_participants").insert(participants).execute()
     counts["claims"] = len(claims)
 
     return {"reset": True, "counts": counts}

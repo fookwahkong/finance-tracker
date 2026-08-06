@@ -1,7 +1,7 @@
 from datetime import date as Date
 from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TransactionCreate(BaseModel):
@@ -82,8 +82,11 @@ class NetWorth(BaseModel):
 
 class ClaimCreate(BaseModel):
     debit_tx_id: str
-    my_share: float
+    my_share: Optional[float] = None
     counterparty: Optional[str] = None
+    participant_names: list[str] = Field(default_factory=list)
+    split_mode: Literal["equal", "custom"] = "equal"
+    my_share_percent: Optional[float] = None
 
 
 class ClaimCreditCreate(BaseModel):

@@ -1209,6 +1209,10 @@ a { color: inherit; }
   background: var(--teal-soft);
   box-shadow: inset 0 0 0 1px var(--teal);
 }
+.claim-person-in-overview {
+  margin-top: 10px;
+  background: var(--surface);
+}
 
 .claim-person-head {
   display: grid;

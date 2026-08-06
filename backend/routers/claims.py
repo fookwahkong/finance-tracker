@@ -24,11 +24,47 @@ def _links_for_claim(db: Client, claim_id: str) -> list[dict]:
 
 def _enrich_claim(db: Client, claim: dict) -> dict:
     links = _links_for_claim(db, claim["id"])
-    received = claim_math.received_total(links)
     enriched = dict(claim)
+    participants = (
+        db.table("claim_participants").select("*").eq("claim_id", claim["id"]).execute().data
+        or []
+    )
+    if not participants:
+        received = claim_math.received_total(links)
+        enriched["links"] = links
+        enriched["received"] = received
+        enriched["remaining"] = claim_math.remaining(claim["expected"], links)
+        return enriched
+
+    total_expected = 0.0
+    total_received = 0.0
+    enriched_participants = []
+    for participant in participants:
+        participant_links = [
+            link for link in links if link.get("participant_id") == participant["id"]
+        ]
+        received = claim_math.received_total(participant_links)
+        owed = float(participant["share_amount"])
+        remaining = owed - received
+        enriched_participant = {
+            **participant,
+            "links": participant_links,
+            "received": received,
+            "remaining": remaining,
+            "overpaid": max(0, -remaining),
+        }
+        enriched_participants.append(enriched_participant)
+        if not participant["is_owner"]:
+            total_expected += owed
+            total_received += received
+
+    owner = next((participant for participant in participants if participant["is_owner"]), None)
+    enriched["participants"] = enriched_participants
     enriched["links"] = links
-    enriched["received"] = received
-    enriched["remaining"] = claim_math.remaining(claim["expected"], links)
+    enriched["my_share"] = float(owner["share_amount"]) if owner else 0
+    enriched["expected"] = total_expected
+    enriched["received"] = total_received
+    enriched["remaining"] = total_expected - total_received
     return enriched
 
 
@@ -44,23 +80,45 @@ def create_claim(claim: ClaimCreate, db: Client = Depends(get_db)):
         raise ValidationError("Claims can only be created from debit transactions.")
 
     total = abs(debit["amount"])
-    if claim.my_share < 0 or claim.my_share >= total:
-        raise ValidationError("My share must be at least 0 and less than the debit total.")
 
     existing = db.table("claims").select("*").eq("debit_tx_id", claim.debit_tx_id).execute().data
     if existing:
         raise ValidationError("A claim already exists for this debit.")
 
+    if claim.participant_names:
+        try:
+            participants = claim_math.participant_split(
+                total,
+                claim.participant_names,
+                claim.split_mode,
+                claim.my_share_percent,
+            )
+        except ValueError as error:
+            raise ValidationError(str(error)) from error
+        owner_share = participants[0]["share_amount"]
+        expected = sum(participant["share_amount"] for participant in participants[1:])
+        counterparty = ", ".join(participant["name"] for participant in participants[1:])
+    else:
+        if claim.my_share is None or claim.my_share < 0 or claim.my_share >= total:
+            raise ValidationError("My share must be at least 0 and less than the debit total.")
+        owner_share = claim.my_share
+        expected = claim_math.expected_amount(total, owner_share)
+        counterparty = claim.counterparty
+        participants = []
+
     payload = {
         "debit_tx_id": claim.debit_tx_id,
         "total": total,
-        "my_share": claim.my_share,
-        "expected": claim_math.expected_amount(total, claim.my_share),
+        "my_share": owner_share,
+        "expected": expected,
         "category": debit.get("category"),
-        "counterparty": claim.counterparty,
+        "counterparty": counterparty,
         "status": "open",
     }
     result = db.table("claims").insert(payload).execute()
+    if participants:
+        participant_rows = [{"claim_id": result.data[0]["id"], **participant} for participant in participants]
+        db.table("claim_participants").insert(participant_rows).execute()
     return result.data[0]
 
 
@@ -100,6 +158,46 @@ def link_credit(claim_id: str, credit: ClaimCreditCreate, db: Client = Depends(g
     }
     result = db.table("claim_credits").insert(payload).execute()
     return result.data[0]
+
+
+@router.post("/{claim_id}/participants/{participant_id}/credits", status_code=201)
+def link_participant_credit(
+    claim_id: str,
+    participant_id: str,
+    credit: ClaimCreditCreate,
+    db: Client = Depends(get_db),
+):
+    if credit.allocated_amount <= 0:
+        raise ValidationError("Allocated amount must be positive.")
+    if not _one(db, "claims", claim_id):
+        raise ValidationError("Claim not found.")
+
+    participant = _one(db, "claim_participants", participant_id)
+    if not participant or participant.get("claim_id") != claim_id:
+        raise ValidationError("Participant does not belong to this claim.")
+    if participant.get("is_owner"):
+        raise ValidationError("Repayments cannot be assigned to the owner.")
+
+    tx = _one(db, "transactions", credit.credit_tx_id)
+    if not tx:
+        raise ValidationError("Credit transaction not found.")
+    if tx["amount"] <= 0:
+        raise ValidationError("Only credit transactions can be linked to claims.")
+
+    existing = (
+        db.table("claim_credits").select("*").eq("credit_tx_id", credit.credit_tx_id).execute().data
+        or []
+    )
+    if claim_math.received_total(existing) + credit.allocated_amount > tx["amount"]:
+        raise ValidationError("Allocated amount exceeds the credit transaction amount.")
+
+    payload = {
+        "claim_id": claim_id,
+        "participant_id": participant_id,
+        "credit_tx_id": credit.credit_tx_id,
+        "allocated_amount": credit.allocated_amount,
+    }
+    return db.table("claim_credits").insert(payload).execute().data[0]
 
 
 @router.delete("/{claim_id}/credits/{link_id}", status_code=204)

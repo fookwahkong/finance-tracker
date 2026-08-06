@@ -176,3 +176,31 @@ def build_claims(inserted_transactions: list[dict]) -> list[dict]:
         claim(dinners[0], "Priya", "open"),
         claim(dinners[1], "Alex", "settled"),
     ]
+
+
+def build_claim_participants(inserted_claims: list[dict]) -> list[dict]:
+    """Create participant rows after Supabase assigns the claim IDs."""
+    participants = []
+    for claim in inserted_claims:
+        total = float(claim["total"])
+        owner_amount = float(claim["my_share"])
+        expected = float(claim["expected"])
+        participants.extend([
+            {
+                "user_id": claim["user_id"],
+                "claim_id": claim["id"],
+                "name": "You",
+                "is_owner": True,
+                "share_amount": owner_amount,
+                "share_percent": owner_amount / total * 100,
+            },
+            {
+                "user_id": claim["user_id"],
+                "claim_id": claim["id"],
+                "name": claim.get("counterparty") or "Someone",
+                "is_owner": False,
+                "share_amount": expected,
+                "share_percent": expected / total * 100,
+            },
+        ])
+    return participants
