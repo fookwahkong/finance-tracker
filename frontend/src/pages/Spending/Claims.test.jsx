@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 const apiMocks = vi.hoisted(() => ({
@@ -75,11 +75,38 @@ describe("Claims", () => {
     const dataTransfer = {
       setData: (type, value) => dragData.set(type, value),
       getData: (type) => dragData.get(type) || "",
+      setDragImage: vi.fn(),
     };
 
-    fireEvent.dragStart(draggedCredit, { dataTransfer });
+    const dragStart = createEvent.dragStart(draggedCredit, { dataTransfer });
+    Object.defineProperties(dragStart, {
+      clientX: { value: 120 },
+      clientY: { value: 120 },
+    });
+    fireEvent(draggedCredit, dragStart);
+
+    const preview = screen.getByTestId("claim-drag-preview");
+    expect(within(preview).getByText("Available PayNow")).toBeInTheDocument();
+    expect(within(preview).getByText("2026-08-03")).toBeInTheDocument();
+    expect(within(preview).getByText("$50.00")).toBeInTheDocument();
+    expect(preview).toHaveStyle({ left: "134px", top: "134px" });
+
+    const dragMove = createEvent.drag(draggedCredit);
+    Object.defineProperties(dragMove, {
+      clientX: { value: 180 },
+      clientY: { value: 200 },
+    });
+    fireEvent(draggedCredit, dragMove);
+    expect(preview).toHaveStyle({ left: "194px", top: "214px" });
+
+    fireEvent.dragEnter(alex);
+    expect(alex).toHaveClass("is-drag-target");
+    fireEvent.dragLeave(alex, { relatedTarget: document.body });
+    expect(alex).not.toHaveClass("is-drag-target");
+
     fireEvent.drop(alex, { dataTransfer });
 
+    expect(screen.queryByTestId("claim-drag-preview")).not.toBeInTheDocument();
     expect(screen.getByRole("dialog", { name: /assign repayment from alex/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/credit transaction/i)).toHaveValue("credit-1");
   });
