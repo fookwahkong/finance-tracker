@@ -1,6 +1,13 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { edgeScrollSpeed, useClaimDrag } from "./useClaimDrag";
+import { dragPreviewPosition, edgeScrollSpeed, useClaimDrag } from "./useClaimDrag";
+
+describe("dragPreviewPosition", () => {
+  it("keeps the preview visible and flips it above a bottom-edge pointer", () => {
+    expect(dragPreviewPosition(120, 120, 1024, 768)).toEqual({ left: 134, top: 134 });
+    expect(dragPreviewPosition(1000, 760, 1024, 768)).toEqual({ left: 730, top: 658 });
+  });
+});
 
 describe("edgeScrollSpeed", () => {
   it("returns proportional speed only inside viewport edge zones", () => {

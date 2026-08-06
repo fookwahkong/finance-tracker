@@ -4,7 +4,7 @@ import { money } from "../../lib/format";
 import { allocatedByCredit, linksForClaims, participantBalance, participantsForClaim } from "../../lib/claims";
 import { linkCredit, settleClaim, unlinkCredit } from "../../api/claims";
 import { useModalFocus } from "../../hooks/useModalFocus";
-import { useClaimDrag } from "../../hooks/useClaimDrag";
+import { dragPreviewPosition, useClaimDrag } from "../../hooks/useClaimDrag";
 
 const cents = (value) => Math.round(Number(value) * 100) / 100;
 
@@ -303,7 +303,12 @@ export default function Claims({ claims, transactions = [], onChanged }) {
           className="claim-drag-preview"
           data-testid="claim-drag-preview"
           aria-hidden="true"
-          style={{ left: dragPreview.x + 14, top: dragPreview.y + 14 }}
+          style={dragPreviewPosition(
+            dragPreview.x,
+            dragPreview.y,
+            window.innerWidth,
+            window.innerHeight,
+          )}
         >
           <span>Repayment</span>
           <strong>{dragPreview.credit.item}</strong>

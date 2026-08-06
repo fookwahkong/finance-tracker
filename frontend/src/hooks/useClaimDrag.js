@@ -1,5 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+export function dragPreviewPosition(
+  clientX,
+  clientY,
+  viewportWidth,
+  viewportHeight,
+  previewWidth = 280,
+  previewHeight = 88,
+  offset = 14,
+) {
+  const renderedWidth = Math.min(previewWidth, Math.max(0, viewportWidth - (offset * 2)));
+  const maxLeft = Math.max(offset, viewportWidth - renderedWidth - offset);
+  const left = Math.min(Math.max(offset, clientX + offset), maxLeft);
+  const fitsBelow = clientY + offset + previewHeight <= viewportHeight - offset;
+  const top = fitsBelow ? clientY + offset : Math.max(offset, clientY - previewHeight - offset);
+  return { left, top };
+}
+
 export function edgeScrollSpeed(clientY, viewportHeight, edgeSize = 96, maxSpeed = 18) {
   if (!(clientY > 0) || !(viewportHeight > 0)) return 0;
   if (clientY < edgeSize) {
