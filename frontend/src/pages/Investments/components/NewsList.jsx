@@ -1,22 +1,30 @@
+import { mergeNews } from "../lib/news";
+import NewsGrid from "./NewsGrid";
 import Section from "./Section";
 
-export default function NewsList({ news }) {
+const MAX_STORIES = 10;
+
+export default function NewsList({ news, symbol, name }) {
   return (
     <Section section={news} isEmpty={(d) => !Array.isArray(d) || d.length === 0}>
-      {(items) => (
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: "0.75rem" }}>
-          {items.slice(0, 10).map((n) => (
-            <li key={n.id || n.url}>
-              <a href={n.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
-                {n.headline}
-              </a>
-              <div style={{ color: "#888", fontSize: "0.85rem" }}>
-                {n.source} · {new Date(n.datetime * 1000).toLocaleDateString()}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      {(items) => {
+        // Finnhub's per-symbol feed is tagged loosely — asking for NVDA returns
+        // syndicated market-wire stories that never mention Nvidia. Same filter
+        // the holdings feed uses, so both lists mean the same thing.
+        const stories = mergeNews([{ ticker: symbol, name, items }], MAX_STORIES)
+          .map((n) => {
+            // Every story here is about this one stock, so a ticker chip would
+            // repeat on all of them. NewsGrid omits it when `tickers` is absent.
+            const story = { ...n };
+            delete story.tickers;
+            return story;
+          });
+
+        if (!stories.length) {
+          return <div className="news-note">No recent stories mention {symbol}.</div>;
+        }
+        return <NewsGrid items={stories} />;
+      }}
     </Section>
   );
 }

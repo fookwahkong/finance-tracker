@@ -7,8 +7,11 @@ export default function StockRoute() {
 
   return (
     <div className="card invest-page">
-      <div style={{ fontSize: 12, color: "var(--muted)" }}>
-        ← <Link to="/investment" style={{ color: "var(--teal)" }}>Portfolio</Link> · {sym}
+      <div className="stock-nav">
+        <Link to="/investment" className="btn btn-outline stock-back">
+          <span aria-hidden="true">←</span> Portfolio
+        </Link>
+        <span className="stock-nav-sym">{sym}</span>
       </div>
       <StockPage key={sym} symbol={sym} />
     </div>

@@ -57,6 +57,7 @@ export default function StockPage({ symbol }) {
       <Tabs active={tab} onChange={setTab} />
       {tab === "overview" && (
         <OverviewTab
+          symbol={symbol}
           aggregates={sections.aggregates}
           profile={sections.profile}
           dividends={sections.dividends}

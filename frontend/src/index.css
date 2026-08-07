@@ -757,6 +757,16 @@ a { color: inherit; }
 .invest-head {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
+
+/* Stock Detail back-nav. This is the only way out of the page now that the
+   shell's tabs are gone, so it gets a real button rather than a text link. */
+.stock-nav { display: flex; align-items: center; gap: 12px; }
+.stock-back { padding-left: 12px; }
+.stock-back:hover { border-color: var(--teal); color: var(--teal-ink); }
+.stock-nav-sym {
+  font-size: 15px; font-weight: 800; letter-spacing: 0.3px;
+  color: var(--muted);
+}
 .invest-head-title {
   font-size: 22px; font-weight: 800; color: var(--teal-ink);
   margin: 0 auto 0 0;
