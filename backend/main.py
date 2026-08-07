@@ -34,7 +34,11 @@ from core.validation import ValidationError
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
-_raw_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173")
+# localhost and 127.0.0.1 are distinct origins to a browser, and the Vite dev
+# server is reachable on both. Allowing each keeps preflights from failing on
+# whichever hostname the browser happens to use. Production overrides this.
+_DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+_raw_origins = os.environ.get("ALLOWED_ORIGINS", _DEFAULT_ORIGINS)
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 configure_logging()

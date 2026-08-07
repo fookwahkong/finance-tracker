@@ -748,45 +748,21 @@ a { color: inherit; }
 .budget-tbl th:first-child, .budget-tbl td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
 .budget-tbl .over-cell { color: var(--red); font-weight: 700; }
 
-/* â”€â”€ Investment watchlist sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.invest-shell { padding: 0; overflow: hidden; }
+/* â”€â”€ Investments page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Stacking and gap the dissolved shell used to provide. */
+.invest-page { display: flex; flex-direction: column; gap: 18px; }
 
-.invest-topnav {
-  display: flex; align-items: center; gap: 4px;
-  height: 52px; padding: 0 20px;
-  border-bottom: 1px solid var(--border);
+/* Page header: title, ticker search, +Trade. The search sits next to the
+   button so both actions live in one row instead of a separate nav bar. */
+.invest-head {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
-.invest-brand {
-  font-size: 18px; font-weight: 800; color: var(--teal-ink);
-  margin-right: 24px; white-space: nowrap;
-}
-.invest-tabs { display: flex; height: 52px; }
-.invest-tab {
-  display: flex; align-items: center; padding: 0 16px;
-  font-size: 17px; font-weight: 600; color: var(--muted);
-  text-decoration: none; border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-.invest-tab:hover { color: var(--ink); }
-.invest-tab.is-active { color: var(--ink); font-weight: 700; border-bottom-color: var(--teal); }
-.invest-navextra { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.invest-chip {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--teal-soft); border: 1px solid var(--teal);
-  color: var(--teal-ink); border-radius: 8px;
-  padding: 5px 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+.invest-head-title {
+  font-size: 22px; font-weight: 800; color: var(--teal-ink);
+  margin: 0 auto 0 0;
 }
 
-.invest-body {
-  display: grid; grid-template-columns: 1.5fr 8.5fr;
-  align-items: stretch; min-height: 620px;
-}
-.invest-main {
-  min-width: 0; padding: 20px 24px;
-  display: flex; flex-direction: column; gap: 18px;
-}
-
-/* Inner bordered boxes (holdings, trades, calendar, stat gridâ€¦) */
+/* Inner bordered boxes (holdings, trades, stat gridâ€¦) */
 .invest-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-sm); overflow: hidden;
@@ -812,67 +788,6 @@ a { color: inherit; }
   vertical-align: middle; white-space: nowrap;
 }
 .invest-card tbody tr:last-child td { border-bottom: none; }
-
-/* Watchlist sidebar â€” always expanded (3:7 of the shell via .invest-body grid) */
-.watchlist {
-  min-width: 0;
-  border-right: 1px solid var(--border);
-  padding: 16px 16px;
-  display: flex; flex-direction: column; gap: 14px;
-}
-.wl-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
-.wl-head-title {
-  font-size: 19px; font-weight: 700; color: var(--teal-ink);
-  margin-right: auto;
-}
-.wl-add-btn, .wl-chevron {
-  appearance: none; border: none; background: transparent; cursor: pointer;
-  color: var(--muted); font-size: 17px; line-height: 1; padding: 2px 4px;
-  border-radius: 6px;
-}
-.wl-add-btn:hover, .wl-chevron:hover { background: var(--line); color: var(--ink); }
-.wl-chevron { transition: transform 120ms ease; }
-.wl-chevron.is-collapsed { transform: rotate(180deg); }
-
-.wl-total-label { font-size: 14px; color: var(--muted); }
-.wl-total { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-.wl-divider { height: 1px; background: var(--line); margin: 12px 0; }
-.wl-portfolio-name { font-size: 15px; font-weight: 700; }
-.wl-portfolio-row {
-  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
-  font-size: 13px; margin-top: 2px;
-}
-.wl-portfolio-val { font-size: 15px; }
-
-.wl-row {
-  position: relative;
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 8px; margin-bottom: 6px;
-  border-radius: 6px; cursor: pointer; background: #f6f7f7;
-}
-.wl-row:hover { background: #eef0f0; }
-.wl-row-main { min-width: 0; flex: 1; }
-.wl-row-side { text-align: right; white-space: nowrap; }
-.wl-ticker { display: block; font-size: 15px; font-weight: 700; }
-.wl-name {
-  display: block; font-size: 12px; color: var(--muted-2);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.wl-price { display: block; font-size: 14px; font-weight: 600; }
-.wl-pct { display: block; font-size: 12px; font-weight: 700; }
-/* Sits over the price/percent column, which only matters while hovering the
-   row the reader is already about to act on. */
-.wl-remove {
-  position: absolute; top: 50%; right: 4px;
-  transform: translateY(-50%); visibility: hidden;
-  border: none; background: #eef0f0; color: var(--muted);
-  cursor: pointer; font-size: 13px; line-height: 1;
-  padding: 5px 6px; border-radius: 6px;
-}
-.wl-remove:hover { color: var(--red); }
-.wl-row:hover .wl-remove { visibility: visible; }
-.wl-add { display: flex; gap: 6px; margin-bottom: 8px; }
-.wl-add .input { font-size: 14px; padding: 6px 8px; min-width: 0; }
 
 /* ── Portfolio tabs ── */
 .ptabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
@@ -967,6 +882,30 @@ a { color: inherit; }
 .confirm-body { font-size: 15px; color: var(--ink-2); line-height: 1.5; }
 .confirm-error { margin-top: 10px; font-size: 14px; color: var(--red); }
 
+/* ── Glossary term explainer ── */
+/* A dotted underline rather than a link colour: these sit inside dense tables,
+   where anything louder would compete with the numbers for attention. */
+.term-info {
+  appearance: none; border: none; background: none; padding: 0;
+  font: inherit; color: inherit; text-align: inherit; cursor: pointer;
+  border-bottom: 1px dotted var(--muted);
+}
+.term-info:hover, .term-info:focus-visible { color: var(--teal-ink); border-bottom-color: var(--teal); }
+
+.term-panel { width: min(460px, 100%); }
+.term-close {
+  appearance: none; border: none; background: transparent; cursor: pointer;
+  color: var(--muted); font-size: 15px; line-height: 1;
+  padding: 4px 6px; border-radius: 6px; margin-left: auto;
+}
+.term-close:hover { background: var(--line); color: var(--ink); }
+.term-meaning { font-size: 15px; color: var(--ink-2); line-height: 1.5; }
+.term-implication-label {
+  margin-top: 16px; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.4px; text-transform: uppercase; color: var(--muted);
+}
+.term-implication { margin-top: 5px; font-size: 15px; color: var(--ink-2); line-height: 1.5; }
+
 /* ── News stories ── */
 .news-title { font-size: 22px; font-weight: 700; }
 .news-sub { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
@@ -977,11 +916,11 @@ a { color: inherit; }
   display: flex; align-items: center; gap: 7px;
   font-size: 13px; color: var(--muted); margin-bottom: 5px;
 }
-.news-badge {
-  display: flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+/* Which holding the story is about — the reason it's in this list at all */
+.news-chip {
+  flex-shrink: 0; border-radius: 5px; padding: 2px 7px;
   background: var(--teal-soft); color: var(--teal-ink);
-  font-size: 11px; font-weight: 800;
+  font-size: 11.5px; font-weight: 800; letter-spacing: 0.2px;
 }
 .news-source { font-weight: 700; color: var(--ink-2); }
 .news-headline { font-size: 17px; font-weight: 600; line-height: 1.35; }
@@ -1073,45 +1012,6 @@ a { color: inherit; }
   line-height: 1.5;
 }
 .login-demo-hint strong { color: var(--muted); font-weight: 700; }
-
-/* Market news: earnings month-grid calendar */
-.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.cal-title { font-size: 19px; font-weight: 700; }
-.cal-nav { display: flex; gap: 14px; }
-.cal-nav button {
-  appearance: none; border: none; background: transparent;
-  color: var(--teal); font-size: 15px; font-weight: 600; cursor: pointer;
-}
-.cal-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.cal-dow { text-align: center; font-size: 13px; color: var(--muted); padding-bottom: 5px; }
-.cal-cell {
-  border: 1px solid var(--line); border-radius: 5px;
-  padding: 5px; min-height: 64px; background: #fafbfb;
-}
-.cal-cell.is-muted { background: #f5f6f6; }
-.cal-cell.is-today { border: 2px solid var(--teal); background: var(--teal-soft); }
-.cal-cell.has-watch { border-color: var(--teal); }
-.cal-date { font-size: 13px; color: var(--ink-2); margin-bottom: 3px; }
-.cal-cell.is-muted .cal-date { color: var(--muted-2); }
-.cal-cell.is-today .cal-date { color: var(--teal); font-weight: 700; }
-.cal-pill {
-  display: block; border-radius: 3px; padding: 1px 5px;
-  font-size: 12px; margin-bottom: 2px; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
-  text-decoration: none; cursor: pointer;
-}
-.cal-pill.bmo { background: #d4f0ed; color: #1a7a70; }
-.cal-pill.amc { background: #fcddd0; color: #8c3300; }
-.cal-pill.watch { background: var(--teal); color: #fff; font-weight: 700; }
-.cal-more { font-size: 11px; color: var(--muted-2); }
-.cal-badge {
-  display: inline-block; background: var(--teal); color: #fff;
-  border-radius: 3px; padding: 1px 6px; font-size: 11px; margin-top: 3px;
-}
-.cal-closed { font-size: 11px; color: var(--muted-2); margin-top: 2px; }
-.cal-legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 10px; }
-.cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); }
-.cal-legend-sw { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
 
 /* Claims: participant splits */
 .claim-split-modal { width: min(720px, 100%); }

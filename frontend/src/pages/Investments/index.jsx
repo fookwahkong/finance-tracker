@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getInvestTransactions, deleteInvestTransaction } from "../../api/investments";
 import { buildPositions, enrichPositions, portfolioTotals, allocations as buildAllocations } from "./lib/portfolio";
 import { guidanceMessages } from "./lib/guidance";
@@ -16,7 +16,6 @@ import { useQuotes } from "./hooks/useQuotes";
 
 export default function Investments() {
   const navigate = useNavigate();
-  const setNavExtra = useOutletContext();
   const [draft, setDraft] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [txError, setTxError] = useState(null);
@@ -74,11 +73,10 @@ export default function Investments() {
     if (next) navigate(`/investment/stock/${next}`);
   };
 
-  // Register the nav-extra slot (search + Trade). Re-runs on draft change so
-  // the controlled input stays in sync with page state.
-  useEffect(() => {
-    setNavExtra(
-      <>
+  return (
+    <div className="card invest-page">
+      <div className="invest-head">
+        <h1 className="invest-head-title">Investments</h1>
         <form onSubmit={submit} style={{ display: "flex" }}>
           <input
             className="input"
@@ -92,13 +90,8 @@ export default function Investments() {
         <button type="button" className="btn btn-primary" onClick={() => setModal({ editing: null })}>
           + Trade
         </button>
-      </>
-    );
-    return () => setNavExtra(null);
-  }, [draft]);
+      </div>
 
-  return (
-    <>
       {txError && <p style={{ color: "var(--red)" }}>{txError}</p>}
       {positions.length > 0 && <PortfolioHero totals={totals} />}
 
@@ -111,17 +104,20 @@ export default function Investments() {
           <PortfolioTabs active={tab} onChange={setTab} />
 
           {tab === "investments" && (
-            <div className="invest-card">
-              <HoldingsTable
-                enriched={enriched}
-                totalValue={totals.value}
-                columns={columns}
-                onColumnsChange={changeColumns}
-                onOpen={(t) => navigate(`/investment/stock/${t}`)}
-                onDelete={setPendingDelete}
-              />
-              <div className="invest-card-foot">↑ click a row to open its Stock Detail page</div>
-            </div>
+            <>
+              <div className="invest-card">
+                <HoldingsTable
+                  enriched={enriched}
+                  totalValue={totals.value}
+                  columns={columns}
+                  onColumnsChange={changeColumns}
+                  onOpen={(t) => navigate(`/investment/stock/${t}`)}
+                  onDelete={setPendingDelete}
+                />
+                <div className="invest-card-foot">↑ click a row to open its Stock Detail page</div>
+              </div>
+              <NewsStories tickers={positions.map((p) => p.ticker)} />
+            </>
           )}
 
           {tab === "insights" && <InsightsTab allocations={allocs} guidance={guidance} />}
@@ -136,8 +132,6 @@ export default function Investments() {
           )}
         </>
       )}
-
-      <NewsStories tickers={positions.map((p) => p.ticker)} />
 
       <ConfirmDialog
         open={pendingDelete !== null}
@@ -159,6 +153,6 @@ export default function Investments() {
         onClose={() => setModal(null)}
         onSaved={loadTransactions}
       />
-    </>
+    </div>
   );
 }

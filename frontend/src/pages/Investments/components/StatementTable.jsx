@@ -1,4 +1,5 @@
 import { statementColumns, statementRows } from "../lib/statement";
+import TermInfo from "./TermInfo";
 
 export default function StatementTable({ periods, fields }) {
   const cols = statementColumns(periods);
@@ -14,7 +15,7 @@ export default function StatementTable({ periods, fields }) {
       <tbody>
         {rows.map((r) => (
           <tr key={r.label}>
-            <td style={{ color: "#555", padding: "4px 8px" }}>{r.label}</td>
+            <td style={{ color: "#555", padding: "4px 8px" }}><TermInfo label={r.label} /></td>
             {r.values.map((v, i) => (
               <td key={i} style={{ textAlign: "right", padding: "4px 8px" }}>{v}</td>
             ))}

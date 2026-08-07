@@ -11,8 +11,6 @@ import Import from "./pages/Import";
 import Budget from "./pages/Budget";
 import Investments from "./pages/Investments";
 import StockRoute from "./pages/Investments/StockRoute";
-import MarketNews from "./pages/Investments/MarketNews";
-import InvestLayout from "./pages/Investments/InvestLayout";
 
 export default function App() {
   const { session, loading } = useAuth();
@@ -31,11 +29,8 @@ export default function App() {
             <Route path="/import" element={<Import />} />
             <Route path="/report" element={<Report />} />
             <Route path="/settings" element={<Settings />} />
-            <Route element={<InvestLayout />}>
-              <Route path="/investment" element={<Investments />} />
-              <Route path="/investment/news" element={<MarketNews />} />
-              <Route path="/investment/stock/:symbol" element={<StockRoute />} />
-            </Route>
+            <Route path="/investment" element={<Investments />} />
+            <Route path="/investment/stock/:symbol" element={<StockRoute />} />
             <Route path="/budget" element={<Budget />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>

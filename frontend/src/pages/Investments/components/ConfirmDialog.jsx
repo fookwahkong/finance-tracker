@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 // Styled confirm, reusing the modal shell TradeForm already established.
@@ -6,6 +7,14 @@ import { createPortal } from "react-dom";
 export default function ConfirmDialog({
   open, title, body, confirmLabel = "Delete", busy, error, onConfirm, onCancel,
 }) {
+  // Escape cancels, but not mid-delete — the request is already in flight.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => { if (e.key === "Escape" && !busy) onCancel(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, busy, onCancel]);
+
   if (!open) return null;
   return createPortal(
     <div className="modal-backdrop" role="presentation" onMouseDown={() => !busy && onCancel()}>

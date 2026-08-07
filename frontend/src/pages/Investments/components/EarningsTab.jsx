@@ -1,4 +1,5 @@
 import Section from "./Section";
+import TermInfo from "./TermInfo";
 
 const DASH = "—";
 const num = (v) => (v == null ? DASH : v.toLocaleString("en-US"));
@@ -14,7 +15,9 @@ export default function EarningsTab({ earnings }) {
           <thead>
             <tr>
               {["Date", "Period", "EPS est.", "EPS actual", "Rev. est.", "Rev. actual"].map((h) => (
-                <th key={h} style={{ textAlign: "right", padding: "4px 8px" }}>{h}</th>
+                <th key={h} style={{ textAlign: "right", padding: "4px 8px" }}>
+                  <TermInfo label={h} />
+                </th>
               ))}
             </tr>
           </thead>
