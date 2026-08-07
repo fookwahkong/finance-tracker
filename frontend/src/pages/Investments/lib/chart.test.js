@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { barsFromAggregates, sliceRange } from "./chart";
+import { barsFromAggregates, sliceRange, rangeAvailable, PORTFOLIO_RANGES } from "./chart";
 
 const ms = (d) => new Date(d).getTime();
 
@@ -50,5 +50,43 @@ describe("sliceRange", () => {
     const out = sliceRange(bars, "1Y", today);
     expect(out.length).toBeGreaterThanOrEqual(364);
     expect(out.length).toBeLessThanOrEqual(366);
+  });
+});
+
+describe("rangeAvailable", () => {
+  const today = new Date("2026-08-06");
+  // `n` daily bars ending today — a portfolio that started n days ago.
+  const seriesOf = (n) =>
+    Array.from({ length: n }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (n - 1 - i));
+      return { t: d.getTime(), c: 100 + i };
+    });
+
+  it("offers nothing when there is no history", () => {
+    expect(PORTFOLIO_RANGES.filter((r) => rangeAvailable(r, [], today))).toEqual([]);
+  });
+
+  it("offers only MAX for a portfolio younger than a month", () => {
+    const out = PORTFOLIO_RANGES.filter((r) => rangeAvailable(r, seriesOf(10), today));
+    expect(out).toEqual(["MAX"]);
+  });
+
+  it("offers 1M and MAX for a portfolio opened ~6 weeks ago", () => {
+    const out = PORTFOLIO_RANGES.filter((r) => rangeAvailable(r, seriesOf(42), today));
+    expect(out).toEqual(["1M", "MAX"]);
+  });
+
+  it("offers every range once two years of history exist", () => {
+    const out = PORTFOLIO_RANGES.filter((r) => rangeAvailable(r, seriesOf(730), today));
+    expect(out).toEqual(PORTFOLIO_RANGES);
+  });
+
+  it("disables a range whose cutoff predates the first bar", () => {
+    // 200 days back from 2026-08-06 is 2026-01-18, after Jan 1 — so YTD would
+    // return every bar and duplicate MAX, while 6M genuinely trims.
+    const bars = seriesOf(200);
+    expect(rangeAvailable("6M", bars, today)).toBe(true);
+    expect(rangeAvailable("YTD", bars, today)).toBe(false);
   });
 });

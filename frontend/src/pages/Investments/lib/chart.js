@@ -26,3 +26,16 @@ export function sliceRange(bars, range, today = new Date()) {
   const min = cutoff(range, today);
   return bars.filter((b) => b.t >= min);
 }
+
+// Ranges offered on the portfolio hero. No 1D/5D (needs intraday bars the
+// backend doesn't serve) and no 5Y (beyond the 2-year aggregates window).
+export const PORTFOLIO_RANGES = ["1M", "6M", "YTD", "1Y", "MAX"];
+
+// A range is unavailable when its cutoff predates the first bar: slicing would
+// return every bar, making the button a duplicate of MAX. Portfolio history
+// starts at the first trade, so a young portfolio only offers the short ranges.
+export function rangeAvailable(range, bars, today = new Date()) {
+  if (!bars.length) return false;
+  if (range === "MAX") return true;
+  return cutoff(range, today) > bars[0].t;
+}

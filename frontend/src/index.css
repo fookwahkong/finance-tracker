@@ -820,39 +820,176 @@ a { color: inherit; }
   padding: 16px 16px;
   display: flex; flex-direction: column; gap: 14px;
 }
-.wl-port-pct { font-size: 22px; font-weight: 800; }
-.wl-port-val { font-size: 14px; color: var(--muted-2); }
-.wl-divider { height: 1px; background: var(--line); }
-.wl-heading { font-size: 14px; color: var(--muted); margin-bottom: 9px; }
+.wl-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.wl-head-title {
+  font-size: 19px; font-weight: 700; color: var(--teal-ink);
+  margin-right: auto;
+}
+.wl-add-btn, .wl-chevron {
+  appearance: none; border: none; background: transparent; cursor: pointer;
+  color: var(--muted); font-size: 17px; line-height: 1; padding: 2px 4px;
+  border-radius: 6px;
+}
+.wl-add-btn:hover, .wl-chevron:hover { background: var(--line); color: var(--ink); }
+.wl-chevron { transition: transform 120ms ease; }
+.wl-chevron.is-collapsed { transform: rotate(180deg); }
+
+.wl-total-label { font-size: 14px; color: var(--muted); }
+.wl-total { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+.wl-divider { height: 1px; background: var(--line); margin: 12px 0; }
+.wl-portfolio-name { font-size: 15px; font-weight: 700; }
+.wl-portfolio-row {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  font-size: 13px; margin-top: 2px;
+}
+.wl-portfolio-val { font-size: 15px; }
+
 .wl-row {
   position: relative;
-  display: flex; flex-direction: column; gap: 1px;
-  padding: 5px 6px; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; margin-bottom: 6px;
   border-radius: 6px; cursor: pointer; background: #f6f7f7;
 }
 .wl-row:hover { background: #eef0f0; }
-.wl-ticker { font-size: 15px; font-weight: 700; }
-.wl-price { font-size: 14px; color: var(--muted); }
-.wl-remove {
-  position: absolute; top: 3px; right: 3px; visibility: hidden;
-  border: none; background: transparent; color: var(--muted);
-  cursor: pointer; font-size: 14px; line-height: 1; padding: 2px;
+.wl-row-main { min-width: 0; flex: 1; }
+.wl-row-side { text-align: right; white-space: nowrap; }
+.wl-ticker { display: block; font-size: 15px; font-weight: 700; }
+.wl-name {
+  display: block; font-size: 12px; color: var(--muted-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.wl-price { display: block; font-size: 14px; font-weight: 600; }
+.wl-pct { display: block; font-size: 12px; font-weight: 700; }
+/* Sits over the price/percent column, which only matters while hovering the
+   row the reader is already about to act on. */
+.wl-remove {
+  position: absolute; top: 50%; right: 4px;
+  transform: translateY(-50%); visibility: hidden;
+  border: none; background: #eef0f0; color: var(--muted);
+  cursor: pointer; font-size: 13px; line-height: 1;
+  padding: 5px 6px; border-radius: 6px;
+}
+.wl-remove:hover { color: var(--red); }
 .wl-row:hover .wl-remove { visibility: visible; }
-.wl-add { display: flex; gap: 6px; margin-top: 4px; }
+.wl-add { display: flex; gap: 6px; margin-bottom: 8px; }
 .wl-add .input { font-size: 14px; padding: 6px 8px; min-width: 0; }
 
-/* Portfolio: donut + holdings side by side (1.5:8.5); holdings matches donut
-   height and scrolls internally when the holdings list is taller. */
-.portfolio-grid {
-  display: grid; grid-template-columns: 3fr 7fr; gap: 16px; align-items: stretch;
+/* ── Portfolio tabs ── */
+.ptabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.ptab {
+  appearance: none; border: none; background: none; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; margin-bottom: -1px;
+  font-family: inherit; font-size: 17px; font-weight: 600; color: var(--muted);
+  border-bottom: 2px solid transparent;
 }
-.donut-card {
-  padding: 100px; display: flex; flex-direction: column;
-  align-items: center; gap: 12px;
+.ptab:hover { color: var(--ink); }
+.ptab.is-active { color: var(--ink); font-weight: 700; border-bottom-color: var(--teal); }
+.ptab-pill {
+  background: var(--teal-soft); color: var(--teal-ink);
+  border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 700;
 }
-.holdings-card { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-.holdings-card .table-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* ── Holdings + transactions tables ── */
+.holdings-tbl .num, .tx-tbl .num { text-align: right; }
+.holdings-row { cursor: pointer; }
+.holdings-row:hover { background: var(--teal-soft); }
+
+/* Two-line identity cell: bold symbol over the company name */
+.sym-cell { line-height: 1.3; }
+.sym-ticker { display: block; font-size: 16px; font-weight: 700; }
+.sym-name {
+  display: block; max-width: 220px; font-size: 12.5px; color: var(--muted-2);
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Two-line numeric cell: figure over its percentage / footnote */
+.cell-main { display: block; }
+.cell-sub { display: block; font-size: 13px; }
+.tx-tbl .cell-sub { color: var(--muted-2); }
+
+/* Right-hand utility column — column settings in the head, ⋮ in each row */
+.holdings-tbl .col-actions, .tx-tbl .col-actions { width: 1%; text-align: right; }
+
+/* ── Row ⋮ menu and column settings popovers ── */
+.rowmenu, .colsettings { position: relative; display: inline-block; }
+.rowmenu-btn, .colsettings-btn {
+  appearance: none; border: none; background: transparent; cursor: pointer;
+  color: var(--muted); line-height: 1; padding: 4px 7px; border-radius: 6px;
+}
+.rowmenu-btn { font-size: 19px; }
+.colsettings-btn { display: flex; align-items: center; }
+.rowmenu-btn:hover, .colsettings-btn:hover { background: var(--line); color: var(--ink); }
+
+.rowmenu-pop, .colsettings-pop {
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 30;
+  min-width: 190px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: 0 14px 40px rgba(0, 0, 0, 0.16);
+  text-align: left;
+}
+.rowmenu-item {
+  appearance: none; border: none; background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 8px 10px; border-radius: 6px;
+  font-family: inherit; font-size: 15px; font-weight: 600; color: var(--ink);
+}
+.rowmenu-item:hover:not(:disabled) { background: var(--line); }
+.rowmenu-item:disabled { color: var(--muted-2); cursor: not-allowed; }
+.rowmenu-item.is-danger { color: var(--red); }
+.rowmenu-item.is-danger:hover { background: var(--red-soft); }
+.rowmenu-hint { font-size: 12px; font-weight: 600; color: var(--muted-2); }
+
+.colsettings-head {
+  padding: 6px 10px 8px; font-size: 13px; font-weight: 700; color: var(--muted);
+  border-bottom: 1px solid var(--line); margin-bottom: 4px;
+}
+.colsettings-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px; border-radius: 6px; cursor: pointer;
+  font-size: 15px; font-weight: 600; white-space: nowrap;
+}
+.colsettings-item:hover { background: var(--line); }
+.colsettings-item input { accent-color: var(--teal); cursor: pointer; }
+
+/* ── Insights tab ── */
+.insights-stack { display: flex; flex-direction: column; gap: 16px; }
+.guidance-stack { display: grid; gap: 8px; }
+.guidance-note {
+  background: var(--amber-soft); color: var(--amber);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  font-size: 13px; font-weight: 600;
+}
+.donut-body { padding: 28px; display: flex; justify-content: center; }
+
+/* ── Confirm dialog ── */
+.confirm-panel { width: min(440px, 100%); }
+.confirm-body { font-size: 15px; color: var(--ink-2); line-height: 1.5; }
+.confirm-error { margin-top: 10px; font-size: 14px; color: var(--red); }
+
+/* ── News stories ── */
+.news-title { font-size: 22px; font-weight: 700; }
+.news-sub { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+.news-note { color: var(--muted); font-size: 14px; }
+.news-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 32px; }
+.news-item { display: block; text-decoration: none; }
+.news-meta {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; color: var(--muted); margin-bottom: 5px;
+}
+.news-badge {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  background: var(--teal-soft); color: var(--teal-ink);
+  font-size: 11px; font-weight: 800;
+}
+.news-source { font-weight: 700; color: var(--ink-2); }
+.news-headline { font-size: 17px; font-weight: 600; line-height: 1.35; }
+.news-item:hover .news-headline { color: var(--teal-ink); text-decoration: underline; }
+
+@media (max-width: 900px) {
+  .news-grid { grid-template-columns: 1fr; }
+}
 
 /* Stock detail: price-range tab buttons in the header */
 .range-tabs { display: flex; gap: 5px; }
@@ -862,6 +999,18 @@ a { color: inherit; }
   background: var(--line); color: var(--muted); font-weight: 600;
 }
 .range-tab.is-active { background: var(--teal); color: #fff; }
+.range-tab:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Portfolio hero: value + day change sit on the page, chart in its own card */
+.hero { display: flex; flex-direction: column; gap: 4px; }
+.hero-title { font-size: 22px; font-weight: 700; }
+.hero-line { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.hero-value { font-size: 34px; font-weight: 800; letter-spacing: -1px; }
+.hero-change { font-size: 17px; font-weight: 700; }
+.hero-meta { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.hero-chart { padding: 12px 8px 8px; }
+.hero-ranges { display: flex; padding: 0 8px 10px; }
+.hero-chart-note { padding: 40px 16px; color: var(--muted); font-size: 14px; }
 
 /* Stock detail: 4-column key-stats grid */
 .statgrid { display: grid; grid-template-columns: repeat(4, 1fr); }

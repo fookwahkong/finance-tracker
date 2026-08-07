@@ -40,3 +40,4 @@ docs/*
 !docs/architecture/
 .worktrees/
 graphify-out/
+references/

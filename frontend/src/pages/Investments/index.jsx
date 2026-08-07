@@ -1,14 +1,18 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { getInvestTransactions } from "../../api/investments";
-import { money, signed } from "../../lib/format";
+import { getInvestTransactions, deleteInvestTransaction } from "../../api/investments";
 import { buildPositions, enrichPositions, portfolioTotals, allocations as buildAllocations } from "./lib/portfolio";
 import { guidanceMessages } from "./lib/guidance";
-import AllocationDonut from "./components/AllocationDonut";
-import { useQuotes } from "./hooks/useQuotes";
+import { loadColumns, saveColumns } from "./lib/columns";
+import PortfolioHero from "./components/PortfolioHero";
+import PortfolioTabs from "./components/PortfolioTabs";
 import HoldingsTable from "./components/HoldingsTable";
-import HoldingsNews from "./components/HoldingsNews";
+import InsightsTab from "./components/InsightsTab";
+import TransactionsTable from "./components/TransactionsTable";
+import NewsStories from "./components/NewsStories";
+import ConfirmDialog from "./components/ConfirmDialog";
 import TradeForm from "./components/TradeForm";
+import { useQuotes } from "./hooks/useQuotes";
 
 export default function Investments() {
   const navigate = useNavigate();
@@ -17,14 +21,14 @@ export default function Investments() {
   const [transactions, setTransactions] = useState([]);
   const [txError, setTxError] = useState(null);
   const [modal, setModal] = useState(null); // null | {editing: row|null}
-
-  // Cap the holdings card to the donut card's height so it scrolls internally
-  // once the holdings list grows taller than the donut.
-  const donutRef = useRef(null);
-  const [donutH, setDonutH] = useState(null);
+  const [tab, setTab] = useState("investments");
+  const [columns, setColumns] = useState(loadColumns);
+  const [pendingDelete, setPendingDelete] = useState(null); // null | position
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   function loadTransactions() {
-    getInvestTransactions()
+    return getInvestTransactions()
       .then((rows) => { setTransactions(rows); setTxError(null); })
       .catch((e) => setTxError(e?.response?.data?.detail || e.message));
   }
@@ -40,15 +44,29 @@ export default function Investments() {
   );
   const allocs = useMemo(() => buildAllocations(enriched), [enriched]);
 
-  useLayoutEffect(() => {
-    const el = donutRef.current;
-    if (!el) { setDonutH(null); return; }
-    const measure = () => setDonutH(el.offsetHeight);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [allocs.length]);
+  const changeColumns = (next) => { setColumns(next); saveColumns(next); };
+
+  // Deleting a holding means deleting every trade behind it — the position is
+  // an aggregate, not a record. Reload either way so the table shows what
+  // actually survived rather than an optimistic guess.
+  const deleteTrades = pendingDelete
+    ? transactions.filter((t) => t.ticker === pendingDelete.ticker)
+    : [];
+
+  async function confirmDelete() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await Promise.all(deleteTrades.map((t) => deleteInvestTransaction(t.id)));
+      await loadTransactions();
+      setPendingDelete(null);
+    } catch (e) {
+      setDeleteError(e?.response?.data?.detail || e.message);
+      await loadTransactions();
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const submit = (e) => {
     e.preventDefault();
@@ -82,84 +100,58 @@ export default function Investments() {
   return (
     <>
       {txError && <p style={{ color: "var(--red)" }}>{txError}</p>}
-      {positions.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-          <div className="stat">
-            <div className="stat-label">Total value</div>
-            <div className="stat-value">{totals.complete ? money(totals.value) : "—"}</div>
-            <div className="stat-note">cost basis {money(totals.costBasis)}</div>
-          </div>
-          <div className="stat">
-            <div className="stat-label">Day change</div>
-            <div className="stat-value" style={{ color: totals.dayChange >= 0 ? "var(--green)" : "var(--red)" }}>
-              {totals.complete ? `${signed(totals.dayChange)} (${totals.dayChangePct.toFixed(2)}%)` : "—"}
-            </div>
-          </div>
-          <div className="stat">
-            <div className="stat-label">Total return</div>
-            <div className="stat-value" style={{ color: totals.totalReturn >= 0 ? "var(--green)" : "var(--red)" }}>
-              {totals.complete ? `${signed(totals.totalReturn)} (${totals.totalReturnPct.toFixed(2)}%)` : "—"}
-            </div>
-          </div>
-        </div>
-      )}
-      {guidance.length > 0 && (
-        <div style={{ display: "grid", gap: 8 }}>
-          {guidance.map((g) => (
-            <div key={g.id} style={{
-              background: "var(--amber-soft)", color: "var(--amber)",
-              borderRadius: "var(--radius-sm)", padding: "10px 14px",
-              fontSize: 13, fontWeight: 600,
-            }}>
-              {g.text}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {positions.length > 0 && (
-        <div className="portfolio-grid">
-          <div className="invest-card donut-card" ref={donutRef}>
-            <AllocationDonut allocations={allocs} compact />
-          </div>
-          <div className="invest-card holdings-card" style={donutH ? { maxHeight: donutH } : undefined}>
-            <HoldingsTable enriched={enriched} onOpen={(t) => navigate(`/investment/stock/${t}`)} />
-            <div className="invest-card-foot">↑ click ticker symbol to open Stock Detail page</div>
-          </div>
-        </div>
-      )}
+      {positions.length > 0 && <PortfolioHero totals={totals} />}
 
       {!txError && transactions.length === 0 && (
         <p style={{ color: "var(--muted)" }}>No trades yet — add your first buy with “+ Trade”.</p>
       )}
+
       {transactions.length > 0 && (
-        <div className="invest-card">
-          <div className="invest-card-head">Trades</div>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr><th>Date</th><th>Ticker</th><th>Type</th><th>Qty</th><th>Price</th><th /></tr>
-              </thead>
-              <tbody>
-                {transactions.map((t) => (
-                  <tr key={t.id}>
-                    <td>{t.purchase_date}</td>
-                    <td>{t.ticker}</td>
-                    <td>{t.type}</td>
-                    <td>{t.quantity}</td>
-                    <td>${Number(t.price_per_share).toFixed(2)}</td>
-                    <td>
-                      <button type="button" className="btn btn-ghost" onClick={() => setModal({ editing: t })}>Edit</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <>
+          <PortfolioTabs active={tab} onChange={setTab} />
+
+          {tab === "investments" && (
+            <div className="invest-card">
+              <HoldingsTable
+                enriched={enriched}
+                totalValue={totals.value}
+                columns={columns}
+                onColumnsChange={changeColumns}
+                onOpen={(t) => navigate(`/investment/stock/${t}`)}
+                onDelete={setPendingDelete}
+              />
+              <div className="invest-card-foot">↑ click a row to open its Stock Detail page</div>
+            </div>
+          )}
+
+          {tab === "insights" && <InsightsTab allocations={allocs} guidance={guidance} />}
+
+          {tab === "transactions" && (
+            <div className="invest-card">
+              <TransactionsTable
+                transactions={transactions}
+                onEdit={(t) => setModal({ editing: t })}
+              />
+            </div>
+          )}
+        </>
       )}
 
-      <HoldingsNews tickers={positions.map((p) => p.ticker)} />
+      <NewsStories tickers={positions.map((p) => p.ticker)} />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete ${pendingDelete?.ticker}?`}
+        body={
+          `This removes all ${deleteTrades.length} ` +
+          `trade${deleteTrades.length === 1 ? "" : "s"} for ${pendingDelete?.ticker}. ` +
+          "The position and its history will be gone. This cannot be undone."
+        }
+        busy={deleting}
+        error={deleteError}
+        onConfirm={confirmDelete}
+        onCancel={() => { setPendingDelete(null); setDeleteError(null); }}
+      />
 
       <TradeForm
         open={modal !== null}

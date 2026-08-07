@@ -15,6 +15,11 @@ export function money(n) {
   });
 }
 
+// "S$1,254.95" — SGD amounts, so they read apart from the USD ones money() renders
+export function sgd(n) {
+  return "S" + money(n);
+}
+
 // "+$3,000.00" / "−$150.00"
 export function signed(n) {
   return (n >= 0 ? "+" : "−") + money(n);
