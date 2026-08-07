@@ -185,22 +185,24 @@ def build_claim_participants(inserted_claims: list[dict]) -> list[dict]:
         total = float(claim["total"])
         owner_amount = float(claim["my_share"])
         expected = float(claim["expected"])
-        participants.extend([
-            {
-                "user_id": claim["user_id"],
-                "claim_id": claim["id"],
-                "name": "You",
-                "is_owner": True,
-                "share_amount": owner_amount,
-                "share_percent": owner_amount / total * 100,
-            },
-            {
-                "user_id": claim["user_id"],
-                "claim_id": claim["id"],
-                "name": claim.get("counterparty") or "Someone",
-                "is_owner": False,
-                "share_amount": expected,
-                "share_percent": expected / total * 100,
-            },
-        ])
+        participants.extend(
+            [
+                {
+                    "user_id": claim["user_id"],
+                    "claim_id": claim["id"],
+                    "name": "You",
+                    "is_owner": True,
+                    "share_amount": owner_amount,
+                    "share_percent": owner_amount / total * 100,
+                },
+                {
+                    "user_id": claim["user_id"],
+                    "claim_id": claim["id"],
+                    "name": claim.get("counterparty") or "Someone",
+                    "is_owner": False,
+                    "share_amount": expected,
+                    "share_percent": expected / total * 100,
+                },
+            ]
+        )
     return participants

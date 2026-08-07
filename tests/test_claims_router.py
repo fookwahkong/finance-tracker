@@ -114,11 +114,14 @@ def test_list_open_claims_enriched(client, fake_supabase):
         {"id": "l1", "claim_id": "c1", "allocated_amount": 50},
     ]
     participants_tbl.select.return_value.eq.return_value.execute.return_value.data = []
-    _set_table_router(fake_supabase, {
-        "claims": claims_tbl,
-        "claim_credits": links_tbl,
-        "claim_participants": participants_tbl,
-    })
+    _set_table_router(
+        fake_supabase,
+        {
+            "claims": claims_tbl,
+            "claim_credits": links_tbl,
+            "claim_participants": participants_tbl,
+        },
+    )
 
     resp = client.get("/api/claims?status=open")
 
@@ -229,41 +232,84 @@ def test_create_claim_stores_named_participants(client, fake_supabase):
     claims_tbl.select.return_value.eq.return_value.execute.return_value.data = []
     claims_tbl.insert.return_value.execute.return_value.data = [{"id": "c1", "total": 100}]
     participants_tbl.insert.return_value.execute.return_value.data = []
-    _set_table_router(fake_supabase, {
-        "transactions": tx_tbl,
-        "claims": claims_tbl,
-        "claim_participants": participants_tbl,
-    })
+    _set_table_router(
+        fake_supabase,
+        {
+            "transactions": tx_tbl,
+            "claims": claims_tbl,
+            "claim_participants": participants_tbl,
+        },
+    )
 
-    response = client.post("/api/claims", json={
-        "debit_tx_id": "d1",
-        "participant_names": ["Alex", "Sam"],
-        "split_mode": "equal",
-    })
+    response = client.post(
+        "/api/claims",
+        json={
+            "debit_tx_id": "d1",
+            "participant_names": ["Alex", "Sam"],
+            "split_mode": "equal",
+        },
+    )
 
     assert response.status_code == 201
     assert participants_tbl.insert.call_args[0][0] == [
-        {"claim_id": "c1", "name": "You", "is_owner": True, "share_amount": 33.34, "share_percent": 100 / 3},
-        {"claim_id": "c1", "name": "Alex", "is_owner": False, "share_amount": 33.33, "share_percent": 100 / 3},
-        {"claim_id": "c1", "name": "Sam", "is_owner": False, "share_amount": 33.33, "share_percent": 100 / 3},
+        {
+            "claim_id": "c1",
+            "name": "You",
+            "is_owner": True,
+            "share_amount": 33.34,
+            "share_percent": 100 / 3,
+        },
+        {
+            "claim_id": "c1",
+            "name": "Alex",
+            "is_owner": False,
+            "share_amount": 33.33,
+            "share_percent": 100 / 3,
+        },
+        {
+            "claim_id": "c1",
+            "name": "Sam",
+            "is_owner": False,
+            "share_amount": 33.33,
+            "share_percent": 100 / 3,
+        },
     ]
 
 
 def test_list_claims_returns_participant_balances(client, fake_supabase):
     claims_tbl, participants_tbl, links_tbl = MagicMock(), MagicMock(), MagicMock()
-    claims_tbl.select.return_value.execute.return_value.data = [{"id": "c1", "total": 100, "status": "open"}]
+    claims_tbl.select.return_value.execute.return_value.data = [
+        {"id": "c1", "total": 100, "status": "open"}
+    ]
     participants_tbl.select.return_value.eq.return_value.execute.return_value.data = [
-        {"id": "owner", "claim_id": "c1", "name": "You", "is_owner": True, "share_amount": 40, "share_percent": 40},
-        {"id": "alex", "claim_id": "c1", "name": "Alex", "is_owner": False, "share_amount": 60, "share_percent": 60},
+        {
+            "id": "owner",
+            "claim_id": "c1",
+            "name": "You",
+            "is_owner": True,
+            "share_amount": 40,
+            "share_percent": 40,
+        },
+        {
+            "id": "alex",
+            "claim_id": "c1",
+            "name": "Alex",
+            "is_owner": False,
+            "share_amount": 60,
+            "share_percent": 60,
+        },
     ]
     links_tbl.select.return_value.eq.return_value.execute.return_value.data = [
         {"id": "l1", "claim_id": "c1", "participant_id": "alex", "allocated_amount": 70},
     ]
-    _set_table_router(fake_supabase, {
-        "claims": claims_tbl,
-        "claim_participants": participants_tbl,
-        "claim_credits": links_tbl,
-    })
+    _set_table_router(
+        fake_supabase,
+        {
+            "claims": claims_tbl,
+            "claim_participants": participants_tbl,
+            "claim_credits": links_tbl,
+        },
+    )
 
     response = client.get("/api/claims")
 
@@ -276,7 +322,12 @@ def test_list_claims_returns_participant_balances(client, fake_supabase):
 
 
 def test_link_credit_to_non_owner_participant(client, fake_supabase):
-    claims_tbl, participants_tbl, tx_tbl, links_tbl = MagicMock(), MagicMock(), MagicMock(), MagicMock()
+    claims_tbl, participants_tbl, tx_tbl, links_tbl = (
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+    )
     claims_tbl.select.return_value.eq.return_value.execute.return_value.data = [{"id": "c1"}]
     participants_tbl.select.return_value.eq.return_value.execute.return_value.data = [
         {"id": "alex", "claim_id": "c1", "is_owner": False},
@@ -284,14 +335,23 @@ def test_link_credit_to_non_owner_participant(client, fake_supabase):
     tx_tbl.select.return_value.eq.return_value.execute.return_value.data = [_tx(80, "cr1")]
     links_tbl.select.return_value.eq.return_value.execute.return_value.data = []
     links_tbl.insert.return_value.execute.return_value.data = [
-        {"id": "l1", "claim_id": "c1", "participant_id": "alex", "credit_tx_id": "cr1", "allocated_amount": 50},
+        {
+            "id": "l1",
+            "claim_id": "c1",
+            "participant_id": "alex",
+            "credit_tx_id": "cr1",
+            "allocated_amount": 50,
+        },
     ]
-    _set_table_router(fake_supabase, {
-        "claims": claims_tbl,
-        "claim_participants": participants_tbl,
-        "transactions": tx_tbl,
-        "claim_credits": links_tbl,
-    })
+    _set_table_router(
+        fake_supabase,
+        {
+            "claims": claims_tbl,
+            "claim_participants": participants_tbl,
+            "transactions": tx_tbl,
+            "claim_credits": links_tbl,
+        },
+    )
 
     response = client.post(
         "/api/claims/c1/participants/alex/credits",

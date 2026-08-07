@@ -111,16 +111,34 @@ def test_build_claims_empty_when_fewer_than_two_dinners():
 
 
 def test_build_claim_participants_creates_an_owner_and_a_person():
-    participants = build_claim_participants([{
-        "id": "claim-1",
-        "user_id": "demo-uid",
-        "total": 42,
-        "my_share": 21,
-        "expected": 21,
-        "counterparty": "Priya",
-    }])
+    participants = build_claim_participants(
+        [
+            {
+                "id": "claim-1",
+                "user_id": "demo-uid",
+                "total": 42,
+                "my_share": 21,
+                "expected": 21,
+                "counterparty": "Priya",
+            }
+        ]
+    )
 
     assert participants == [
-        {"user_id": "demo-uid", "claim_id": "claim-1", "name": "You", "is_owner": True, "share_amount": 21, "share_percent": 50},
-        {"user_id": "demo-uid", "claim_id": "claim-1", "name": "Priya", "is_owner": False, "share_amount": 21, "share_percent": 50},
+        {
+            "user_id": "demo-uid",
+            "claim_id": "claim-1",
+            "name": "You",
+            "is_owner": True,
+            "share_amount": 21,
+            "share_percent": 50,
+        },
+        {
+            "user_id": "demo-uid",
+            "claim_id": "claim-1",
+            "name": "Priya",
+            "is_owner": False,
+            "share_amount": 21,
+            "share_percent": 50,
+        },
     ]

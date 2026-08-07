@@ -26,8 +26,7 @@ def _enrich_claim(db: Client, claim: dict) -> dict:
     links = _links_for_claim(db, claim["id"])
     enriched = dict(claim)
     participants = (
-        db.table("claim_participants").select("*").eq("claim_id", claim["id"]).execute().data
-        or []
+        db.table("claim_participants").select("*").eq("claim_id", claim["id"]).execute().data or []
     )
     if not participants:
         received = claim_math.received_total(links)
@@ -117,7 +116,9 @@ def create_claim(claim: ClaimCreate, db: Client = Depends(get_db)):
     }
     result = db.table("claims").insert(payload).execute()
     if participants:
-        participant_rows = [{"claim_id": result.data[0]["id"], **participant} for participant in participants]
+        participant_rows = [
+            {"claim_id": result.data[0]["id"], **participant} for participant in participants
+        ]
         db.table("claim_participants").insert(participant_rows).execute()
     return result.data[0]
 
