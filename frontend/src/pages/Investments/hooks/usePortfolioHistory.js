@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getInvestTransactions, getAggregates } from "../../../api/investments";
 import { barsFromAggregates } from "../lib/chart";
 import { positionsAsOf } from "../lib/portfolio";
+import { queryKeys } from "../../../api/queryKeys";
 
 const DAY = 86400000;
 
@@ -10,12 +12,16 @@ const DAY = 86400000;
 // Returns { series: [{date, value}], loading }.
 export function usePortfolioHistory(days = 120) {
   const [state, setState] = useState({ series: [], loading: true });
+  const { data: transactions } = useQuery({
+    queryKey: queryKeys.investTransactions,
+    queryFn: getInvestTransactions,
+  });
 
   useEffect(() => {
+    if (transactions === undefined) return undefined;
     let alive = true;
     (async () => {
       try {
-        const transactions = await getInvestTransactions();
         const tickers = [...new Set(transactions.map((t) => t.ticker))];
         if (!tickers.length) {
           if (alive) setState({ series: [], loading: false });
@@ -54,7 +60,7 @@ export function usePortfolioHistory(days = 120) {
       }
     })();
     return () => { alive = false; };
-  }, [days]);
+  }, [transactions, days]);
 
   return state;
 }

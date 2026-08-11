@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getInvestTransactions, getQuote } from "../../../api/investments";
 import { buildPositions, enrichPositions, portfolioTotals } from "../lib/portfolio";
+import { queryKeys } from "../../../api/queryKeys";
 
 // One-shot portfolio value in USD for the net-worth card (no polling).
 // Returns { valueUsd: number|null, totals: object|null, loading }. null = no holdings or fetch failed.
 export function usePortfolioValue() {
   const [state, setState] = useState({ valueUsd: null, totals: null, loading: true });
+  const { data: transactions } = useQuery({
+    queryKey: queryKeys.investTransactions,
+    queryFn: getInvestTransactions,
+  });
 
   useEffect(() => {
+    if (transactions === undefined) return undefined;
     let alive = true;
     (async () => {
       try {
-        const positions = buildPositions(await getInvestTransactions());
+        const positions = buildPositions(transactions);
         if (!positions.length) {
           if (alive) setState({ valueUsd: null, totals: null, loading: false });
           return;
@@ -27,7 +34,7 @@ export function usePortfolioValue() {
       }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [transactions]);
 
   return state;
 }
