@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getBudgets, upsertBudget, getTransactions } from "../api/client";
+import { queryKeys } from "../api/queryKeys";
 import { CATEGORIES, emojiFor } from "../lib/categories";
 import { money } from "../lib/format";
 import { yearsInData, categoryYearStats, budgetStatus } from "../lib/aggregate";
@@ -12,20 +14,19 @@ const STATUS_META = {
 };
 
 export default function Budget() {
-  const [budgets, setBudgets] = useState({});
-  const [transactions, setTransactions] = useState([]);
+  const queryClient = useQueryClient();
+  const { data: budgetRows = [] } = useQuery({ queryKey: queryKeys.budgets, queryFn: getBudgets });
+  const budgets = useMemo(
+    () => Object.fromEntries(budgetRows.map((b) => [b.category, b.amount])),
+    [budgetRows]
+  );
+  const { data: transactions = [] } = useQuery({
+    queryKey: queryKeys.transactions(),
+    queryFn: () => getTransactions(),
+  });
   const [drafts, setDrafts] = useState({});
   const [savingCat, setSavingCat] = useState(null);
   const [year, setYear] = useState(String(new Date().getFullYear()));
-
-  useEffect(() => {
-    getBudgets()
-      .then((rows) => setBudgets(Object.fromEntries(rows.map((b) => [b.category, b.amount]))))
-      .catch(() => setBudgets({}));
-  }, []);
-  useEffect(() => {
-    getTransactions().then(setTransactions).catch(() => setTransactions([]));
-  }, []);
 
   const years = useMemo(() => yearsInData(transactions), [transactions]);
 
@@ -47,7 +48,7 @@ export default function Budget() {
     setSavingCat(category);
     try {
       await upsertBudget(category, amount);
-      setBudgets((b) => ({ ...b, [category]: amount }));
+      await queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
       setDrafts((d) => { const next = { ...d }; delete next[category]; return next; });
     } finally {
       setSavingCat(null);
