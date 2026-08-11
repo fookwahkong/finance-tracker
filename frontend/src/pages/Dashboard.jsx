@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   ResponsiveContainer, AreaChart, Area, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from "recharts";
 import { getMonthlyReport, getTransactions, getBudgets } from "../api/client";
+import { queryKeys } from "../api/queryKeys";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../lib/format";
 import { emojiFor } from "../lib/categories";
 import { lastSixMonths, monthlyTotals } from "../lib/aggregate";
@@ -28,20 +30,22 @@ function Demo() {
 
 export default function Dashboard() {
   const [month, setMonth] = useState(currentMonth());
-  const [budgets, setBudgets] = useState([]);
-  const [allTx, setAllTx] = useState([]);
-  const [report, setReport] = useState(null);
-  const [recent, setRecent] = useState([]);
+  const { data: budgets = [] } = useQuery({ queryKey: queryKeys.budgets, queryFn: getBudgets });
+  const { data: allTx = [] } = useQuery({
+    queryKey: queryKeys.transactions(),
+    queryFn: () => getTransactions(),
+  });
+  const { data: report = null } = useQuery({
+    queryKey: queryKeys.monthlyReport(month),
+    queryFn: () => getMonthlyReport(month),
+  });
+  const { data: monthTx = [] } = useQuery({
+    queryKey: queryKeys.transactions(month),
+    queryFn: () => getTransactions(month),
+  });
+  const recent = useMemo(() => monthTx.slice(0, 5), [monthTx]);
   const { valueUsd: portfolioValue, totals: portfolioTotalsData } = usePortfolioValue();
   const { series: portfolioHistory } = usePortfolioHistory(120);
-
-  useEffect(() => {
-    getMonthlyReport(month).then(setReport).catch(() => setReport(null));
-    getTransactions(month).then((txs) => setRecent(txs.slice(0, 5))).catch(() => setRecent([]));
-  }, [month]);
-
-  useEffect(() => { getBudgets().then(setBudgets).catch(() => setBudgets([])); }, []);
-  useEffect(() => { getTransactions().then(setAllTx).catch(() => setAllTx([])); }, []);
 
   const sixMonth = useMemo(() => monthlyTotals(allTx, lastSixMonths()), [allTx]);
   const cashFlowData = useMemo(
