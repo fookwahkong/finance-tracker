@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getInvestTransactions, deleteInvestTransaction } from "../../api/investments";
+import { queryKeys } from "../../api/queryKeys";
 import { buildPositions, enrichPositions, portfolioTotals, allocations as buildAllocations } from "./lib/portfolio";
 import { guidanceMessages } from "./lib/guidance";
 import { loadColumns, saveColumns } from "./lib/columns";
@@ -16,9 +18,13 @@ import { useQuotes } from "./hooks/useQuotes";
 
 export default function Investments() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [draft, setDraft] = useState("");
-  const [transactions, setTransactions] = useState([]);
-  const [txError, setTxError] = useState(null);
+  const {
+    data: transactions = [],
+    error: txQueryError,
+  } = useQuery({ queryKey: queryKeys.investTransactions, queryFn: getInvestTransactions });
+  const txError = txQueryError ? (txQueryError?.response?.data?.detail || txQueryError.message) : null;
   const [modal, setModal] = useState(null); // null | {editing: row|null}
   const [tab, setTab] = useState("investments");
   const [columns, setColumns] = useState(loadColumns);
@@ -27,11 +33,8 @@ export default function Investments() {
   const [deleteError, setDeleteError] = useState(null);
 
   function loadTransactions() {
-    return getInvestTransactions()
-      .then((rows) => { setTransactions(rows); setTxError(null); })
-      .catch((e) => setTxError(e?.response?.data?.detail || e.message));
+    return queryClient.invalidateQueries({ queryKey: queryKeys.investTransactions });
   }
-  useEffect(() => { loadTransactions(); }, []);
 
   const positions = useMemo(() => buildPositions(transactions), [transactions]);
   const quotes = useQuotes(positions.map((p) => p.ticker));
