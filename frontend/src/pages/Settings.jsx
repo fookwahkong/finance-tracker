@@ -1,18 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCategories, createCategory, deleteCategory } from "../api/client";
+import { queryKeys } from "../api/queryKeys";
 import { useAuth } from "../auth/AuthContext";
 
 export default function Settings() {
   const { signOut } = useAuth();
-  const [categories, setCategories] = useState([]);
+  const queryClient = useQueryClient();
+  const { data: categories = [] } = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: getCategories,
+  });
   const [newName, setNewName] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-
-  function load() {
-    getCategories().then(setCategories).catch(() => {});
-  }
-  useEffect(() => { load(); }, []);
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -22,7 +23,7 @@ export default function Settings() {
       await createCategory(newName.trim());
       setNewName("");
       setError("");
-      load();
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     } catch (err) {
       setError(err?.response?.data?.detail || "Failed to add category.");
     } finally {
@@ -33,7 +34,7 @@ export default function Settings() {
   async function handleDelete(cat) {
     if (window.confirm(`Delete category "${cat.name}"?`)) {
       await deleteCategory(cat.id);
-      load();
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     }
   }
 
