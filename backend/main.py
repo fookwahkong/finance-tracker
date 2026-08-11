@@ -16,6 +16,7 @@ from backend.routers import (
     networth,
     reports,
     statements,
+    savings,
     subscriptions,
     telegram,
     transactions,
@@ -87,6 +88,7 @@ app.include_router(ingest.router, prefix="/api/ingest", tags=["ingest"])
 app.include_router(statements.router, prefix="/api/statements", tags=["statements"])
 app.include_router(budgets.router, prefix="/api/budgets", tags=["budgets"])
 app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["subscriptions"])
+app.include_router(savings.router, prefix="/api/savings", tags=["savings"])
 app.include_router(networth.router, prefix="/api/networth", tags=["networth"])
 app.include_router(claims.router, prefix="/api/claims", tags=["claims"])
 app.include_router(demo.router, prefix="/api/demo", tags=["demo"])

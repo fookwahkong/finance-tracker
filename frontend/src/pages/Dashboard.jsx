@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, AreaChart, Area, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from "recharts";
-import { getMonthlyReport, getTransactions, getBudgets } from "../api/client";
+import { getMonthlyReport, getTransactions, getBudgets, getSavings } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../lib/format";
 import { emojiFor } from "../lib/categories";
@@ -18,19 +18,10 @@ import { usePortfolioHistory } from "./Investments/hooks/usePortfolioHistory";
 const shortMonth = (ym) => monthLabel(ym).split(" ")[0];
 
 // Static sample data for widgets that have no backend yet.
-const DEMO_GOALS = [
-  { name: "Emergency Fund", icon: "🛟", saved: "$8,400", target: "$12,000", pct: 70 },
-  { name: "Vacation 2026", icon: "✈️", saved: "$2,100", target: "$5,000", pct: 42 },
-  { name: "New Car", icon: "🚗", saved: "$11,500", target: "$30,000", pct: 38 },
-];
-
-function Demo() {
-  return <span className="demo-tag" title="Sample data — not yet wired to a backend">DEMO</span>;
-}
-
 export default function Dashboard() {
   const [month, setMonth] = useState(currentMonth());
   const { data: budgets = [] } = useQuery({ queryKey: queryKeys.budgets, queryFn: getBudgets });
+  const { data: savings = { goals: [], contributions: [] } } = useQuery({ queryKey: queryKeys.savings, queryFn: getSavings });
   const { data: allTx = [] } = useQuery({
     queryKey: queryKeys.transactions(),
     queryFn: () => getTransactions(),
@@ -184,14 +175,14 @@ export default function Dashboard() {
             <div className="card-title">Investment Performance</div>
           </div>
           {portfolioValue == null ? (
-            <div className="empty">No holdings yet — add trades on the Investment page.</div>
+            <div className="empty">No holdings yet - add trades on the Investment page.</div>
           ) : (
             <>
               <Link to="/investment" style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "6px 0 14px", textDecoration: "none", color: "inherit" }}>
                 <div style={{ fontSize: 30, fontWeight: 800 }}>{money(portfolioValue)}</div>
                 {portfolioTotalsData?.complete && (
                   <div style={{ fontSize: 12, fontWeight: 700, color: portfolioTotalsData.dayChange >= 0 ? "var(--green)" : "var(--red)" }}>
-                    {portfolioTotalsData.dayChange >= 0 ? "↑" : "↓"} {Math.abs(portfolioTotalsData.dayChangePct).toFixed(2)}%
+                    {portfolioTotalsData.dayChange >= 0 ? "+" : "-"} {Math.abs(portfolioTotalsData.dayChangePct).toFixed(2)}%
                     <span style={{ color: "var(--muted-2)", fontWeight: 500 }}> today</span>
                   </div>
                 )}
@@ -213,7 +204,7 @@ export default function Dashboard() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="empty">Building portfolio history…</div>
+                <div className="empty">Building portfolio history...</div>
               )}
             </>
           )}
@@ -226,26 +217,25 @@ export default function Dashboard() {
       <div className="grid-2b">
         <section className="card">
           <div className="card-head">
-            <div className="card-title">Savings Goals <Demo /></div>
+            <div className="card-title">Savings Goals</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {DEMO_GOALS.map((g) => (
-              <div key={g.name}>
+            {savings.goals.length === 0 ? <div className="empty">No savings goals yet. Add one from Budget.</div> : savings.goals.map((g) => { const saved = savings.contributions.filter((c) => c.goal_id === g.id).reduce((sum, c) => sum + Number(c.amount), 0); const pct = Math.min(100, Math.round(saved / Number(g.target_amount) * 100)); return (
+              <div key={g.id}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>
-                  <span>{g.icon}</span>
                   <span style={{ fontWeight: 700, fontSize: 14 }}>{g.name}</span>
-                  <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--muted)" }}>{g.saved} / {g.target}</span>
+                  <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--muted)" }}>{money(saved)} / {money(g.target_amount)}</span>
                 </div>
-                <div className="progress"><span style={{ width: g.pct + "%" }} /></div>
+                <div className="progress"><span style={{ width: pct + "%" }} /></div>
               </div>
-            ))}
+            ); })}
           </div>
         </section>
 
         <section className="card">
           <div className="card-head">
             <div className="card-title">Recent Transactions</div>
-            <Link to="/spending" style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, textDecoration: "none", color: "var(--teal)" }}>View all →</Link>
+            <Link to="/spending" style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, textDecoration: "none", color: "var(--teal)" }}>View all -&gt;</Link>
           </div>
           {recent.length === 0 ? (
             <div className="empty">No transactions this month.</div>

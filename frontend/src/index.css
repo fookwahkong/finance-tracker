@@ -52,13 +52,13 @@ body {
 
 a { color: inherit; }
 
-/* â”€â”€ App shell â”€â”€ */
+/* section */
 .app {
   display: flex;
   min-height: 100vh;
 }
 
-/* â”€â”€ Sidebar â”€â”€ */
+/* section */
 .sidebar {
   width: 248px;
   flex: none;
@@ -188,7 +188,7 @@ a { color: inherit; }
   padding: 2px 5px;
 }
 
-/* â”€â”€ Main column â”€â”€ */
+/* section */
 .main {
   flex: 1;
   min-width: 0;
@@ -261,7 +261,7 @@ a { color: inherit; }
   gap: 20px;
 }
 
-/* â”€â”€ Cards â”€â”€ */
+/* section */
 .card {
   background: var(--surface);
   border: 1px solid var(--border-2);
@@ -298,7 +298,7 @@ a { color: inherit; }
   padding: 3px 7px;
 }
 
-/* â”€â”€ Grids â”€â”€ */
+/* section */
 .grid-2 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 20px; }
 .grid-2b { display: grid; grid-template-columns: 1fr 1.55fr; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -307,7 +307,7 @@ a { color: inherit; }
 .grid-cols { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; }
 .networth-split { grid-template-columns: 1fr 1fr; }
 
-/* â”€â”€ Stat / summary cards â”€â”€ */
+/* section */
 .stat {
   background: var(--surface);
   border: 1px solid var(--border-2);
@@ -324,7 +324,7 @@ a { color: inherit; }
 .pos { color: var(--green); }
 .neg { color: var(--red); }
 
-/* â”€â”€ Donut â”€â”€ */
+/* section */
 .donut-wrap { display: flex; align-items: center; gap: 20px; }
 .donut {
   position: relative;
@@ -345,16 +345,16 @@ a { color: inherit; }
 .legend-dot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
 .legend-row b { margin-left: auto; }
 
-/* â”€â”€ Bars (mini sparkline) â”€â”€ */
+/* section */
 .bars { display: flex; align-items: flex-end; gap: 5px; height: 34px; }
 .bar { width: 7px; border-radius: 4px; }
 
-/* â”€â”€ Progress â”€â”€ */
+/* section */
 .progress { height: 9px; border-radius: 9px; background: var(--bg); overflow: hidden; }
 .progress > span { display: block; height: 100%; border-radius: 9px; background: var(--teal); }
 .progress.sm { height: 8px; }
 
-/* â”€â”€ List rows (bills / goals / txns) â”€â”€ */
+/* section */
 .row {
   display: flex;
   align-items: center;
@@ -376,7 +376,7 @@ a { color: inherit; }
 .row-sub { font-size: 14px; color: var(--muted-2); }
 .row-right { margin-left: auto; text-align: right; }
 
-/* â”€â”€ Table â”€â”€ */
+/* section */
 .tbl { width: 100%; border-collapse: collapse; font-size: 15.5px; }
 .tbl th {
   text-align: left;
@@ -390,7 +390,7 @@ a { color: inherit; }
 .tbl tbody tr:last-child td { border-bottom: none; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 
-/* â”€â”€ Chip â”€â”€ */
+/* section */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -404,7 +404,7 @@ a { color: inherit; }
 }
 .chip .legend-dot { width: 8px; height: 8px; }
 
-/* â”€â”€ Buttons â”€â”€ */
+/* section */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -431,7 +431,7 @@ a { color: inherit; }
 .btn-icon { padding: 7px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* â”€â”€ Forms â”€â”€ */
+/* section */
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field-label { font-size: 14px; font-weight: 600; color: var(--muted); }
 .input, .select {
@@ -456,7 +456,7 @@ a { color: inherit; }
   align-items: end;
 }
 
-/* â”€â”€ Dropdown menu â”€â”€ */
+/* section */
 .dd { position: relative; }
 .dd-toggle {
   display: flex;
@@ -496,7 +496,7 @@ a { color: inherit; }
 .dd-item:hover { background: #f3f5f5; }
 .dd-item.on { background: var(--teal-soft); color: var(--teal-ink); font-weight: 700; }
 
-/* â”€â”€ Date group label â”€â”€ */
+/* section */
 .date-label {
   font-size: 14px;
   font-weight: 700;
@@ -504,7 +504,7 @@ a { color: inherit; }
   padding: 14px 0 8px;
 }
 
-/* â”€â”€ Empty state â”€â”€ */
+/* section */
 .empty {
   padding: 36px 16px;
   text-align: center;
@@ -512,7 +512,7 @@ a { color: inherit; }
   font-size: 16px;
 }
 
-/* â”€â”€ Placeholder page â”€â”€ */
+/* section */
 .placeholder {
   display: flex;
   flex-direction: column;
@@ -537,14 +537,14 @@ a { color: inherit; }
 .placeholder h2 { font-size: 22px; font-weight: 800; }
 .placeholder p { color: var(--muted); font-size: 16px; max-width: 360px; }
 
-/* â”€â”€ Animations â”€â”€ */
+/* section */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .fade-in { animation: fadeUp 0.2s ease forwards; }
 
-/* â”€â”€ Responsive â”€â”€ */
+/* section */
 @media (max-width: 1000px) {
   .grid-2, .grid-2b, .grid-cols { grid-template-columns: 1fr; }
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
@@ -748,7 +748,7 @@ a { color: inherit; }
 .budget-tbl th:first-child, .budget-tbl td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
 .budget-tbl .over-cell { color: var(--red); font-weight: 700; }
 
-/* â”€â”€ Investments page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* section */
 /* Stacking and gap the dissolved shell used to provide. */
 .invest-page { display: flex; flex-direction: column; gap: 18px; }
 
@@ -772,7 +772,7 @@ a { color: inherit; }
   margin: 0 auto 0 0;
 }
 
-/* Inner bordered boxes (holdings, trades, stat gridâ€¦) */
+/* section */
 .invest-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-sm); overflow: hidden;
@@ -799,7 +799,7 @@ a { color: inherit; }
 }
 .invest-card tbody tr:last-child td { border-bottom: none; }
 
-/* ── Portfolio tabs ── */
+/* section */
 .ptabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
 .ptab {
   appearance: none; border: none; background: none; cursor: pointer;
@@ -815,7 +815,7 @@ a { color: inherit; }
   border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 700;
 }
 
-/* ── Holdings + transactions tables ── */
+/* section */
 .holdings-tbl .num, .tx-tbl .num { text-align: right; }
 .holdings-row { cursor: pointer; }
 .holdings-row:hover { background: var(--teal-soft); }
@@ -833,10 +833,10 @@ a { color: inherit; }
 .cell-sub { display: block; font-size: 13px; }
 .tx-tbl .cell-sub { color: var(--muted-2); }
 
-/* Right-hand utility column — column settings in the head, ⋮ in each row */
+/* section */
 .holdings-tbl .col-actions, .tx-tbl .col-actions { width: 1%; text-align: right; }
 
-/* ── Row ⋮ menu and column settings popovers ── */
+/* section */
 .rowmenu, .colsettings { position: relative; display: inline-block; }
 .rowmenu-btn, .colsettings-btn {
   appearance: none; border: none; background: transparent; cursor: pointer;
@@ -877,7 +877,7 @@ a { color: inherit; }
 .colsettings-item:hover { background: var(--line); }
 .colsettings-item input { accent-color: var(--teal); cursor: pointer; }
 
-/* ── Insights tab ── */
+/* section */
 .insights-stack { display: flex; flex-direction: column; gap: 16px; }
 .guidance-stack { display: grid; gap: 8px; }
 .guidance-note {
@@ -887,12 +887,12 @@ a { color: inherit; }
 }
 .donut-body { padding: 28px; display: flex; justify-content: center; }
 
-/* ── Confirm dialog ── */
+/* section */
 .confirm-panel { width: min(440px, 100%); }
 .confirm-body { font-size: 15px; color: var(--ink-2); line-height: 1.5; }
 .confirm-error { margin-top: 10px; font-size: 14px; color: var(--red); }
 
-/* ── Glossary term explainer ── */
+/* section */
 /* A dotted underline rather than a link colour: these sit inside dense tables,
    where anything louder would compete with the numbers for attention. */
 .term-info {
@@ -916,7 +916,7 @@ a { color: inherit; }
 }
 .term-implication { margin-top: 5px; font-size: 15px; color: var(--ink-2); line-height: 1.5; }
 
-/* ── News stories ── */
+/* section */
 .news-title { font-size: 22px; font-weight: 700; }
 .news-sub { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
 .news-note { color: var(--muted); font-size: 14px; }
@@ -926,7 +926,7 @@ a { color: inherit; }
   display: flex; align-items: center; gap: 7px;
   font-size: 13px; color: var(--muted); margin-bottom: 5px;
 }
-/* Which holding the story is about — the reason it's in this list at all */
+/* section */
 .news-chip {
   flex-shrink: 0; border-radius: 5px; padding: 2px 7px;
   background: var(--teal-soft); color: var(--teal-ink);
@@ -972,7 +972,7 @@ a { color: inherit; }
 .statgrid-label { font-size: 13px; color: var(--muted); }
 .statgrid-value { font-size: 18px; font-weight: 700; }
 
-/* ── Login page ── */
+/* section */
 .login-shell {
   min-height: 100vh;
   display: flex;

@@ -33,6 +33,14 @@ export const upsertBudget = (category, amount) =>
 export const deleteBudget = (category) =>
   api.delete(`/api/budgets/${encodeURIComponent(category)}`);
 
+// Savings goals
+export const getSavings = () => api.get("/api/savings").then((r) => r.data);
+export const syncSavings = () => api.post("/api/savings/sync").then((r) => r.data);
+export const upsertSavingProfile = (data) => api.put("/api/savings/profile", data).then((r) => r.data);
+export const createSavingGoal = (data) => api.post("/api/savings/goals", data).then((r) => r.data);
+export const deleteSavingGoal = (id) => api.delete(`/api/savings/goals/${id}`);
+export const addSavingContribution = (id, amount) =>
+  api.post(`/api/savings/goals/${id}/contributions`, { amount }).then((r) => r.data);
 // Reports
 export const getMonthlyReport = (month) =>
   api.get("/api/reports/monthly", { params: { month } }).then((r) => r.data);

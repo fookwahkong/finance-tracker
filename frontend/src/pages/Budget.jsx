@@ -5,6 +5,7 @@ import { queryKeys } from "../api/queryKeys";
 import { CATEGORIES, emojiFor } from "../lib/categories";
 import { money } from "../lib/format";
 import { yearsInData, categoryYearStats, budgetStatus } from "../lib/aggregate";
+import SavingsGoals from "./SavingsGoals";
 
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const STATUS_META = {
@@ -27,6 +28,7 @@ export default function Budget() {
   const [drafts, setDrafts] = useState({});
   const [savingCat, setSavingCat] = useState(null);
   const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [tab, setTab] = useState("budget");
 
   const years = useMemo(() => yearsInData(transactions), [transactions]);
 
@@ -57,6 +59,11 @@ export default function Budget() {
 
   return (
     <>
+      <div className="card" style={{ padding: 8, display: "flex", gap: 8 }}>
+        <button type="button" className={`btn ${tab === "budget" ? "" : "btn-outline"}`} onClick={() => setTab("budget")}>Budget by Category</button>
+        <button type="button" className={`btn ${tab === "goals" ? "" : "btn-outline"}`} onClick={() => setTab("goals")}>Savings Goals</button>
+      </div>
+      {tab === "goals" ? <SavingsGoals /> : <>
       <div className="grid-3">
         <div className="stat">
           <div className="stat-label">On track</div>
@@ -66,7 +73,7 @@ export default function Budget() {
         <div className="stat">
           <div className="stat-label">Watch</div>
           <div className="stat-value" style={{ color: "var(--amber)" }}>{counts.watch}</div>
-          <div className="stat-note">avg 80–100% of budget</div>
+          <div className="stat-note">avg 80-100% of budget</div>
         </div>
         <div className="stat">
           <div className="stat-label">Over</div>
@@ -77,13 +84,13 @@ export default function Budget() {
 
       <div className="card" style={{ padding: "12px 20px", display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center" }}>
         <span className="status-badge status-on">On track</span><span className="row-sub">avg &lt; 80% of budget</span>
-        <span className="status-badge status-watch">Watch</span><span className="row-sub">avg 80–100% of budget</span>
+          <div className="stat-note">avg 80-100% of budget</div>
         <span className="status-badge status-over">Over</span><span className="row-sub">avg &gt; budget</span>
       </div>
 
       <section className="card" >
         <div className="card-head">
-          <div className="card-title">Budget by Category — {year}</div>
+          <div className="card-title">Budget by Category - {year}</div>
           <select
             className="select"
             style={{ width: "auto", marginLeft: 8 }}
@@ -114,10 +121,10 @@ export default function Budget() {
                     <td><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>{emojiFor(r.cat)} <b style={{ fontWeight: 600 }}>{r.cat}</b></span></td>
                     {r.months.map((amt, i) => (
                       <td key={i} className={r.budget > 0 && amt > r.budget ? "over-cell" : undefined}>
-                        {amt ? money(amt).replace(/\.\d+$/, "") : "—"}
+                        {amt ? money(amt).replace(/\.\d+$/, "") : "-"}
                       </td>
                     ))}
-                    <td style={{ fontWeight: 700 }}>{r.average ? money(r.average).replace(/\.\d+$/, "") : "—"}</td>
+                    <td style={{ fontWeight: 700 }}>{r.average ? money(r.average).replace(/\.\d+$/, "") : "-"}</td>
                     <td>
                       <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
                         <input
@@ -131,7 +138,7 @@ export default function Budget() {
                           onChange={(e) => setDrafts((d) => ({ ...d, [r.cat]: e.target.value }))}
                         />
                         <button type="button" className="btn btn-outline btn-sm" onClick={() => save(r.cat)} disabled={savingCat === r.cat || draft === undefined}>
-                          {savingCat === r.cat ? "…" : "Save"}
+                          {savingCat === r.cat ? "..." : "Save"}
                         </button>
                       </span>
                     </td>
@@ -143,6 +150,7 @@ export default function Budget() {
           </table>
         </div>
       </section>
+      </>}
     </>
   );
 }
