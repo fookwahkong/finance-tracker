@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTransactions, getCategories } from "../api/client";
 import { getClaims } from "../api/claims";
+import { queryKeys } from "../api/queryKeys";
 import Overview from "./Spending/Overview";
 import MonthVsMonth from "./Spending/MonthVsMonth";
 import Insights from "./Spending/Insights";
@@ -16,24 +18,28 @@ const TABS = [
 
 export default function Spending() {
   const [tab, setTab] = useState("overview");
-  const [transactions, setTransactions] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [claims, setClaims] = useState([]);
+  const queryClient = useQueryClient();
 
-  // to fetch transaction via getTransactions
-  const reload = useCallback(() => {
-    getTransactions().then(setTransactions).catch(() => setTransactions([]));
-  }, []);
+  const { data: transactions = [] } = useQuery({
+    queryKey: queryKeys.transactions(),
+    queryFn: () => getTransactions(),
+  });
+  const { data: claims = [] } = useQuery({
+    queryKey: queryKeys.claims,
+    queryFn: () => getClaims(),
+  });
+  const { data: categories = [] } = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: getCategories,
+  });
 
-  // to fetch claims via getClaims
-  const reloadClaims = useCallback(() => {
-    getClaims().then(setClaims).catch(() => setClaims([]));
-  }, []);
-
-  // useEffect 
-  useEffect(() => { reload(); }, [reload]);
-  useEffect(() => { reloadClaims(); }, [reloadClaims]);
-  useEffect(() => { getCategories().then(setCategories).catch(() => {}); }, []);
+  const reload = () => {
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["monthlyReport"] });
+  };
+  const reloadClaims = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.claims });
+  };
 
   const claimLinks = linksForClaims(claims);
 
