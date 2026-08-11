@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getMonthlyReport } from "../api/client";
+import { queryKeys } from "../api/queryKeys";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
@@ -18,11 +20,10 @@ const tooltipStyle = {
 
 export default function Report() {
   const [month, setMonth] = useState(currentMonth());
-  const [report, setReport] = useState(null);
-
-  useEffect(() => {
-    getMonthlyReport(month).then(setReport).catch(() => setReport(null));
-  }, [month]);
+  const { data: report = null } = useQuery({
+    queryKey: queryKeys.monthlyReport(month),
+    queryFn: () => getMonthlyReport(month),
+  });
 
   const chartData = report
     ? Object.entries(report.breakdown).map(([name, value]) => ({
