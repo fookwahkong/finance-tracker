@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useQuery } from "@tanstack/react-query";
 import { parseStatement, importStatement, getCategories } from "../api/client";
+import { queryKeys } from "../api/queryKeys";
 import { signed } from "../lib/format";
 
 const SOURCE_LABELS = {
@@ -9,7 +11,10 @@ const SOURCE_LABELS = {
 const sourceLabel = (s) => SOURCE_LABELS[s] || s;
 
 export default function Import() {
-  const [categories, setCategories] = useState([]);
+  const { data: categories = [] } = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: getCategories,
+  });
   const [rows, setRows] = useState([]);
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -17,8 +22,6 @@ export default function Import() {
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
   const fileRef = useRef(null);
-
-  useEffect(() => { getCategories().then(setCategories).catch(() => {}); }, []);
 
   const knownNames = useMemo(() => new Set(categories.map((c) => c.name)), [categories]);
 
