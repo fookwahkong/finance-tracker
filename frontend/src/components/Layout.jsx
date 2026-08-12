@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import AssistantWidget from "./AssistantWidget";
 import Sidebar, { NAV } from "./Sidebar";
 
 const TITLES = [...NAV.main, ...NAV.manage].reduce(
@@ -38,6 +39,7 @@ export default function Layout() {
           <Outlet />
         </div>
       </main>
+      <AssistantWidget />
     </div>
   );
 }

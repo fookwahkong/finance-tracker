@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.routers import (
+    agent,
     budgets,
     categories,
     claims,
@@ -106,6 +107,7 @@ app.include_router(
 )
 app.include_router(investments_fx.router, prefix="/api/investments/fx", tags=["investments"])
 app.include_router(investments_ai.router, prefix="/api/investments/ai", tags=["investments"])
+app.include_router(agent.router, prefix="/api/agent", tags=["agent"])
 
 
 @app.get("/")

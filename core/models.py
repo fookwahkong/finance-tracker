@@ -104,3 +104,8 @@ class InvestTransactionUpsert(BaseModel):
 
 class WatchlistAdd(BaseModel):
     ticker: str
+
+
+class AgentChatRequest(BaseModel):
+    message: str
+    history: list[dict] = Field(default_factory=list)

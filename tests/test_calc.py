@@ -1,4 +1,4 @@
-from core.calc import month_range, monthly_summary
+from core.calc import budget_status, month_range, monthly_summary
 
 
 def test_month_range_mid_year():
@@ -27,3 +27,19 @@ def test_monthly_summary_totals_and_breakdown():
 def test_monthly_summary_empty():
     result = monthly_summary([])
     assert result == {"total_income": 0, "total_expenses": 0, "net": 0, "breakdown": {}}
+
+
+def test_budget_status_no_budget_is_on():
+    assert budget_status(500, 0) == "on"
+
+
+def test_budget_status_over():
+    assert budget_status(120, 100) == "over"
+
+
+def test_budget_status_watch_at_boundary():
+    assert budget_status(80, 100) == "watch"
+
+
+def test_budget_status_on():
+    assert budget_status(50, 100) == "on"
