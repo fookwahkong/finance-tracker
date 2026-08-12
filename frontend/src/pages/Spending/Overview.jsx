@@ -6,8 +6,8 @@ import {
 import { createClaim, linkCredit, settleClaim, reopenClaim, deleteClaim } from "../../api/claims";
 import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
-import { yearsInData, applyAdjustmentsToMonth } from "../../lib/aggregate";
-import { claimAdjustments, receivedTotal, variance, allocatedByCredit, claimCreatePayload, linksForClaims, participantBalance, participantsForClaim } from "../../lib/claims";
+import { yearsInData } from "../../lib/aggregate";
+import { applyClaimAdjustments, receivedTotal, variance, allocatedByCredit, claimCreatePayload, linksForClaims, participantBalance, participantsForClaim } from "../../lib/claims";
 import ClaimSplitDialog from "./ClaimSplitDialog";
 import ClaimRepaymentDialog from "./ClaimRepaymentDialog";
 import { dragPreviewPosition, useClaimDrag } from "../../hooks/useClaimDrag";
@@ -52,6 +52,8 @@ export default function Overview({ transactions, categories, claims = [], claimL
   const [repaymentSaving, setRepaymentSaving] = useState(false);
   const [repaymentError, setRepaymentError] = useState("");
   const [dropTargetId, setDropTargetId] = useState(null);
+  const [showAllOut, setShowAllOut] = useState(false);
+  const [showAllIn, setShowAllIn] = useState(false);
   const { dragPreview, startDrag, moveDrag, endDrag } = useClaimDrag();
 
   const years = useMemo(() => yearsInData(transactions), [transactions]);
@@ -83,9 +85,17 @@ export default function Overview({ transactions, categories, claims = [], claimL
     return map;
   }, [claims]);
 
-  const adjustments = useMemo(
-    () => claimAdjustments(transactions, claims, claimLinks),
+  // The claim-adjusted transaction list is the source of truth for every
+  // spend/income total on this page (and Month vs Month / Insights) — a
+  // claimed debit's magnitude already reflects what's been reimbursed, and
+  // a claimed credit's magnitude already reflects what's not real income.
+  const adjustedTransactions = useMemo(
+    () => applyClaimAdjustments(transactions, claims, claimLinks),
     [transactions, claims, claimLinks],
+  );
+  const adjustedMonthTx = useMemo(
+    () => adjustedTransactions.filter((t) => String(t.date || "").slice(0, 7) === month),
+    [adjustedTransactions, month],
   );
 
   useEffect(() => {
@@ -101,32 +111,29 @@ export default function Overview({ transactions, categories, claims = [], claimL
       : monthTx.filter((t) => (t.category || "Uncategorized") === catFilter)
   ), [monthTx, catFilter]);
 
-  const rawSpend = filtered.filter((t) => t.amount < 0).reduce((s, t) => s - t.amount, 0);
-  const rawIncome = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const monthAdj = applyAdjustmentsToMonth(month, null, adjustments);
-  const totalSpend = catFilter === "all"
-    ? rawSpend - monthAdj.spendingDelta
-    : rawSpend - applyAdjustmentsToMonth(month, catFilter, adjustments).spendingDelta;
-  const totalIncome = rawIncome - monthAdj.incomeDelta;
-  const net = totalIncome - totalSpend;
-  const avg = filtered.length
-    ? filtered.reduce((s, t) => s + Math.abs(t.amount), 0) / filtered.length
-    : 0;
-
   const catRows = useMemo(() => {
-    const by = {};
-    monthTx.filter((t) => t.amount < 0).forEach((t) => {
+    // Money Out and Money In are computed independently per category, from
+    // claim-adjusted amounts — never netted against each other. A category
+    // with both spend and income shows as two separate, honest rows (e.g.
+    // -15 spend and +100 +100 income in the same category shows "−$15" in
+    // Money Out and "+$200" in Money In, not one masked "+$185").
+    const spend = {};
+    const income = {};
+    adjustedMonthTx.forEach((t) => {
       const name = t.category || "Uncategorized";
-      by[name] = (by[name] || 0) + (-t.amount);
+      if (t.amount < 0) spend[name] = (spend[name] || 0) + (-t.amount);
+      else if (t.amount > 0) income[name] = (income[name] || 0) + Number(t.amount);
     });
-    for (const name of Object.keys(by)) {
-      const { spendingDelta } = applyAdjustmentsToMonth(month, name, adjustments);
-      by[name] = Math.max(0, by[name] - spendingDelta);
-    }
-    const sorted = Object.entries(by).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
-    return sorted.map(([name, value], i) => ({ name, value, color: colorFor(i) }));
-  }, [monthTx, month, adjustments]);
-  const breakdownSpend = catRows.reduce((s, c) => s + c.value, 0);
+    const build = (map, sign) => Object.entries(map)
+      .filter(([, magnitude]) => magnitude > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, magnitude], i) => ({ name, value: sign * magnitude, color: colorFor(i) }));
+    return { moneyOut: build(spend, -1), moneyIn: build(income, 1) };
+  }, [adjustedMonthTx]);
+  // The donut/Share % read directly from the Money Out rows above — there is
+  // no separate "gross spend" total to disagree with them.
+  const breakdownSpend = catRows.moneyOut.reduce((s, c) => s - c.value, 0);
+  const totalMoneyIn = catRows.moneyIn.reduce((s, c) => s + c.value, 0);
 
   const groups = useMemo(() => {
     const order = [];
@@ -142,6 +149,24 @@ export default function Overview({ transactions, categories, claims = [], claimL
     });
     return order.map((date) => ({ date, items: map[date] }));
   }, [filtered, creditAllocations]);
+
+  function renderCatRow(c, shareLabel) {
+    const active = catFilter === c.name;
+    const toggle = () => setCatFilter(active ? "all" : c.name);
+    return (
+      <tr key={c.name} className={`cat-row${active ? " is-active" : ""}`} role="button" tabIndex={0} aria-pressed={active} onClick={toggle}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}>
+        <td>
+          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="legend-dot" style={{ width: 10, height: 10, background: c.color }} />
+            <b style={{ fontWeight: 600 }}>{c.name}</b>
+          </span>
+        </td>
+        <td className={`num ${c.value < 0 ? "neg" : "pos"}`} style={{ fontWeight: 700 }}>{signed(c.value)}</td>
+        <td className="num" style={{ color: "var(--muted)" }}>{shareLabel}</td>
+      </tr>
+    );
+  }
 
   function resetForm() {
     setForm({ ...EMPTY_FORM, date: new Date().toISOString().slice(0, 10) });
@@ -245,6 +270,12 @@ export default function Overview({ transactions, categories, claims = [], claimL
     setRepaymentError("");
   }
 
+  function openRepaymentPicker(claim, people, debitDate) {
+    if (people.length === 0) return;
+    setRepayment({ claim, participant: people[0], participants: people, claimMonth: String(debitDate || "").slice(0, 7) });
+    setRepaymentError("");
+  }
+
   function dropOnParticipant(event, claim, participant) {
     event.preventDefault();
     const creditId = event.dataTransfer.getData("text/credit-id");
@@ -258,7 +289,8 @@ export default function Overview({ transactions, categories, claims = [], claimL
     setRepaymentSaving(true);
     setRepaymentError("");
     try {
-      await linkCredit(repayment.claim.id, repayment.participant.id, data);
+      const { participant_id, ...payload } = data;
+      await linkCredit(repayment.claim.id, participant_id, payload);
       setRepayment(null);
       reloadClaims?.();
       onChanged?.();
@@ -413,64 +445,34 @@ export default function Overview({ transactions, categories, claims = [], claimL
         </section>
       ) : (
         <>
-          {/* Summary */}
-          <div className="grid-4">
-            <div className="stat">
-              <div className="stat-label">Total Spending</div>
-              <div className="stat-value neg">{money(totalSpend)}</div>
-              <div className="stat-note">{monthLabel(month)}</div>
-            </div>
-            <div className="stat">
-              <div className="stat-label">Total Income</div>
-              <div className="stat-value pos">{money(totalIncome)}</div>
-              <div className="stat-note">{monthLabel(month)}</div>
-            </div>
-            <div className="stat">
-              <div className="stat-label">Net Cash Flow</div>
-              <div className="stat-value">{signed(net)}</div>
-              <div className="stat-note">Income − spending</div>
-            </div>
-            <div className="stat accent">
-              <div className="stat-label">Transactions</div>
-              <div className="stat-value">{filtered.length}</div>
-              <div className="stat-note">Avg {money(avg)} each</div>
-            </div>
-          </div>
-
-          {/* Spending by category */}
+          {/* Money out */}
           <section className="card">
-            <div className="card-head"><div className="card-title">Spending by Category</div></div>
-            {catRows.length === 0 ? (
+            <div className="card-head"><div className="card-title">Money out</div></div>
+            {catRows.moneyOut.length === 0 ? (
               <div className="empty">No spending for this selection.</div>
             ) : (
               <div className="grid-cols">
-                <table className="tbl">
-                  <thead>
-                    <tr><th>Category</th><th className="num">Spent</th><th className="num">Share</th></tr>
-                  </thead>
-                  <tbody>
-                    {catRows.map((c) => {
-                      const active = catFilter === c.name;
-                      const toggle = () => setCatFilter(active ? "all" : c.name);
-                      return (
-                        <tr key={c.name} className={`cat-row${active ? " is-active" : ""}`} role="button" tabIndex={0} aria-pressed={active} onClick={toggle}
-                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}>
-                          <td>
-                            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <span className="legend-dot" style={{ width: 10, height: 10, background: c.color }} />
-                              <b style={{ fontWeight: 600 }}>{c.name}</b>
-                            </span>
-                          </td>
-                          <td className="num" style={{ fontWeight: 700 }}>{money(c.value)}</td>
-                          <td className="num" style={{ color: "var(--muted)" }}>{breakdownSpend ? Math.round((c.value / breakdownSpend) * 100) : 0}%</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <div>
+                  <table className="tbl">
+                    <thead>
+                      <tr><th>Category</th><th className="num">Amount</th><th className="num">Share</th></tr>
+                    </thead>
+                    <tbody>
+                      {(showAllOut ? catRows.moneyOut : catRows.moneyOut.slice(0, 4)).map((c) => renderCatRow(
+                        c,
+                        `${Math.round((-c.value / breakdownSpend) * 100)}%`,
+                      ))}
+                    </tbody>
+                  </table>
+                  {catRows.moneyOut.length > 4 && (
+                    <button type="button" className="btn btn-ghost" onClick={() => setShowAllOut((v) => !v)}>
+                      {showAllOut ? "Show less" : `Show ${catRows.moneyOut.length - 4} more`}
+                    </button>
+                  )}
+                </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <div className="donut" style={{ width: 200, height: 200 }}>
-                    <div className="donut-ring" style={{ width: 200, height: 200, background: donutGradient(catRows) }} />
+                    <div className="donut-ring" style={{ width: 200, height: 200, background: donutGradient(catRows.moneyOut.map((c) => ({ value: -c.value, color: c.color }))) }} />
                     <div className="donut-hole" style={{ inset: 38 }}>
                       <div style={{ fontSize: 12, color: "var(--muted-2)" }}>Total spending</div>
                       <div style={{ fontSize: 26, fontWeight: 800 }}>{money(breakdownSpend).replace(/\.\d+$/, "")}</div>
@@ -478,6 +480,33 @@ export default function Overview({ transactions, categories, claims = [], claimL
                   </div>
                 </div>
               </div>
+            )}
+          </section>
+
+          {/* Money in */}
+          <section className="card">
+            <div className="card-head"><div className="card-title">Money in</div></div>
+            {catRows.moneyIn.length === 0 ? (
+              <div className="empty">No income for this selection.</div>
+            ) : (
+              <>
+                <table className="tbl">
+                  <thead>
+                    <tr><th>Category</th><th className="num">Amount</th><th className="num">Share</th></tr>
+                  </thead>
+                  <tbody>
+                    {(showAllIn ? catRows.moneyIn : catRows.moneyIn.slice(0, 4)).map((c) => renderCatRow(
+                      c,
+                      `${Math.round((c.value / totalMoneyIn) * 100)}%`,
+                    ))}
+                  </tbody>
+                </table>
+                {catRows.moneyIn.length > 4 && (
+                  <button type="button" className="btn btn-ghost" onClick={() => setShowAllIn((v) => !v)}>
+                    {showAllIn ? "Show less" : `Show ${catRows.moneyIn.length - 4} more`}
+                  </button>
+                )}
+              </>
             )}
           </section>
 
@@ -585,6 +614,7 @@ export default function Overview({ transactions, categories, claims = [], claimL
                                 <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                                   {!settled && <button type="button" className="btn btn-outline" onClick={() => onSettle(claim.id)}>Close claim</button>}
                                   {settled && <button type="button" className="btn btn-ghost" onClick={() => onReopen(claim.id)}>Reopen</button>}
+                                  {!settled && <button type="button" className="btn btn-outline" onClick={() => openRepaymentPicker(claim, people, t.date)}>Choose repayment</button>}
                                   {!settled && <button type="button" className="btn btn-outline" onClick={() => onDelete(claim.id)}>Delete</button>}
                                 </span>
                               </div>
@@ -660,6 +690,9 @@ export default function Overview({ transactions, categories, claims = [], claimL
               credits={availableCredits}
               initialCreditId={repayment.creditId}
               participant={repayment.participant}
+              participants={repayment.participants}
+              claimMonth={repayment.claimMonth}
+              years={years}
               saving={repaymentSaving}
               serverError={repaymentError}
               onClose={() => !repaymentSaving && setRepayment(null)}

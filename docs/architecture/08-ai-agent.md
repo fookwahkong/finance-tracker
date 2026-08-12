@@ -131,20 +131,3 @@ right now — try again tomorrow"* — with the **conversation history rolled
 back to before the failed turn**, so a transient provider error doesn't
 corrupt what the client resends next time. The frontend has its own fallback
 for the same case (`AssistantWidget.jsx` checks for HTTP 429).
-
-## What's intentionally not here (yet)
-
-This ships as a **read-only** agent — Phase 1 of a three-phase plan
-(`ai-agent.md` in the repo root). Two deliberate omissions:
-
-- **No write actions.** The model can look up data but can't create a budget
-  or log a saving contribution on the user's behalf. `db/005_agent.sql`
-  already defines an `agent_actions` table (`tool_name`, `proposed_input`,
-  `status: approved | rejected`) for the confirm-before-execute flow this
-  enables, but nothing writes to it yet — the migration is staged ahead of
-  the feature.
-- **No persisted conversation history.** Covered above — by design for now,
-  revisit if multi-session continuity turns out to matter.
-
-Both are scoped, known next steps, not oversights — see
-[design decisions](06-design-decisions.md#accepted-trade-offs).

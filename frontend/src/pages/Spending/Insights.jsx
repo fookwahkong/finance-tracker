@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getBudgets, getMonthlyReport, getSubscriptions } from "../../api/client";
 import { queryKeys } from "../../api/queryKeys";
 import { money, monthLabel, signed } from "../../lib/format";
+import { applyClaimAdjustments } from "../../lib/claims";
 import {
   categoryDeltas,
   spendingPace,
@@ -28,7 +30,7 @@ function Empty({ label = "Not enough data yet." }) {
   return <div className="empty">{label}</div>;
 }
 
-export default function Insights({ transactions = [], today = new Date() }) {
+export default function Insights({ transactions = [], claims = [], claimLinks = [], today = new Date() }) {
   const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
   const { data: budgets = [] } = useQuery({ queryKey: queryKeys.budgets, queryFn: getBudgets });
@@ -41,12 +43,20 @@ export default function Insights({ transactions = [], today = new Date() }) {
     queryFn: () => getMonthlyReport(month),
   });
 
-  const deltas = categoryDeltas(transactions, today);
-  const pace = spendingPace(transactions, today);
-  const biggest = biggestTransaction(transactions, today);
-  const tipping = budgetsClosestToTipping(transactions, budgets, today);
-  const creep = subscriptionCreep(transactions, subscriptions, today);
-  const split = weekdayWeekendSplit(transactions, today);
+  // Money In/Money Out are the source of truth everywhere — every insight
+  // below sums these claim-adjusted transactions, not raw ones, so a
+  // reimbursed shared expense doesn't inflate spend here either.
+  const adjustedTransactions = useMemo(
+    () => applyClaimAdjustments(transactions, claims, claimLinks),
+    [transactions, claims, claimLinks],
+  );
+
+  const deltas = categoryDeltas(adjustedTransactions, today);
+  const pace = spendingPace(adjustedTransactions, today);
+  const biggest = biggestTransaction(adjustedTransactions, today);
+  const tipping = budgetsClosestToTipping(adjustedTransactions, budgets, today);
+  const creep = subscriptionCreep(adjustedTransactions, subscriptions, today);
+  const split = weekdayWeekendSplit(adjustedTransactions, today);
 
   return (
     <>

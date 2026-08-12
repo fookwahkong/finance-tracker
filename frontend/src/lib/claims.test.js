@@ -28,6 +28,47 @@ describe("linksByClaim", () => {
   });
 });
 
+describe("applyClaimAdjustments", () => {
+  it("shrinks a claimed debit's magnitude by what's been received against it", () => {
+    const transactions = [{ id: "d1", date: "2026-06-01", amount: -100, category: "Food & Drink" }];
+    const claims = [{ id: "c1", debit_tx_id: "d1", expected: 75 }];
+    const links = [{ id: "l1", claim_id: "c1", credit_tx_id: "cr1", allocated_amount: 75 }];
+
+    const result = claimMath.applyClaimAdjustments(transactions, claims, links);
+    expect(result[0].amount).toBe(-25);
+  });
+
+  it("only reflects what's actually received, not the full expected share", () => {
+    const transactions = [{ id: "d1", date: "2026-06-01", amount: -100, category: "Food & Drink" }];
+    const claims = [{ id: "c1", debit_tx_id: "d1", expected: 75 }];
+    const links = [{ id: "l1", claim_id: "c1", credit_tx_id: "cr1", allocated_amount: 30 }];
+
+    const result = claimMath.applyClaimAdjustments(transactions, claims, links);
+    expect(result[0].amount).toBe(-70);
+  });
+
+  it("zeroes out a fully-claimed credit and shrinks a partially-claimed one", () => {
+    const transactions = [
+      { id: "cr-full", date: "2026-06-02", amount: 75, category: "Others" },
+      { id: "cr-partial", date: "2026-06-03", amount: 80, category: "Others" },
+    ];
+    const links = [
+      { id: "l1", claim_id: "c1", credit_tx_id: "cr-full", allocated_amount: 75 },
+      { id: "l2", claim_id: "c2", credit_tx_id: "cr-partial", allocated_amount: 30 },
+    ];
+
+    const result = claimMath.applyClaimAdjustments(transactions, [], links);
+    expect(result[0].amount).toBe(0);
+    expect(result[1].amount).toBe(50);
+  });
+
+  it("leaves unrelated transactions unchanged", () => {
+    const transactions = [{ id: "t1", date: "2026-06-01", amount: -50, category: "Groceries" }];
+    const result = claimMath.applyClaimAdjustments(transactions, [], []);
+    expect(result[0].amount).toBe(-50);
+  });
+});
+
 describe("claimAdjustments", () => {
   const tx = [{ id: "d1", date: "2026-06-01", amount: -100, category: "Groceries" }];
 
@@ -126,6 +167,14 @@ describe("calculateClaimSplit", () => {
 
     expect(split.valid).toBe(false);
     expect(split.errors.duplicates).toMatch(/unique/i);
+  });
+
+  it("gives the owner exactly 0 when the remainder doesn't divide evenly", () => {
+    const split = claimMath.calculateClaimSplit(100, ["Alex", "Sam", "Jo"], 0);
+
+    expect(split.ownerAmount).toBe(0);
+    const namedTotal = split.namedParticipants.reduce((sum, p) => sum + p.amount, 0);
+    expect(Math.round(namedTotal * 100) / 100).toBe(100);
   });
 
   it("rejects custom owner percentages outside the claim range", () => {

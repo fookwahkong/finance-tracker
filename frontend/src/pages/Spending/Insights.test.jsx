@@ -46,6 +46,19 @@ describe("Insights", () => {
     expect(screen.getByText("$90.00")).toBeInTheDocument();
   });
 
+  it("reflects claim reimbursements in Biggest transaction, not the raw amount paid", async () => {
+    const transactions = [
+      { id: "debit-1", date: "2026-08-02", amount: -500, item: "Group dinner", category: "Food & Drink" },
+    ];
+    const claims = [{ id: "claim-1", debit_tx_id: "debit-1", expected: 450 }];
+    const claimLinks = [{ id: "link-1", claim_id: "claim-1", credit_tx_id: "credit-1", allocated_amount: 450 }];
+    renderWithClient(<Insights transactions={transactions} claims={claims} claimLinks={claimLinks} today={TODAY} />);
+
+    // -500 + 450 received = your real -$50 share, not the full $500 paid.
+    expect(await screen.findByText("$50.00")).toBeInTheDocument();
+    expect(screen.queryByText("$500.00")).not.toBeInTheDocument();
+  });
+
   it("renders graceful empty states when there is not enough data", async () => {
     getBudgets.mockResolvedValue([]);
     getSubscriptions.mockResolvedValue([]);

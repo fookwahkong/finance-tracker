@@ -102,6 +102,24 @@ def test_participant_split_custom_owner_percentage():
     assert [participant["share_percent"] for participant in participants] == [40, 30, 30]
 
 
+def test_participant_split_custom_zero_percent_gives_owner_exactly_zero():
+    # $100 over 3 named participants doesn't divide evenly; the leftover cent
+    # must land on a participant, not silently get forced back onto the owner.
+    participants = claims.participant_split(100, ["Alex", "Sam", "Jo"], "custom", 0)
+
+    assert participants[0] == {"name": "You", "is_owner": True, "share_amount": 0.0, "share_percent": 0.0}
+    assert sum(p["share_amount"] for p in participants[1:]) == 100.0
+
+
+def test_participant_split_zero_percent_with_one_participant_gives_them_100():
+    # When the owner keeps 0% and there's exactly one other person, that
+    # person legitimately owes the full 100% — the DB's share_percent check
+    # constraint must allow this for non-owner rows (db/006_*.sql).
+    participants = claims.participant_split(100, ["Alex"], "custom", 0)
+
+    assert participants[1] == {"name": "Alex", "is_owner": False, "share_amount": 100.0, "share_percent": 100.0}
+
+
 def test_participant_split_rejects_invalid_names_and_percentages():
     for names, mode, percentage in [
         ([], "equal", None),

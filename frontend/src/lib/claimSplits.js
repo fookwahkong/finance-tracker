@@ -62,19 +62,26 @@ export function calculateClaimSplit(total, names, ownerPercent = null) {
   const totalCents = Number.isFinite(totalNumber) && totalNumber > 0 ? toCents(totalNumber) : 0;
   const namedCount = cleanNames.length;
   let ownerCents = totalCents;
-  let namedCents = 0;
   let namedPercent = 0;
+  let namedCentsList = [];
 
   if (namedCount > 0 && !errors.ownerPercent) {
     if (mode === "equal") {
-      namedCents = Math.floor(totalCents / (namedCount + 1));
-      ownerCents = totalCents - (namedCents * namedCount);
+      // Leftover cent from the integer split goes to the owner (You).
+      const namedCentsEach = Math.floor(totalCents / (namedCount + 1));
+      ownerCents = totalCents - (namedCentsEach * namedCount);
       namedPercent = 100 / (namedCount + 1);
+      namedCentsList = new Array(namedCount).fill(namedCentsEach);
     } else {
-      const requestedOwnerCents = Math.round(totalCents * parsedOwnerPercent / 100);
-      namedCents = Math.floor((totalCents - requestedOwnerCents) / namedCount);
-      ownerCents = totalCents - (namedCents * namedCount);
+      // Owner's cents are exactly the requested percentage; the leftover
+      // cent from dividing the remainder goes to a participant instead, so
+      // an explicit 0% (or any %) request is honored exactly.
+      ownerCents = Math.round(totalCents * parsedOwnerPercent / 100);
+      const namedTotalCents = totalCents - ownerCents;
+      const namedCentsEach = Math.floor(namedTotalCents / namedCount);
       namedPercent = (100 - parsedOwnerPercent) / namedCount;
+      namedCentsList = new Array(namedCount).fill(namedCentsEach);
+      namedCentsList[namedCount - 1] += namedTotalCents - (namedCentsEach * namedCount);
     }
   }
 
@@ -90,7 +97,7 @@ export function calculateClaimSplit(total, names, ownerPercent = null) {
     name,
     isOwner: false,
     percent: namedPercent,
-    amount: fromCents(namedCents),
+    amount: fromCents(namedCentsList[index] ?? 0),
   }));
 
   return {

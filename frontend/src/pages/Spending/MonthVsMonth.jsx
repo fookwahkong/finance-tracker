@@ -1,22 +1,31 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { yearsInData, incomeSpendByMonth, categoryMonthlySeries } from "../../lib/aggregate";
+import { applyClaimAdjustments } from "../../lib/claims";
 import { CATEGORIES } from "../../lib/categories";
-import { signed } from "../../lib/format";
+import { money, signed } from "../../lib/format";
 
 const IncomeSpendBars = lazy(() => import("../../components/IncomeSpendBars"));
 const CategoryLine = lazy(() => import("../../components/CategoryLine"));
 
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export default function MonthVsMonth({ transactions }) {
+export default function MonthVsMonth({ transactions, claims = [], claimLinks = [] }) {
   const years = useMemo(() => yearsInData(transactions), [transactions]);
   const [year, setYear] = useState(String(years[0]));
   const [category, setCategory] = useState(CATEGORIES[0]);
 
-  const barData = useMemo(() => incomeSpendByMonth(transactions, Number(year)), [transactions, year]);
+  // Money In/Money Out are the source of truth everywhere — this feeds the
+  // same claim-adjusted transactions into the existing (unchanged) chart
+  // math, rather than the raw transactions it used before.
+  const adjustedTransactions = useMemo(
+    () => applyClaimAdjustments(transactions, claims, claimLinks),
+    [transactions, claims, claimLinks],
+  );
+
+  const barData = useMemo(() => incomeSpendByMonth(adjustedTransactions, Number(year)), [adjustedTransactions, year]);
   const lineData = useMemo(
-    () => categoryMonthlySeries(transactions, Number(year), category),
-    [transactions, year, category],
+    () => categoryMonthlySeries(adjustedTransactions, Number(year), category),
+    [adjustedTransactions, year, category],
   );
 
   return (
@@ -45,6 +54,21 @@ export default function MonthVsMonth({ transactions }) {
             </div>
           ))}
         </div>
+        <table className="tbl" style={{ marginTop: 16 }}>
+          <thead>
+            <tr><th>Month</th><th className="num">Money in</th><th className="num">Money out</th><th className="num">Net</th></tr>
+          </thead>
+          <tbody>
+            {barData.map((d, i) => (
+              <tr key={d.month}>
+                <td>{MONTH_ABBR[i]}</td>
+                <td className="num pos">{money(d.income)}</td>
+                <td className="num neg">{money(d.spending)}</td>
+                <td className={`num ${d.net >= 0 ? "pos" : "neg"}`}>{signed(d.net)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className="card">

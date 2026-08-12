@@ -31,9 +31,12 @@ def participant_split(
 
     participant_count = len(clean_names)
     if split_mode == "equal":
-        named_cents = total_cents // (participant_count + 1)
+        # Leftover cent from the integer split goes to the owner (You).
+        named_cents_each = total_cents // (participant_count + 1)
         owner_share_percent = 100 / (participant_count + 1)
         named_share_percent = owner_share_percent
+        owner_cents = total_cents - (named_cents_each * participant_count)
+        named_cents = [named_cents_each] * participant_count
     else:
         if owner_percent is None:
             raise ValueError("A custom split requires your percentage.")
@@ -45,10 +48,15 @@ def participant_split(
                 Decimal("1"), rounding=ROUND_HALF_UP
             )
         )
-        named_cents = (total_cents - owner_cents) // participant_count
         named_share_percent = (100 - owner_share_percent) / participant_count
+        # Owner's cents are exactly the requested percentage; the leftover
+        # cent from dividing the remainder goes to a participant instead, so
+        # an explicit 0% (or any %) request is honored exactly.
+        named_total_cents = total_cents - owner_cents
+        named_cents_each = named_total_cents // participant_count
+        named_cents = [named_cents_each] * participant_count
+        named_cents[-1] += named_total_cents - (named_cents_each * participant_count)
 
-    owner_cents = total_cents - (named_cents * participant_count)
     participants = [
         {
             "name": "You",
@@ -61,10 +69,10 @@ def participant_split(
         {
             "name": name,
             "is_owner": False,
-            "share_amount": named_cents / 100,
+            "share_amount": cents / 100,
             "share_percent": named_share_percent,
         }
-        for name in clean_names
+        for name, cents in zip(clean_names, named_cents)
     )
     return participants
 

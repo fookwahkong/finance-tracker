@@ -86,7 +86,7 @@ create table if not exists claim_participants (
   name text not null,
   is_owner boolean not null default false,
   share_amount numeric not null check (share_amount >= 0),
-  share_percent numeric not null check (share_percent >= 0 and share_percent < 100),
+  share_percent numeric not null check (share_percent >= 0 and (is_owner = false or share_percent < 100)),
   created_at timestamptz not null default now()
 );
 

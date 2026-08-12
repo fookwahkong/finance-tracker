@@ -8,14 +8,7 @@ Here's the task list to hand off, grouped by phase:
 - Frontend chat tab — React state holds history, no persistence needed yet
 - Test against your three original asks: spending, savings, stock pros/cons
 
-**Phase 2 — write actions with confirmation**
-- Add `mutates: True` tools: `create_budget`, `create_saving_goal`, `add_saving_contribution`
-- Orchestrator: pause instead of executing when a `mutates` tool is called
-- `POST /api/agent/confirm` — executes or declines, resumes the loop, writes to `agent_actions`
-- Frontend confirm/reject proposal card
-- Daily cap on confirmed writes
-
-**Phase 3 — polish**
+**Phase 2 — polish**
 - Cap tool-loop iterations + daily agent LLM calls (extend your `ai_usage` pattern)
 - "Not financial advice" caveat on investment-touching responses
 - Optional: Telegram channel, since `core/agent` stays transport-agnostic like the rest of your business logicHand this task list to Claude Code with your repo open — it can work through the phases against your actual files and tests, rather than you copy-pasting code out of this chat.

@@ -117,8 +117,6 @@ known, not oversights:
 | **Containerization** | Vercel's build handles the runtime; no orchestration need. | Dockerize the backend if it ever moves off serverless. |
 | **External log aggregation** | Structured logs, request IDs, health checks, and opt-in error tracking already exist; logs stream to stdout. | Drain stdout to a log service on a server-hosted path. |
 | **Local / SQLite storage** | Ships on Supabase; the DB seam (`core/db.py`) is isolated but not yet swappable. | A true local-first storage backend for full self-hosting. |
-| **End-to-end (browser) tests** | Core logic and components are covered by pytest + Vitest; CI runs them on every push. | Add Playwright coverage for the critical user flows. |
-| **Agent write-actions** | The [AI agent](08-ai-agent.md) shipped read-only first — a smaller, safer surface than letting a model mutate financial data. | `mutates` tools (create budget, log a contribution) behind a confirm/reject step, logged to the already-staged `agent_actions` table. |
 
 Naming the gaps honestly — and knowing the next step for each — is itself part of
 understanding what building software end-to-end actually looks like.
