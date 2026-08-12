@@ -69,7 +69,7 @@ export default function Spending() {
         />
       )}
       {tab === "month" && <MonthVsMonth transactions={transactions} />}
-      {tab === "insights" && <Insights />}
+      {tab === "insights" && <Insights transactions={transactions} />}
       {tab === "claims" && (
         <Claims claims={claims} transactions={transactions} onChanged={() => { reload(); reloadClaims(); }} />
       )}

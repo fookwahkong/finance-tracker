@@ -18,6 +18,7 @@ Read top-to-bottom for the full picture, or jump to a topic:
 5. [Deployment](05-deployment.md) — GitHub → Vercel → cron → webhooks → DB.
 6. [Design decisions](06-design-decisions.md) — the trade-offs and the reasoning.
 7. [Observability](07-observability.md) — logging, health, and error handling.
+8. [AI agent](08-ai-agent.md) — the conversational, tool-calling assistant.
 
 > **Built spec-first.** Every feature here began as a written design doc before
 > any code — the modular `core/` refactor, email ingestion, the statement
@@ -43,7 +44,8 @@ requirements to deployment. Each stage below links to where it's documented.
 | **Deployment** | Deployed serverless on Vercel with two scheduled cron jobs and a Telegram webhook. → [deployment](05-deployment.md) |
 | **Testing & CI** | Covered parsing, validation, settlement math, and every router with pytest + Vitest, run on every push by GitHub Actions (lint, tests, build, secret scan). → [decisions](06-design-decisions.md#quality--continuous-integration) |
 | **Observability** | Structured logging with request correlation, fail-safe error handling, health checks, and opt-in error tracking. → [observability](07-observability.md) |
-| **Future work** | Identified next steps: containerization, external log aggregation, local/SQLite storage, an AI agent. → [decisions](06-design-decisions.md#accepted-trade-offs) |
+| **AI agent** | Built a Claude tool-use loop that answers questions over the user's own spending, budgets, savings, and portfolio data. → [AI agent](08-ai-agent.md) |
+| **Future work** | Identified next steps: containerization, external log aggregation, local/SQLite storage, agent write-actions with confirmation. → [decisions](06-design-decisions.md#accepted-trade-offs) |
 
 ---
 
@@ -98,6 +100,11 @@ backend hands it to a request-scoped client so Postgres evaluates
 **AI services** — A pluggable seam (`LLM_PROVIDER`) swaps Anthropic Claude (prod)
 and local Ollama (dev) behind one interface. Used for natural-language entry,
 bank-statement extraction, and cached investment analysis. → [AI pipeline](04-ai-pipeline.md)
+
+**AI agent** — A Claude tool-use loop (`core/agent/`) that answers free-form
+questions by calling read-only tools over the user's spending, budgets,
+savings goals, and portfolio — Claude picks the tool, the orchestrator just
+executes it. → [AI agent](08-ai-agent.md)
 
 **Cron jobs** — Two Vercel cron schedules: a daily job that ingests bank-alert
 emails, and a nightly job that resets the public demo account.

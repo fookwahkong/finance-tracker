@@ -114,9 +114,9 @@ Each gated endpoint depends on `enforce_ai_limit`, which calls the atomic
 `increment_ai_usage()` RPC and returns HTTP 429 once the demo account passes the
 limit. The personal account is exempt. → [database](03-database-design.md#authentication--row-level-security)
 
-## What's intentionally *not* here (yet)
+## A third AI surface: the conversational agent
 
-There is **no conversational "ask a question" agent** today. A Claude tool-use
-agent that answers *"how am I doing this month?"* is on the
-[roadmap](06-design-decisions.md#accepted-trade-offs) — it's called out here so
-the documentation matches what actually ships.
+Extraction and investment analysis are both AI *generating* something for the
+user. There's a third shape — AI *answering* the user by calling read-only
+tools over their own data (*"how am I doing this month?"*) — that's different
+enough to warrant its own doc. → [AI agent](08-ai-agent.md)

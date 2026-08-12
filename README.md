@@ -77,6 +77,9 @@ row-level security, reseeds to a fresh baseline every night, and caps AI calls a
   settle automatically when reimbursed.
 - 🧠 **AI financial insights** — structured parsing of free text and bank-statement
   PDFs, plus AI-generated bull/bear cases and news summaries on the investments tab.
+- 💬 **AI chat assistant** — a Claude tool-use agent that answers questions like
+  *"how's my spending this month?"* by calling read-only tools over your own
+  spending, budgets, savings goals, and portfolio.
 - ⏰ **Scheduled background jobs** — daily cron to ingest bank-alert emails and a
   nightly cron to reset the demo account.
 - 🔗 **Webhook integration** — log transactions from a Telegram bot via a
@@ -125,7 +128,8 @@ whether typed on the web, sent from a bot, uploaded as a PDF, or read from email
 
 > 📖 **Want the technical deep-dive?** See [`docs/architecture/`](docs/architecture/README.md)
 > for the system diagram, data flow, database design (ER + row-level security),
-> the AI pipeline, deployment, observability, and the design decisions behind it all.
+> the AI pipeline, the AI agent, deployment, observability, and the design
+> decisions behind it all.
 
 ---
 
@@ -169,8 +173,9 @@ cd frontend && npm test                          # frontend
 
 - **LLM confidence layer** — return a confidence score and flagged ambiguities;
   below threshold, ask a clarifying question instead of auto-saving.
-- **AI financial agent** — a Claude tool-use agent that answers *"how am I doing
-  this month?"* with trend and budget-burn analysis.
+- **Agent write-actions** — let the chat assistant create a budget or log a
+  saving contribution itself, behind a confirm/reject step (the `agent_actions`
+  table is already staged for it).
 - **Forecasting** — recurring-expense detection, projected month-end balance, and
   what-if scenarios on the dashboard.
 - **Event-driven architecture** — emit `transaction.created/updated/deleted`

@@ -1447,3 +1447,24 @@ a { color: inherit; }
 }
 
 .assistant-input-row .input { flex: 1; }
+
+/* spending insights */
+.insights-grid { align-items: start; }
+
+.insight-card .row-ico { background: var(--teal-soft); color: var(--teal); }
+
+.insight-list { display: flex; flex-direction: column; gap: 10px; }
+.insight-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.insight-stat { display: flex; flex-direction: column; gap: 4px; }
+.insight-value { font-size: 28px; font-weight: 800; }
+
+@media (max-width: 900px) {
+  .insights-grid { grid-template-columns: 1fr; }
+}
