@@ -27,3 +27,6 @@ class OllamaProvider:
         except httpx.HTTPError as exc:
             raise RuntimeError(f"Ollama unreachable at {self._host}: {exc}") from exc
         return resp.json()["message"]["content"]
+
+    def complete_vision(self, system: str, user: str, images: list[bytes]) -> str:
+        raise NotImplementedError("OllamaProvider does not support vision extraction")

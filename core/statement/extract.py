@@ -134,19 +134,26 @@ def _parse_lines(lines: list[str]) -> list[dict]:
     return rows
 
 
+# A page from a digital statement has text in the thousands of characters; a
+# scanned/screenshot page carries only incidental text (e.g. a "Page 1 of 5"
+# footer), regardless of how many pages the document has.
+_SCANNED_CHAR_THRESHOLD = 50
+
+
 def extract_rows(pdf_bytes: bytes) -> list[dict]:
     import pdfplumber
 
     lines: list[str] = []
-    any_text = False
+    scanned = True
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for page in pdf.pages:
-            text = page.extract_text() or ""
-            if text.strip():
-                any_text = True
-            lines.extend(text.split("\n"))
+            if len(page.chars) >= _SCANNED_CHAR_THRESHOLD:
+                scanned = False
+            lines.extend((page.extract_text() or "").split("\n"))
 
-    if not any_text:
-        raise ValueError("This looks like a scanned PDF; only digital statements are supported.")
+    if scanned:
+        from .extract_image import extract_rows_from_image
+
+        return extract_rows_from_image(pdf_bytes)
 
     return _parse_lines(lines)

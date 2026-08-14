@@ -1,4 +1,6 @@
-from core.statement.extract import _parse_lines
+import core.statement.extract_image as extract_image
+from core.statement.extract import _parse_lines, extract_rows
+from tests.fixtures.blank_pdf import BLANK_PDF_BYTES
 from tests.fixtures.dbs_statement_lines import SAMPLE_LINES
 
 
@@ -77,3 +79,21 @@ def test_checksum_failure_raises():
 
     with pytest.raises(ValueError):
         _parse_lines(bad)
+
+
+def test_routes_scanned_pdf_to_vision_extraction(monkeypatch):
+    fake_rows = [
+        {"date": "2026-08-14", "item": "X", "amount": 1.0, "direction": "out", "source": None}
+    ]
+    calls = []
+
+    def fake_extract_rows_from_image(pdf_bytes):
+        calls.append(pdf_bytes)
+        return fake_rows
+
+    monkeypatch.setattr(extract_image, "extract_rows_from_image", fake_extract_rows_from_image)
+
+    rows = extract_rows(BLANK_PDF_BYTES)
+
+    assert calls == [BLANK_PDF_BYTES]
+    assert rows == fake_rows
