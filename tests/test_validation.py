@@ -78,7 +78,9 @@ def test_validate_transaction_rejects_non_numeric_amount():
 def test_validate_transaction_converts_cny_to_sgd(monkeypatch):
     monkeypatch.setattr(
         "core.validation.FxClient",
-        lambda: type("F", (), {"rate": lambda self, base, quote: {"rate": 0.19, "date": "2026-08-14"}})(),
+        lambda: type(
+            "F", (), {"rate": lambda self, base, quote: {"rate": 0.19, "date": "2026-08-14"}}
+        )(),
     )
     data = _base(amount=None, currency="CNY", foreign_amount=-100)
     tx = validate_transaction(data, CATS)
@@ -101,7 +103,9 @@ def test_validate_transaction_rejects_unknown_currency():
 def test_validate_transaction_cny_requires_foreign_amount(monkeypatch):
     monkeypatch.setattr(
         "core.validation.FxClient",
-        lambda: type("F", (), {"rate": lambda self, base, quote: {"rate": 0.19, "date": "2026-08-14"}})(),
+        lambda: type(
+            "F", (), {"rate": lambda self, base, quote: {"rate": 0.19, "date": "2026-08-14"}}
+        )(),
     )
     with pytest.raises(ValidationError):
         validate_transaction(_base(amount=None, currency="CNY"), CATS)

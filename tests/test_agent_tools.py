@@ -22,12 +22,14 @@ def make_db(tables: dict):
 
 
 def test_get_spending_summary_wraps_monthly_summary():
-    db = make_db({
-        "transactions": [
-            {"amount": 3000.0, "category": "Income"},
-            {"amount": -20.0, "category": "Food"},
-        ]
-    })
+    db = make_db(
+        {
+            "transactions": [
+                {"amount": 3000.0, "category": "Income"},
+                {"amount": -20.0, "category": "Food"},
+            ]
+        }
+    )
     result = TOOLS["get_spending_summary"]["run"](db, month="2026-08")
     assert result["month"] == "2026-08"
     assert result["total_income"] == 3000.0
@@ -35,10 +37,12 @@ def test_get_spending_summary_wraps_monthly_summary():
 
 
 def test_get_budget_status_classifies_each_category():
-    db = make_db({
-        "budgets": [{"category": "Food", "amount": 100.0}],
-        "transactions": [{"amount": -120.0, "category": "Food"}],
-    })
+    db = make_db(
+        {
+            "budgets": [{"category": "Food", "amount": 100.0}],
+            "transactions": [{"amount": -120.0, "category": "Food"}],
+        }
+    )
     result = TOOLS["get_budget_status"]["run"](db, month="2026-08")
     assert result == [{"category": "Food", "spend": 120.0, "budget": 100.0, "status": "over"}]
 
@@ -50,13 +54,21 @@ def test_get_budget_status_defaults_to_current_month_when_omitted():
 
 
 def test_get_savings_goal_progress_joins_goals_and_contributions():
-    db = make_db({
-        "saving_goals": [{"id": "g1", "name": "Emergency Fund", "target_amount": 1000}],
-        "saving_contributions": [{"goal_id": "g1", "amount": 250}],
-    })
+    db = make_db(
+        {
+            "saving_goals": [{"id": "g1", "name": "Emergency Fund", "target_amount": 1000}],
+            "saving_contributions": [{"goal_id": "g1", "amount": 250}],
+        }
+    )
     result = TOOLS["get_savings_goal_progress"]["run"](db)
     assert result == [
-        {"goal_id": "g1", "name": "Emergency Fund", "target_amount": 1000, "contributed": 250, "progress_pct": 25.0}
+        {
+            "goal_id": "g1",
+            "name": "Emergency Fund",
+            "target_amount": 1000,
+            "contributed": 250,
+            "progress_pct": 25.0,
+        }
     ]
 
 
@@ -78,11 +90,19 @@ def test_analyze_stock_returns_raw_data_no_llm_call(monkeypatch):
 
 
 def test_get_portfolio_holdings_prices_positions(monkeypatch):
-    db = make_db({
-        "invest_transactions": [
-            {"ticker": "AAPL", "type": "BUY", "quantity": 10, "price_per_share": 100, "purchase_date": "2026-01-01"},
-        ]
-    })
+    db = make_db(
+        {
+            "invest_transactions": [
+                {
+                    "ticker": "AAPL",
+                    "type": "BUY",
+                    "quantity": 10,
+                    "price_per_share": 100,
+                    "purchase_date": "2026-01-01",
+                },
+            ]
+        }
+    )
     finnhub = MagicMock()
     finnhub.quote.return_value = {"c": 150, "pc": 140}
     monkeypatch.setattr("core.agent.tools.finnhub", finnhub)

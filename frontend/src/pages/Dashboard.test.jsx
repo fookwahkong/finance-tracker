@@ -12,6 +12,8 @@ vi.mock("../api/client", () => ({
   getBudgets: (...args) => getBudgets(...args),
   getNetWorth: vi.fn().mockResolvedValue([]),
   getSubscriptions: vi.fn().mockResolvedValue([]),
+  getSavings: vi.fn().mockResolvedValue({ goals: [], contributions: [] }),
+  getFxRate: vi.fn().mockResolvedValue({ rate: 1.34, date: "2026-07-01" }),
 }));
 vi.mock("./Investments/hooks/usePortfolioValue", () => ({
   usePortfolioValue: () => ({ valueUsd: null, totals: null, loading: false }),

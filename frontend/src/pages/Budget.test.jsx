@@ -8,6 +8,11 @@ vi.mock("../api/client", () => ({
   getBudgets: (...args) => getBudgets(...args),
   getTransactions: (...args) => getTransactions(...args),
   upsertBudget: vi.fn(),
+  getSavings: vi.fn().mockResolvedValue({ goals: [], contributions: [] }),
+  syncSavings: vi.fn().mockResolvedValue({ goals: [], contributions: [] }),
+  upsertSavingProfile: vi.fn(),
+  createSavingGoal: vi.fn(),
+  addSavingContribution: vi.fn(),
 }));
 
 import Budget from "./Budget";
@@ -18,11 +23,11 @@ describe("Budget", () => {
     getTransactions.mockClear();
     const client = createTestQueryClient();
     const { unmount } = renderWithClient(<Budget />, client);
-    await screen.findByText(/budget by category/i);
+    await screen.findByText(/budget by category - \d{4}/i);
 
     unmount();
     renderWithClient(<Budget />, client);
-    await screen.findByText(/budget by category/i);
+    await screen.findByText(/budget by category - \d{4}/i);
 
     expect(getBudgets).toHaveBeenCalledTimes(1);
     expect(getTransactions).toHaveBeenCalledTimes(1);
