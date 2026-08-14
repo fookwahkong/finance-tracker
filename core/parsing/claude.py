@@ -2,6 +2,15 @@ import base64
 import os
 
 
+def _text_content(message) -> str:
+    # Some responses lead with a ThinkingBlock before the TextBlock, so the
+    # text isn't reliably at content[0].
+    for block in message.content:
+        if block.type == "text":
+            return block.text
+    raise ValueError("Claude response contained no text block")
+
+
 class ClaudeProvider:
     def __init__(self):
         import anthropic
@@ -17,7 +26,7 @@ class ClaudeProvider:
             system=system,
             messages=[{"role": "user", "content": user}],
         )
-        return message.content[0].text
+        return _text_content(message)
 
     def complete_vision(self, system: str, user: str, images: list[bytes]) -> str:
         content: list[dict] = []
@@ -42,4 +51,4 @@ class ClaudeProvider:
             system=system,
             messages=[{"role": "user", "content": content}],
         )
-        return message.content[0].text
+        return _text_content(message)
