@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends
-from supabase import Client
 from datetime import date
 
-from fastapi import HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from supabase import Client
 
-from core.savings import due_automatic_months
 from backend.deps import get_db
+from core.savings import due_automatic_months
 
 router = APIRouter()
 
