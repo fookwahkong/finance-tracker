@@ -47,8 +47,12 @@ class ClaudeProvider:
 
         message = self._client.messages.create(
             model=self._vision_model,
-            max_tokens=4096,
+            max_tokens=16384,
             system=system,
             messages=[{"role": "user", "content": content}],
+            # Without this, the model can spend the entire max_tokens budget on
+            # extended thinking for a multi-page statement and return no answer
+            # text at all (stop_reason "max_tokens", zero-length text block).
+            thinking={"type": "disabled"},
         )
         return _text_content(message)
