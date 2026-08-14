@@ -18,16 +18,31 @@ def _one(db: Client, table: str, row_id: str):
     return rows[0] if rows else None
 
 
-def _links_for_claim(db: Client, claim_id: str) -> list[dict]:
-    return db.table("claim_credits").select("*").eq("claim_id", claim_id).execute().data or []
+def _group_by_claim(rows: list[dict]) -> dict[str, list[dict]]:
+    grouped: dict[str, list[dict]] = {}
+    for row in rows:
+        grouped.setdefault(row["claim_id"], []).append(row)
+    return grouped
 
 
-def _enrich_claim(db: Client, claim: dict) -> dict:
-    links = _links_for_claim(db, claim["id"])
-    enriched = dict(claim)
-    participants = (
-        db.table("claim_participants").select("*").eq("claim_id", claim["id"]).execute().data or []
+def _links_by_claim(db: Client, claim_ids: list[str]) -> dict[str, list[dict]]:
+    if not claim_ids:
+        return {}
+    rows = db.table("claim_credits").select("*").in_("claim_id", claim_ids).execute().data or []
+    return _group_by_claim(rows)
+
+
+def _participants_by_claim(db: Client, claim_ids: list[str]) -> dict[str, list[dict]]:
+    if not claim_ids:
+        return {}
+    rows = (
+        db.table("claim_participants").select("*").in_("claim_id", claim_ids).execute().data or []
     )
+    return _group_by_claim(rows)
+
+
+def _enrich_claim(claim: dict, links: list[dict], participants: list[dict]) -> dict:
+    enriched = dict(claim)
     if not participants:
         received = claim_math.received_total(links)
         enriched["links"] = links
@@ -130,7 +145,18 @@ def list_claims(status: Optional[str] = None, db: Client = Depends(get_db)):
         rows = query.eq("status", status).execute().data
     else:
         rows = query.execute().data
-    return [_enrich_claim(db, row) for row in (rows or [])]
+    rows = rows or []
+
+    claim_ids = [row["id"] for row in rows]
+    links_by_claim = _links_by_claim(db, claim_ids)
+    participants_by_claim = _participants_by_claim(db, claim_ids)
+
+    return [
+        _enrich_claim(
+            row, links_by_claim.get(row["id"], []), participants_by_claim.get(row["id"], [])
+        )
+        for row in rows
+    ]
 
 
 @router.post("/{claim_id}/credits", status_code=201)

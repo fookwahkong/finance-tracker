@@ -110,10 +110,10 @@ def test_list_open_claims_enriched(client, fake_supabase):
     claims_tbl.select.return_value.eq.return_value.execute.return_value.data = [
         {"id": "c1", "expected": 75, "status": "open", "category": "Groceries"},
     ]
-    links_tbl.select.return_value.eq.return_value.execute.return_value.data = [
+    links_tbl.select.return_value.in_.return_value.execute.return_value.data = [
         {"id": "l1", "claim_id": "c1", "allocated_amount": 50},
     ]
-    participants_tbl.select.return_value.eq.return_value.execute.return_value.data = []
+    participants_tbl.select.return_value.in_.return_value.execute.return_value.data = []
     _set_table_router(
         fake_supabase,
         {
@@ -281,7 +281,7 @@ def test_list_claims_returns_participant_balances(client, fake_supabase):
     claims_tbl.select.return_value.execute.return_value.data = [
         {"id": "c1", "total": 100, "status": "open"}
     ]
-    participants_tbl.select.return_value.eq.return_value.execute.return_value.data = [
+    participants_tbl.select.return_value.in_.return_value.execute.return_value.data = [
         {
             "id": "owner",
             "claim_id": "c1",
@@ -299,7 +299,7 @@ def test_list_claims_returns_participant_balances(client, fake_supabase):
             "share_percent": 60,
         },
     ]
-    links_tbl.select.return_value.eq.return_value.execute.return_value.data = [
+    links_tbl.select.return_value.in_.return_value.execute.return_value.data = [
         {"id": "l1", "claim_id": "c1", "participant_id": "alex", "allocated_amount": 70},
     ]
     _set_table_router(
