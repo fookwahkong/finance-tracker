@@ -27,11 +27,13 @@ def goal_progress(goals: list[dict], contributions: list[dict]) -> list[dict]:
     for goal in goals:
         target = goal["target_amount"]
         contributed = contributed_by_goal.get(goal["id"], 0)
-        result.append({
-            "goal_id": goal["id"],
-            "name": goal["name"],
-            "target_amount": target,
-            "contributed": contributed,
-            "progress_pct": (contributed / target * 100) if target else 0.0,
-        })
+        result.append(
+            {
+                "goal_id": goal["id"],
+                "name": goal["name"],
+                "target_amount": target,
+                "contributed": contributed,
+                "progress_pct": (contributed / target * 100) if target else 0.0,
+            }
+        )
     return result

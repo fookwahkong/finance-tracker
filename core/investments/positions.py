@@ -37,15 +37,21 @@ def enrich_positions(positions: list[dict], quotes: dict) -> list[dict]:
         price = q["c"] if q else None
         prev_close = q["pc"] if q else None
         value = p["shares"] * price if price is not None else None
-        day_change = (price - prev_close) * p["shares"] if price is not None and prev_close is not None else None
+        day_change = (
+            (price - prev_close) * p["shares"]
+            if price is not None and prev_close is not None
+            else None
+        )
         total_return = value - p["costBasis"] if value is not None else None
-        enriched.append({
-            **p,
-            "price": price,
-            "value": value,
-            "dayChange": day_change,
-            "totalReturn": total_return,
-        })
+        enriched.append(
+            {
+                **p,
+                "price": price,
+                "value": value,
+                "dayChange": day_change,
+                "totalReturn": total_return,
+            }
+        )
     return enriched
 
 

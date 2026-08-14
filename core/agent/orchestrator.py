@@ -22,17 +22,15 @@ _SYSTEM = (
     "questions about the user's spending, budgets, savings goals, and "
     "investment portfolio. Always call a tool to look up real numbers "
     "instead of guessing or recalling from earlier in the conversation. "
-    "When the user references a relative date (\"this month\", \"last week\", "
-    "\"today\"), resolve it against the date given at the start of the "
+    'When the user references a relative date ("this month", "last week", '
+    '"today"), resolve it against the date given at the start of the '
     "conversation. Format replies in concise markdown — bold for key figures, "
     "bullet lists for multiple items — and keep prose tight, no filler or "
     "repeated disclaimers."
 )
 
 _RATE_LIMIT_REPLY = "I'm rate-limited right now — try again tomorrow."
-_ITERATIONS_EXCEEDED_REPLY = (
-    "I wasn't able to finish that within the allowed number of steps — try asking something narrower."
-)
+_ITERATIONS_EXCEEDED_REPLY = "I wasn't able to finish that within the allowed number of steps — try asking something narrower."
 
 _client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
@@ -66,7 +64,7 @@ def _with_date_context(message: str) -> str:
     now = _now_sgt()
     context = (
         f"(Context: today is {now.strftime('%A, %Y-%m-%d %H:%M')} Singapore time (UTC+8). "
-        "Resolve relative dates like \"this month\", \"last week\", or \"today\" against this date.)"
+        'Resolve relative dates like "this month", "last week", or "today" against this date.)'
     )
     return f"{context}\n\n{message}"
 
@@ -99,11 +97,13 @@ def run_agent_turn(db, message: str, history: list[dict]) -> dict:
             if block["type"] != "tool_use":
                 continue
             result = TOOLS[block["name"]]["run"](db, **block["input"])
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": block["id"],
-                "content": json.dumps(result),
-            })
+            tool_results.append(
+                {
+                    "type": "tool_result",
+                    "tool_use_id": block["id"],
+                    "content": json.dumps(result),
+                }
+            )
         messages.append({"role": "user", "content": tool_results})
 
     return {"reply": _ITERATIONS_EXCEEDED_REPLY, "history": messages}

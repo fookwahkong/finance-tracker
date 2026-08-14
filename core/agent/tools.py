@@ -32,12 +32,14 @@ def _get_budget_status(db, month: str | None = None) -> list[dict]:
     result = []
     for b in budgets:
         spend = -breakdown.get(b["category"], 0)
-        result.append({
-            "category": b["category"],
-            "spend": spend,
-            "budget": b["amount"],
-            "status": budget_status(spend, b["amount"]),
-        })
+        result.append(
+            {
+                "category": b["category"],
+                "spend": spend,
+                "budget": b["amount"],
+                "status": budget_status(spend, b["amount"]),
+            }
+        )
     return result
 
 
@@ -87,7 +89,9 @@ TOOLS = {
         ),
         "input_schema": {
             "type": "object",
-            "properties": {"month": {"type": "string", "description": "YYYY-MM, defaults to current month"}},
+            "properties": {
+                "month": {"type": "string", "description": "YYYY-MM, defaults to current month"}
+            },
             "required": [],
         },
         "run": _get_budget_status,

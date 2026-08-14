@@ -42,7 +42,9 @@ def test_thinking_block_is_preserved_and_excluded_from_reply_text(monkeypatch):
     client = MagicMock()
     client.messages.create.return_value = SimpleNamespace(
         content=[
-            SimpleNamespace(type="thinking", thinking="reasoning about the answer", signature="sig123"),
+            SimpleNamespace(
+                type="thinking", thinking="reasoning about the answer", signature="sig123"
+            ),
             SimpleNamespace(type="text", text="You spent $200 this month."),
         ],
         stop_reason="end_turn",
@@ -87,7 +89,9 @@ def test_executes_tool_call_and_continues_loop(monkeypatch):
 
 def test_stops_after_max_iterations(monkeypatch):
     client = MagicMock()
-    client.messages.create.return_value = tool_use_response("t1", "get_spending_summary", {"month": "2026-08"})
+    client.messages.create.return_value = tool_use_response(
+        "t1", "get_spending_summary", {"month": "2026-08"}
+    )
     monkeypatch.setattr("core.agent.orchestrator._client", client)
 
     fake_tool = MagicMock(return_value={})
@@ -123,7 +127,10 @@ def test_does_not_reinject_date_context_when_history_present(monkeypatch):
     monkeypatch.setattr("core.agent.orchestrator._client", client)
 
     existing_history = [
-        {"role": "user", "content": "(Context: today is Wednesday, 2026-08-12 14:30 Singapore time (UTC+8)...)\n\nHi"},
+        {
+            "role": "user",
+            "content": "(Context: today is Wednesday, 2026-08-12 14:30 Singapore time (UTC+8)...)\n\nHi",
+        },
         {"role": "assistant", "content": [{"type": "text", "text": "Hi there!"}]},
     ]
     run_agent_turn(db=None, message="And last week?", history=existing_history)

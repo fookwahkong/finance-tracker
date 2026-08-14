@@ -16,13 +16,18 @@ def client():
 
 
 def test_chat_returns_reply_and_history(client, monkeypatch):
-    fake = MagicMock(return_value={"reply": "You spent $200.", "history": [{"role": "user", "content": "hi"}]})
+    fake = MagicMock(
+        return_value={"reply": "You spent $200.", "history": [{"role": "user", "content": "hi"}]}
+    )
     monkeypatch.setattr("backend.routers.agent.run_agent_turn", fake)
 
     resp = client.post("/api/agent/chat", json={"message": "How much did I spend?", "history": []})
 
     assert resp.status_code == 200
-    assert resp.json() == {"reply": "You spent $200.", "history": [{"role": "user", "content": "hi"}]}
+    assert resp.json() == {
+        "reply": "You spent $200.",
+        "history": [{"role": "user", "content": "hi"}],
+    }
     fake.assert_called_once()
     args = fake.call_args
     assert args.kwargs["message"] == "How much did I spend?"

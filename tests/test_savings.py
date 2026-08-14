@@ -27,13 +27,31 @@ def test_goal_progress_sums_contributions_per_goal():
         {"goal_id": "g2", "amount": 50},
     ]
     assert goal_progress(goals, contributions) == [
-        {"goal_id": "g1", "name": "Emergency Fund", "target_amount": 1000, "contributed": 250, "progress_pct": 25.0},
-        {"goal_id": "g2", "name": "Vacation", "target_amount": 500, "contributed": 50, "progress_pct": 10.0},
+        {
+            "goal_id": "g1",
+            "name": "Emergency Fund",
+            "target_amount": 1000,
+            "contributed": 250,
+            "progress_pct": 25.0,
+        },
+        {
+            "goal_id": "g2",
+            "name": "Vacation",
+            "target_amount": 500,
+            "contributed": 50,
+            "progress_pct": 10.0,
+        },
     ]
 
 
 def test_goal_progress_zero_contributions():
     goals = [{"id": "g1", "name": "Emergency Fund", "target_amount": 1000}]
     assert goal_progress(goals, []) == [
-        {"goal_id": "g1", "name": "Emergency Fund", "target_amount": 1000, "contributed": 0, "progress_pct": 0.0},
+        {
+            "goal_id": "g1",
+            "name": "Emergency Fund",
+            "target_amount": 1000,
+            "contributed": 0,
+            "progress_pct": 0.0,
+        },
     ]

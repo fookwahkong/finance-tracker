@@ -2,42 +2,56 @@ from core.investments.positions import build_positions, enrich_positions, portfo
 
 
 def tx(ticker, type_, quantity, price, date):
-    return {"ticker": ticker, "type": type_, "quantity": quantity, "price_per_share": price, "purchase_date": date}
+    return {
+        "ticker": ticker,
+        "type": type_,
+        "quantity": quantity,
+        "price_per_share": price,
+        "purchase_date": date,
+    }
 
 
 def test_build_positions_aggregates_buys():
-    p = build_positions([
-        tx("AAPL", "BUY", 10, 100, "2026-01-01"),
-        tx("AAPL", "BUY", 10, 200, "2026-02-01"),
-    ])
+    p = build_positions(
+        [
+            tx("AAPL", "BUY", 10, 100, "2026-01-01"),
+            tx("AAPL", "BUY", 10, 200, "2026-02-01"),
+        ]
+    )
     assert p == [{"ticker": "AAPL", "shares": 20, "costBasis": 3000, "avgCost": 150}]
 
 
 def test_build_positions_sells_reduce_cost_basis_at_average():
-    p = build_positions([
-        tx("AAPL", "BUY", 10, 100, "2026-01-01"),
-        tx("AAPL", "BUY", 10, 200, "2026-02-01"),
-        tx("AAPL", "SELL", 5, 300, "2026-03-01"),
-    ])
+    p = build_positions(
+        [
+            tx("AAPL", "BUY", 10, 100, "2026-01-01"),
+            tx("AAPL", "BUY", 10, 200, "2026-02-01"),
+            tx("AAPL", "SELL", 5, 300, "2026-03-01"),
+        ]
+    )
     assert p[0]["shares"] == 15
     assert p[0]["costBasis"] == 2250
     assert p[0]["avgCost"] == 150
 
 
 def test_build_positions_drops_fully_sold_positions():
-    p = build_positions([
-        tx("AAPL", "BUY", 10, 100, "2026-01-01"),
-        tx("AAPL", "SELL", 10, 120, "2026-02-01"),
-        tx("MSFT", "BUY", 1, 400, "2026-02-01"),
-    ])
+    p = build_positions(
+        [
+            tx("AAPL", "BUY", 10, 100, "2026-01-01"),
+            tx("AAPL", "SELL", 10, 120, "2026-02-01"),
+            tx("MSFT", "BUY", 1, 400, "2026-02-01"),
+        ]
+    )
     assert [x["ticker"] for x in p] == ["MSFT"]
 
 
 def test_build_positions_applies_in_date_order_regardless_of_input_order():
-    p = build_positions([
-        tx("AAPL", "SELL", 5, 120, "2026-02-01"),
-        tx("AAPL", "BUY", 10, 100, "2026-01-01"),
-    ])
+    p = build_positions(
+        [
+            tx("AAPL", "SELL", 5, 120, "2026-02-01"),
+            tx("AAPL", "BUY", 10, 100, "2026-01-01"),
+        ]
+    )
     assert p[0]["shares"] == 5
     assert p[0]["costBasis"] == 500
 

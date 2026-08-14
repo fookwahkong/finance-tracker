@@ -42,7 +42,7 @@ def get_or_fetch(key: str, fetch_fn: Callable[[], Payload], ttl_seconds: int) ->
     )
     # maybe_single().execute() returns None (not a response) on a cache miss.
     # so we use .maybe_single().execute()
-    
+
     row = result.data if result else None
     if row:
         fetched_at = datetime.fromisoformat(row["fetched_at"])

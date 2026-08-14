@@ -152,7 +152,9 @@ def list_claims(status: Optional[str] = None, db: Client = Depends(get_db)):
     participants_by_claim = _participants_by_claim(db, claim_ids)
 
     return [
-        _enrich_claim(row, links_by_claim.get(row["id"], []), participants_by_claim.get(row["id"], []))
+        _enrich_claim(
+            row, links_by_claim.get(row["id"], []), participants_by_claim.get(row["id"], [])
+        )
         for row in rows
     ]
 
