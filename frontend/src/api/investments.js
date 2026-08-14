@@ -69,10 +69,6 @@ export const getNewsSummary = (tickers) =>
   api.get("/api/investments/ai/news-summary", { params: { tickers: tickers.join(",") } })
     .then((r) => r.data);
 
-// FX (frankfurter via backend, server-cached 24h)
-export const getFxUsdSgd = () =>
-  api.get("/api/investments/fx/usd-sgd").then((r) => r.data);
-
 // Financials (FMP) — annual only in v1
 export const getIncome = (symbol) =>
   api.get(`/api/investments/financials/income/${symbol}`).then((r) => r.data);

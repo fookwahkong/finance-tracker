@@ -8,8 +8,8 @@ export function colorFor(index) {
 }
 
 // "$1,254.95" — no sign
-export function money(n) {
-  return "$" + Math.abs(n).toLocaleString("en-US", {
+export function money(n, symbol = "$") {
+  return symbol + Math.abs(n).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -21,8 +21,8 @@ export function sgd(n) {
 }
 
 // "+$3,000.00" / "−$150.00"
-export function signed(n) {
-  return (n >= 0 ? "+" : "−") + money(n);
+export function signed(n, symbol = "$") {
+  return (n >= 0 ? "+" : "−") + money(n, symbol);
 }
 
 export function currentMonth() {

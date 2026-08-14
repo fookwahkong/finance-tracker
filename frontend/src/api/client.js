@@ -13,6 +13,10 @@ export const updateTransaction = (id, data) =>
 export const deleteTransaction = (id) =>
   api.delete(`/api/transactions/${id}`);
 
+// FX (frankfurter via backend, server-cached 24h)
+export const getFxRate = (base, quote) =>
+  api.get("/api/fx/rate", { params: { base, quote } }).then((r) => r.data);
+
 // Categories
 export const getCategories = () =>
   api.get("/api/categories").then((r) => r.data);

@@ -28,9 +28,15 @@ def list_transactions(month: Optional[str] = None, db: Client = Depends(get_db))
     return result.data
 
 
+_CURRENCY_FIELDS = {"amount", "foreign_amount", "currency"}
+
+
 @router.post("", status_code=201)
 def create_transaction(tx: TransactionCreate, db: Client = Depends(get_db)):
-    validated = validate_transaction(tx.model_dump(), _known_categories(db))
+    try:
+        validated = validate_transaction(tx.model_dump(), _known_categories(db))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
     payload = validated.model_dump()
     payload["date"] = payload["date"].isoformat()
     result = db.table("transactions").insert(payload).execute()
@@ -44,8 +50,16 @@ def update_transaction(tx_id: str, tx: TransactionUpdate, db: Client = Depends(g
         raise HTTPException(status_code=404, detail="Transaction not found")
     provided = {k: v for k, v in tx.model_dump().items() if v is not None}
     merged = {**existing[0], **provided}
-    validated = validate_transaction(merged, _known_categories(db))
-    payload = {k: getattr(validated, k) for k in provided}
+    try:
+        validated = validate_transaction(merged, _known_categories(db))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    payload_keys = set(provided)
+    # amount is derived from foreign_amount + currency, so changing any one of
+    # the three must write back all three or the recomputed amount is lost.
+    if payload_keys & _CURRENCY_FIELDS:
+        payload_keys |= _CURRENCY_FIELDS
+    payload = {k: getattr(validated, k) for k in payload_keys}
     if "date" in payload:
         payload["date"] = payload["date"].isoformat()
     result = db.table("transactions").update(payload).eq("id", tx_id).execute()

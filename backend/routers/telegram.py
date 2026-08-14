@@ -42,9 +42,14 @@ async def telegram_webhook(request: Request):
         payload["user_id"] = os.environ["PERSONAL_USER_ID"]
         tx = supabase.table("transactions").insert(payload).execute().data[0]
         sign = "+" if tx["amount"] > 0 else ""
+        if tx.get("currency") == "CNY":
+            fsign = "+" if tx["foreign_amount"] > 0 else ""
+            amount_line = f"Amount: {fsign}{tx['foreign_amount']} CNY (≈ {sign}{tx['amount']} SGD)"
+        else:
+            amount_line = f"Amount: {sign}{tx['amount']}"
         reply = (
             f"Recorded: {tx['item']}\n"
-            f"Amount: {sign}{tx['amount']}\n"
+            f"{amount_line}\n"
             f"Category: {tx.get('category') or 'Uncategorized'}\n"
             f"Date: {tx['date']}"
         )

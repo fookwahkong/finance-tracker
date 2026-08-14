@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { getNetWorth, upsertNetWorth, deleteNetWorth } from "../api/client";
-import { getFxUsdSgd } from "../api/investments";
+import { getNetWorth, upsertNetWorth, deleteNetWorth, getFxRate } from "../api/client";
 import { cashForMonth, netFlowMap } from "../lib/aggregate";
 import { money, currentMonth, monthLabel } from "../lib/format";
 import { usePortfolioValue } from "../pages/Investments/hooks/usePortfolioValue";
@@ -32,7 +31,7 @@ export default function NetWorthCard({ transactions }) {
 
   const { valueUsd } = usePortfolioValue();
   const [fxRate, setFxRate] = useState(null);
-  useEffect(() => { getFxUsdSgd().then((fx) => setFxRate(fx.rate)).catch(() => {}); }, []);
+  useEffect(() => { getFxRate("USD", "SGD").then((fx) => setFxRate(fx.rate)).catch(() => {}); }, []);
   const investmentSgd = valueUsd != null && fxRate != null ? valueUsd * fxRate : null;
   // Show the raw USD portfolio value as soon as it's known, rather than a
   // "—" while the FX rate is still loading.

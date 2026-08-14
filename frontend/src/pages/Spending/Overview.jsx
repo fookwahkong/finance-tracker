@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  createTransaction, updateTransaction, deleteTransaction,
+  createTransaction, updateTransaction, deleteTransaction, getFxRate,
 } from "../../api/client";
 import { createClaim, linkCredit, settleClaim, reopenClaim, deleteClaim } from "../../api/claims";
-import { money, signed, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
+import { money, signed, sgd, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
 import { yearsInData } from "../../lib/aggregate";
 import { applyClaimAdjustments, receivedTotal, variance, allocatedByCredit, claimCreatePayload, linksForClaims, participantBalance, participantsForClaim } from "../../lib/claims";
@@ -22,6 +22,11 @@ const METHODS = [
 const METHOD_LABELS = Object.fromEntries(METHODS.map((m) => [m.value, m.label]));
 const methodLabel = (s) => METHOD_LABELS[s] || s;
 
+const CURRENCIES = [
+  { value: "SGD", label: "SGD" },
+  { value: "CNY", label: "CNY (¥)" },
+];
+
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const EMPTY_FORM = {
@@ -30,6 +35,7 @@ const EMPTY_FORM = {
   amount: "",
   category: "",
   source: "cash",
+  currency: "SGD",
 };
 
 export default function Overview({ transactions, categories, claims = [], claimLinks = [], onChanged, reloadClaims }) {
@@ -39,6 +45,7 @@ export default function Overview({ transactions, categories, claims = [], claimL
 
   const [catFilter, setCatFilter] = useState("all");
   const [form, setForm] = useState(EMPTY_FORM);
+  const [cnySgdRate, setCnySgdRate] = useState(null);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -55,6 +62,13 @@ export default function Overview({ transactions, categories, claims = [], claimL
   const [showAllOut, setShowAllOut] = useState(false);
   const [showAllIn, setShowAllIn] = useState(false);
   const { dragPreview, startDrag, moveDrag, endDrag } = useClaimDrag();
+
+  // Live rate for the grey SGD preview under a CNY amount in the form —
+  // fetched once, the first time the currency is switched to CNY.
+  useEffect(() => {
+    if (form.currency !== "CNY" || cnySgdRate != null) return;
+    getFxRate("CNY", "SGD").then((fx) => setCnySgdRate(fx.rate)).catch(() => {});
+  }, [form.currency, cnySgdRate]);
 
   const years = useMemo(() => yearsInData(transactions), [transactions]);
 
@@ -185,12 +199,15 @@ export default function Overview({ transactions, categories, claims = [], claimL
     resetForm();
   }
   function startEdit(t) {
+    const currency = t.currency || "SGD";
+    const rawAmount = currency === "CNY" ? t.foreign_amount : t.amount;
     setForm({
       date: String(t.date || "").slice(0, 10),
       item: t.item || "",
-      amount: t.amount == null ? "" : String(t.amount),
+      amount: rawAmount == null ? "" : String(rawAmount),
       category: t.category || "",
       source: t.source || "cash",
+      currency,
     });
     setEditingId(t.id);
     setSubmitError("");
@@ -205,9 +222,12 @@ export default function Overview({ transactions, categories, claims = [], claimL
       const payload = {
         date: form.date,
         item: form.item,
-        amount: Number(form.amount),
         category: form.category || null,
         source: form.source || null,
+        currency: form.currency,
+        ...(form.currency === "CNY"
+          ? { foreign_amount: Number(form.amount) }
+          : { amount: Number(form.amount) }),
       };
       if (editingId !== null) {
         await updateTransaction(editingId, payload);
@@ -400,6 +420,19 @@ export default function Overview({ transactions, categories, claims = [], claimL
                 <div className="field">
                   <label className="field-label">Amount</label>
                   <input className="input" type="number" step="0.01" required placeholder="-50 or +1000" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+                  {form.currency === "CNY" && (
+                    <div style={{ marginTop: 4, fontSize: 12, color: "var(--muted)" }}>
+                      {form.amount && cnySgdRate != null
+                        ? `≈ ${sgd(Number(form.amount) * cnySgdRate)}`
+                        : "Fetching SGD rate…"}
+                    </div>
+                  )}
+                </div>
+                <div className="field">
+                  <label className="field-label">Currency</label>
+                  <select className="select" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}>
+                    {CURRENCIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
                 </div>
                 <div className="field">
                   <label className="field-label">Category</label>
@@ -585,8 +618,13 @@ export default function Overview({ transactions, categories, claims = [], claimL
 
                             </div>
                           </div>
-                          <div className="row-name" style={{ width: 110, textAlign: "right", color: income ? "var(--green)" : "var(--ink)" }}>
-                            {signed(displayAmount)}
+                          <div style={{ width: 110, textAlign: "right" }}>
+                            <div className="row-name" style={{ color: income ? "var(--green)" : "var(--ink)" }}>
+                              {t.currency === "CNY" ? signed(t.foreign_amount, "¥") : signed(displayAmount)}
+                            </div>
+                            {t.currency === "CNY" && (
+                              <div style={{ fontSize: 11, color: "var(--muted)" }}>{sgd(displayAmount)}</div>
+                            )}
                           </div>
                           <div className="dd" style={{ flex: "none" }}>
                             <button className="btn btn-ghost btn-icon" aria-label="Transaction actions" onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === t.id ? null : t.id); }}>⋯</button>

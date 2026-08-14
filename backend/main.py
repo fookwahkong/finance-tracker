@@ -13,6 +13,7 @@ from backend.routers import (
     categories,
     claims,
     demo,
+    fx,
     ingest,
     networth,
     reports,
@@ -26,7 +27,6 @@ from backend.routers.investments import (
     ai as investments_ai,
     company as investments_company,
     financials as investments_financials,
-    fx as investments_fx,
     market as investments_market,
     portfolio as investments_portfolio,
 )
@@ -105,8 +105,8 @@ app.include_router(
 app.include_router(
     investments_portfolio.router, prefix="/api/investments/portfolio", tags=["investments"]
 )
-app.include_router(investments_fx.router, prefix="/api/investments/fx", tags=["investments"])
 app.include_router(investments_ai.router, prefix="/api/investments/ai", tags=["investments"])
+app.include_router(fx.router, prefix="/api/fx", tags=["fx"])
 app.include_router(agent.router, prefix="/api/agent", tags=["agent"])
 
 

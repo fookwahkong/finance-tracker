@@ -18,6 +18,16 @@ alter table transactions
 alter table transactions
   add column if not exists time time;
 
+-- Foreign-currency transactions (e.g. CNY): `amount` stays the canonical
+-- SGD value every reader already uses; `foreign_amount` holds the raw
+-- entered value when currency != 'SGD'.
+alter table transactions
+  add column if not exists currency text not null default 'SGD'
+  check (currency in ('SGD', 'CNY'));
+
+alter table transactions
+  add column if not exists foreign_amount numeric;
+
 -- ── Budgets ──────────────────────────────────────────────────────────
 -- One recurring monthly budget amount per category.
 create table if not exists budgets (

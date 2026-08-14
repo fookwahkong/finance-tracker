@@ -2,12 +2,14 @@ from datetime import date, timedelta
 
 from pydantic import ValidationError as PydanticValidationError
 
+from core.fx import FxClient
 from core.models import TransactionCreate
 
 MAX_TEXT_LEN = 500
 MAX_ITEM_LEN = 200
 MIN_DATE = date(2000, 1, 1)
 DEFAULT_CATEGORY = "Others"
+ALLOWED_CURRENCIES = {"SGD", "CNY"}
 
 
 class ValidationError(Exception):
@@ -28,6 +30,19 @@ def validate_transaction(data, known_categories: list[str]) -> TransactionCreate
         tx = TransactionCreate.model_validate(data)
     except PydanticValidationError as exc:
         raise ValidationError(f"Invalid transaction: {exc}") from exc
+
+    if tx.currency not in ALLOWED_CURRENCIES:
+        raise ValidationError(f"Unsupported currency: {tx.currency}")
+
+    if tx.currency == "SGD":
+        if tx.amount is None:
+            raise ValidationError("Amount is required.")
+        tx.foreign_amount = None
+    else:
+        if tx.foreign_amount is None:
+            raise ValidationError("Amount is required.")
+        rate = FxClient().rate(tx.currency, "SGD")["rate"]
+        tx.amount = round(tx.foreign_amount * rate, 2)
 
     if tx.amount == 0:
         raise ValidationError("Amount cannot be zero.")

@@ -8,8 +8,10 @@ class TransactionCreate(BaseModel):
     date: Date
     item: str
     category: Optional[str] = None
-    amount: float
+    amount: Optional[float] = None
     source: Optional[str] = None
+    currency: str = "SGD"
+    foreign_amount: Optional[float] = None
 
 
 class TransactionUpdate(BaseModel):
@@ -18,6 +20,8 @@ class TransactionUpdate(BaseModel):
     category: Optional[str] = None
     amount: Optional[float] = None
     source: Optional[str] = None
+    currency: Optional[str] = None
+    foreign_amount: Optional[float] = None
 
 
 class Transaction(TransactionCreate):

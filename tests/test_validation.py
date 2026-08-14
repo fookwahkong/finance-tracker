@@ -73,3 +73,35 @@ def test_validate_transaction_coerces_missing_category_to_others():
 def test_validate_transaction_rejects_non_numeric_amount():
     with pytest.raises(ValidationError):
         validate_transaction(_base(amount="lots"), CATS)
+
+
+def test_validate_transaction_converts_cny_to_sgd(monkeypatch):
+    monkeypatch.setattr(
+        "core.validation.FxClient",
+        lambda: type("F", (), {"rate": lambda self, base, quote: {"rate": 0.19, "date": "2026-08-14"}})(),
+    )
+    data = _base(amount=None, currency="CNY", foreign_amount=-100)
+    tx = validate_transaction(data, CATS)
+    assert tx.currency == "CNY"
+    assert tx.foreign_amount == -100
+    assert tx.amount == -19.0
+
+
+def test_validate_transaction_sgd_clears_foreign_amount():
+    tx = validate_transaction(_base(foreign_amount=999), CATS)
+    assert tx.currency == "SGD"
+    assert tx.foreign_amount is None
+
+
+def test_validate_transaction_rejects_unknown_currency():
+    with pytest.raises(ValidationError):
+        validate_transaction(_base(currency="USD"), CATS)
+
+
+def test_validate_transaction_cny_requires_foreign_amount(monkeypatch):
+    monkeypatch.setattr(
+        "core.validation.FxClient",
+        lambda: type("F", (), {"rate": lambda self, base, quote: {"rate": 0.19, "date": "2026-08-14"}})(),
+    )
+    with pytest.raises(ValidationError):
+        validate_transaction(_base(amount=None, currency="CNY"), CATS)

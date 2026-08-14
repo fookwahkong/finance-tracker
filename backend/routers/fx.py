@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException
 
-from core.investments.providers.fx import FxClient
+from core.fx import FxClient
 
 router = APIRouter()
 client = FxClient()
 
 
-@router.get("/usd-sgd")
-def get_usd_sgd():
+@router.get("/rate")
+def get_rate(base: str, quote: str):
     try:
-        return client.usd_sgd()
+        return client.rate(base, quote)
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
