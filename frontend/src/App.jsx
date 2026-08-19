@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import { useAuth } from "./auth/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import Spending from "./pages/Spending";
+import Travel from "./pages/Travel";
 import Settings from "./pages/Settings";
 import Import from "./pages/Import";
 import Budget from "./pages/Budget";
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/spending" element={<Spending />} />
+            <Route path="/travel" element={<Travel />} />
             <Route path="/import" element={<Import />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/investment" element={<Investments />} />

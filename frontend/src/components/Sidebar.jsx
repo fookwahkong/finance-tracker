@@ -4,6 +4,7 @@ export const NAV = {
   main: [
     { to: "/dashboard", label: "Dashboard", icon: "▦" },
     { to: "/spending", label: "Spending", icon: "◎" },
+    { to: "/travel", label: "Travel", icon: "✈" },
     { to: "/investment", label: "Investment", icon: "▲" },
   ],
   manage: [

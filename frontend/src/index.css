@@ -1468,3 +1468,146 @@ a { color: inherit; }
 @media (max-width: 900px) {
   .insights-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Travel ──────────────────────────────────────────────────────────
+   Trip cards, the day strip, and the day-summary stat rows. */
+
+.trip-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.trip-card {
+  position: relative;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.trip-card:hover { border-color: var(--teal); }
+.trip-card.is-active {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 1px var(--teal);
+}
+
+.trip-card-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.trip-card-name { font-size: 16px; font-weight: 700; color: var(--ink); }
+.trip-card-dest { font-size: 13px; color: var(--muted); }
+.trip-card-range { font-size: 13px; color: var(--muted-2); margin-top: 3px; }
+.trip-card-total { font-size: 22px; font-weight: 800; margin-top: 10px; }
+.trip-card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.trip-card-actions { display: flex; gap: 4px; margin-top: 10px; }
+.trip-card-actions .btn { font-size: 13px; padding: 4px 8px; }
+
+.trip-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.trip-hero-name { font-size: 20px; font-weight: 800; }
+.trip-hero-range { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.trip-hero-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+.trip-hero-stats span { display: block; font-size: 12px; color: var(--muted-2); }
+.trip-hero-stats strong { font-size: 20px; font-weight: 800; }
+
+.trip-preview {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--teal-soft);
+  color: var(--teal-ink);
+  font-size: 14px;
+}
+
+.day-strip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.day-strip-controls { display: flex; align-items: center; gap: 8px; }
+
+.day-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.day-chip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 92px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+.day-chip:hover { border-color: var(--teal); }
+.day-chip.is-active { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal); }
+.day-chip-no { font-size: 11px; font-weight: 700; color: var(--muted-2); letter-spacing: 0.3px; }
+.day-chip-date { font-size: 13px; color: var(--muted); }
+.day-chip-total { font-size: 15px; font-weight: 700; color: var(--ink); }
+.day-chip-total.is-zero { color: var(--muted-2); font-weight: 500; }
+
+.day-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+.day-stats span { display: block; font-size: 12px; color: var(--muted-2); }
+.day-stats strong { font-size: 24px; font-weight: 800; }
+.day-stats em {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.day-stats em.is-over { color: var(--red); }
+.day-stats em.is-under { color: var(--green); }
+
+.cat-row-detail > td { padding: 0 0 10px 0; }
+
+.picker-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted-2);
+  margin: 10px 0 4px;
+}
+.picker-hint .btn { font-size: 13px; padding: 4px 8px; }
+
+.picker-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+}
+
+.trip-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}

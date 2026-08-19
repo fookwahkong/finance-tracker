@@ -22,6 +22,7 @@ from backend.routers import (
     subscriptions,
     telegram,
     transactions,
+    travel,
 )
 from backend.routers.investments import (
     ai as investments_ai,
@@ -92,6 +93,7 @@ app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["sub
 app.include_router(savings.router, prefix="/api/savings", tags=["savings"])
 app.include_router(networth.router, prefix="/api/networth", tags=["networth"])
 app.include_router(claims.router, prefix="/api/claims", tags=["claims"])
+app.include_router(travel.router, prefix="/api/travel", tags=["travel"])
 app.include_router(demo.router, prefix="/api/demo", tags=["demo"])
 app.include_router(
     investments_market.router, prefix="/api/investments/market", tags=["investments"]

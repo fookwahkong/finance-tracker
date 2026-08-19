@@ -15,6 +15,7 @@ erDiagram
     users ||--o{ subscriptions : owns
     users ||--o{ net_worth : owns
     users ||--o{ claims : owns
+    users ||--o{ travel_groups : owns
     users ||--o{ invest_transactions : owns
     users ||--o{ watchlist : owns
     users ||--o{ ai_usage : owns
@@ -22,6 +23,8 @@ erDiagram
     transactions ||--o| claims : "debit is claimed by"
     claims ||--o{ claim_credits : "settled by"
     transactions ||--o{ claim_credits : "credit applied via"
+    travel_groups ||--o{ travel_group_transactions : "membership overridden by"
+    transactions ||--o{ travel_group_transactions : "forced in or out via"
 
     users {
         uuid id PK
@@ -77,6 +80,21 @@ erDiagram
         uuid credit_tx_id FK
         numeric allocated_amount ">0"
     }
+    travel_groups {
+        uuid id PK
+        uuid user_id FK
+        text name
+        text destination
+        date start_date
+        date end_date "no overlap per user"
+    }
+    travel_group_transactions {
+        uuid id PK
+        uuid user_id FK
+        uuid group_id FK
+        uuid transaction_id FK
+        text mode "include | exclude"
+    }
     invest_transactions {
         uuid id PK
         uuid user_id FK
@@ -108,6 +126,8 @@ erDiagram
 | `net_worth` | One user-entered cash "anchor" per month. |
 | `claims` | A shared expense awaiting reimbursement. |
 | `claim_credits` | Links reimbursement credits to the claim they pay down. |
+| `travel_groups` | A named trip: a date range that gathers the spending inside it. |
+| `travel_group_transactions` | The two exceptions to date-range membership (`include` / `exclude`). |
 | `invest_transactions` | BUY/SELL lots; holdings are derived from these. |
 | `watchlist` | Tickers the user follows. |
 | `ai_usage` | Per-user, per-day LLM call counter (powers the demo cap). |
@@ -133,6 +153,43 @@ phantom "someone owes me" rows into `transactions`. Instead:
 This keeps the ledger honest — it records real money movements only — while the
 claims layer models "who owes what" on top. The settlement math lives in
 `core/claims.py` with no database dependency, so it's unit-tested in isolation.
+
+### Travel groups: membership derived, not stored
+
+A travel group stores **only a name and a date range**. There is no
+`travel_group_id` column on `transactions`, and nothing is written to the ledger
+when a trip is created. Which transactions belong to a trip is computed at read
+time:
+
+```
+in range and not excluded, OR explicitly included
+```
+
+That is what keeps the Travel and Spending tabs in sync without a sync step. Had
+membership been stored as a foreign key, correcting a transaction's date in
+Spending would leave the key pointing at the wrong trip, and every write path —
+web, Telegram, statement import, email ingest — would need to remember to fix
+it. Deriving it means re-dating a transaction re-buckets it for free, and
+editing a trip's range re-derives the whole trip instantly.
+
+`travel_group_transactions` exists because pure date derivation is wrong at both
+edges, and both cases are ordinary:
+
+- **Bought before departure** — flights and hotels, usually a trip's two largest
+  line items, are paid weeks in advance and fall outside the range (`include`).
+- **Charged while away** — rent and GIRO subscriptions auto-debit mid-trip and
+  would otherwise inflate the trip by hundreds (`exclude`).
+
+Two trips of the same user may not overlap. That is enforced in Postgres with a
+`btree_gist` exclusion constraint over `daterange(start_date, end_date, '[]')`,
+because overlapping ranges would count one transaction toward two trips with no
+defensible reconciliation. Both ends are inclusive, matching how a user reads
+"18 August to 26 August".
+
+The membership rule itself lives in `frontend/src/lib/travel.js` and **only**
+there — the browser is its only consumer, and one rule written twice in two
+languages is two rules waiting to disagree. `core/travel.py` holds the
+validation and the overlap check the API must enforce server-side.
 
 ### Net worth: anchors plus derived balances
 
