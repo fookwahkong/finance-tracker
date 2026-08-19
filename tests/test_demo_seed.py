@@ -185,10 +185,25 @@ def test_build_travel_overrides_pulls_the_flight_in_and_pushes_giro_bills_out():
     start, _ = demo_trip_dates(today)
     groups = [{"id": "g1", "user_id": "demo-user"}]
     transactions = [
-        {"id": "flight", "item": "ANA flights to Osaka", "date": (start - timedelta(days=35)).isoformat(), "source": "card"},
+        {
+            "id": "flight",
+            "item": "ANA flights to Osaka",
+            "date": (start - timedelta(days=35)).isoformat(),
+            "source": "card",
+        },
         {"id": "hotel", "item": "Namba hotel", "date": start.isoformat(), "source": "card"},
-        {"id": "netflix", "item": "Netflix", "date": (start + timedelta(days=2)).isoformat(), "source": "giro"},
-        {"id": "gym-home", "item": "Gym membership", "date": (start - timedelta(days=60)).isoformat(), "source": "giro"},
+        {
+            "id": "netflix",
+            "item": "Netflix",
+            "date": (start + timedelta(days=2)).isoformat(),
+            "source": "giro",
+        },
+        {
+            "id": "gym-home",
+            "item": "Gym membership",
+            "date": (start - timedelta(days=60)).isoformat(),
+            "source": "giro",
+        },
     ]
 
     overrides = build_travel_overrides(groups, transactions, today)

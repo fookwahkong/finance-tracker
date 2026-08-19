@@ -30,7 +30,9 @@ def test_validate_group_allows_a_single_day_trip():
 
 
 def test_validate_group_treats_a_blank_destination_as_absent():
-    assert validate_group(_group("2026-08-18", "2026-08-26", destination="   "))["destination"] is None
+    assert (
+        validate_group(_group("2026-08-18", "2026-08-26", destination="   "))["destination"] is None
+    )
 
 
 @pytest.mark.parametrize("name", ["", "   "])
@@ -59,11 +61,15 @@ def test_validate_group_rejects_an_unparseable_date():
     [
         # (start, end) pairs — both ends inclusive.
         (("2026-08-18", "2026-08-26"), ("2026-09-01", "2026-09-05"), False),  # disjoint
-        (("2026-08-18", "2026-08-26"), ("2026-08-26", "2026-09-02"), True),   # touching
-        (("2026-08-18", "2026-08-26"), ("2026-08-20", "2026-08-22"), True),   # nested
-        (("2026-08-18", "2026-08-26"), ("2026-08-18", "2026-08-26"), True),   # identical
-        (("2026-08-18", "2026-08-26"), ("2026-08-24", "2026-09-02"), True),   # partial
-        (("2026-08-18", "2026-08-26"), ("2026-08-10", "2026-08-17"), False),  # adjacent, no shared day
+        (("2026-08-18", "2026-08-26"), ("2026-08-26", "2026-09-02"), True),  # touching
+        (("2026-08-18", "2026-08-26"), ("2026-08-20", "2026-08-22"), True),  # nested
+        (("2026-08-18", "2026-08-26"), ("2026-08-18", "2026-08-26"), True),  # identical
+        (("2026-08-18", "2026-08-26"), ("2026-08-24", "2026-09-02"), True),  # partial
+        (
+            ("2026-08-18", "2026-08-26"),
+            ("2026-08-10", "2026-08-17"),
+            False,
+        ),  # adjacent, no shared day
     ],
 )
 def test_overlaps_truth_table(a, b, expected):

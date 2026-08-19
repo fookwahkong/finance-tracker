@@ -103,9 +103,7 @@ def delete_group(group_id: str, db: Client = Depends(get_db)):
 
 
 @router.post("/groups/{group_id}/transactions", status_code=201)
-def upsert_override(
-    group_id: str, payload: TravelOverrideUpsert, db: Client = Depends(get_db)
-):
+def upsert_override(group_id: str, payload: TravelOverrideUpsert, db: Client = Depends(get_db)):
     """Force a transaction into ('include') or out of ('exclude') a trip.
 
     'include' is how a flight booked six weeks early joins the trip it paid

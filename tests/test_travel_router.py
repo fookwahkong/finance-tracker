@@ -23,7 +23,9 @@ def _select_chain(db, order_data=None, eq_data=None, in_data=None):
     """Wire the supabase-py builder chains the travel router uses."""
     table = db.table.return_value
     select = table.select.return_value
-    select.order.return_value.execute.return_value.data = order_data if order_data is not None else []
+    select.order.return_value.execute.return_value.data = (
+        order_data if order_data is not None else []
+    )
     select.eq.return_value.execute.return_value.data = eq_data if eq_data is not None else []
     select.in_.return_value.execute.return_value.data = in_data if in_data is not None else []
     return table

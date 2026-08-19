@@ -72,7 +72,9 @@ def overlaps(candidate: dict, existing: dict) -> bool:
     return a_start <= b_end and b_start <= a_end
 
 
-def find_overlap(candidate: dict, existing_groups: list[dict], ignore_id: str | None = None) -> dict | None:
+def find_overlap(
+    candidate: dict, existing_groups: list[dict], ignore_id: str | None = None
+) -> dict | None:
     """The first already-saved trip clashing with `candidate`, if any."""
     for group in existing_groups:
         if ignore_id is not None and group.get("id") == ignore_id:
