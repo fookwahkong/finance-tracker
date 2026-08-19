@@ -6,5 +6,6 @@ export const queryKeys = {
   savings: ["savings"],
   monthlyReport: (month) => ["monthlyReport", month],
   claims: ["claims"],
+  travelGroups: ["travelGroups"],
   investTransactions: ["investTransactions"],
 };

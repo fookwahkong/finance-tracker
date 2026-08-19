@@ -210,3 +210,89 @@ describe("Money out / Money in cards", () => {
     expect(catRowsIn(moneyOutCard)).toHaveLength(4);
   });
 });
+
+describe("Overview period", () => {
+  const spanning = [
+    { id: "before", date: "2026-08-17", item: "Pre-trip haircut", amount: -30, category: "Beauty" },
+    { id: "first", date: "2026-08-18", item: "Airport train", amount: -12, category: "Transport" },
+    { id: "middle", date: "2026-08-22", item: "Ramen", amount: -18, category: "Food & Drink" },
+    { id: "last", date: "2026-08-26", item: "Souvenirs", amount: -60, category: "Shopping" },
+    { id: "after", date: "2026-08-27", item: "Groceries", amount: -40, category: "Groceries" },
+  ];
+  const trip = { start: "2026-08-18", end: "2026-08-26", label: "Japan", slug: "japan-2026-08-18" };
+
+  const renderTrip = (props = {}) => render(
+    <Overview
+      transactions={spanning}
+      categories={[]}
+      claims={[]}
+      claimLinks={[]}
+      onChanged={vi.fn()}
+      reloadClaims={vi.fn()}
+      period={trip}
+      {...props}
+    />,
+  );
+
+  it("includes both boundary days of an arbitrary date range and excludes the days either side", () => {
+    renderTrip();
+
+    expect(screen.getByText("Airport train")).toBeInTheDocument();
+    expect(screen.getByText("Ramen")).toBeInTheDocument();
+    expect(screen.getByText("Souvenirs")).toBeInTheDocument();
+    expect(screen.queryByText("Pre-trip haircut")).not.toBeInTheDocument();
+    expect(screen.queryByText("Groceries")).not.toBeInTheDocument();
+  });
+
+  it("totals only the transactions inside the range", () => {
+    renderTrip();
+    // 12 + 18 + 60, not the 30 before or the 40 after.
+    expect(screen.getByText("$90")).toBeInTheDocument();
+  });
+
+  it("labels the header with the period, not a month name", () => {
+    renderTrip();
+    expect(screen.getByText(/Japan · All categories/)).toBeInTheDocument();
+  });
+
+  it("renders the host's period selector in place of a month picker", () => {
+    renderTrip({ periodSelector: <div>trip chip</div> });
+    expect(screen.getByText("trip chip")).toBeInTheDocument();
+  });
+
+  it("shows the caller's empty message when nothing falls in the range", () => {
+    render(
+      <Overview
+        transactions={[]}
+        categories={[]}
+        claims={[]}
+        claimLinks={[]}
+        onChanged={vi.fn()}
+        reloadClaims={vi.fn()}
+        period={trip}
+        emptyMessage="Nothing spent on this trip yet."
+      />,
+    );
+    expect(screen.getByText("Nothing spent on this trip yet.")).toBeInTheDocument();
+  });
+
+  it("offers the host's extra row actions alongside Edit and Delete", () => {
+    const onRemove = vi.fn();
+    renderTrip({ extraRowActions: () => [{ label: "Remove from trip", onClick: onRemove }] });
+
+    const row = screen.getByText("Ramen").closest(".row");
+    fireEvent.click(within(row).getByRole("button", { name: /transaction actions/i }));
+    fireEvent.click(screen.getByText("Remove from trip"));
+
+    expect(onRemove).toHaveBeenCalledWith(expect.objectContaining({ id: "middle" }));
+  });
+
+  it("defaults a new transaction's date to the caller's date instead of today", () => {
+    renderTrip({ defaultDate: "2026-08-18" });
+    fireEvent.click(screen.getByRole("button", { name: /new transaction/i }));
+
+    // The modal's labels aren't htmlFor-linked, so query the date input directly.
+    const dateInput = screen.getByRole("dialog").querySelector('input[type="date"]');
+    expect(dateInput).toHaveValue("2026-08-18");
+  });
+});

@@ -1,3 +1,5 @@
+import { monthLabel } from "./format";
+
 // Six "YYYY-MM" strings ending with the current month, oldest first.
 export function lastSixMonths(today = new Date()) {
   const out = [];
@@ -144,4 +146,18 @@ export function cashForMonth(anchors, flowMap, targetMonth) {
     cash += flowMap[cursor] || 0;
   }
   return cash;
+}
+
+// A calendar month as an inclusive {start, end} period, in the shape the
+// Spending Overview takes. Built in UTC so the last-day calculation can't
+// slip a day in a negative-offset timezone.
+export function monthPeriod(ym) {
+  const [y, m] = ym.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return {
+    start: `${ym}-01`,
+    end: `${ym}-${String(lastDay).padStart(2, "0")}`,
+    label: monthLabel(ym),
+    slug: ym,
+  };
 }

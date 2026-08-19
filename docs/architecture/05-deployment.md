@@ -90,7 +90,7 @@ privileged operation happens server-side behind the service key.
 ## Data layer
 
 **Supabase** hosts Postgres and issues the JWTs used for auth. Applying the schema
-is a one-time step: run `db/schema.sql` then `db/002_multi_tenant.sql` in the
-Supabase SQL editor. Row-level security means the same database safely serves both
+is a one-time step: run `db/schema.sql`, then `db/002_multi_tenant.sql`, then the
+remaining numbered migrations in `db/` in order, in the Supabase SQL editor. Row-level security means the same database safely serves both
 the private personal account and the public demo.
 → [database design](03-database-design.md)

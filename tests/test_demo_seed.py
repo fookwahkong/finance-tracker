@@ -142,3 +142,68 @@ def test_build_claim_participants_creates_an_owner_and_a_person():
             "share_percent": 50,
         },
     ]
+
+
+def test_seed_rows_includes_one_travel_group_over_the_trip_dates():
+    from datetime import date
+
+    from backend.demo_seed import demo_trip_dates, seed_rows
+
+    today = date(2026, 8, 19)
+    rows = seed_rows("demo-user", today)
+    start, end = demo_trip_dates(today)
+
+    assert len(rows["travel_groups"]) == 1
+    group = rows["travel_groups"][0]
+    assert group["name"] == "Osaka"
+    assert group["start_date"] == start.isoformat()
+    assert group["end_date"] == end.isoformat()
+    assert group["user_id"] == "demo-user"
+
+
+def test_seed_rows_dates_the_flight_before_the_trip_starts():
+    from datetime import date
+
+    from backend.demo_seed import demo_trip_dates, seed_rows
+
+    today = date(2026, 8, 19)
+    start, _ = demo_trip_dates(today)
+    flight = next(
+        t for t in seed_rows("demo-user", today)["transactions"] if t["item"].startswith("ANA")
+    )
+
+    # The whole point of the include override: it is outside the range.
+    assert flight["date"] < start.isoformat()
+
+
+def test_build_travel_overrides_pulls_the_flight_in_and_pushes_giro_bills_out():
+    from datetime import date, timedelta
+
+    from backend.demo_seed import build_travel_overrides, demo_trip_dates
+
+    today = date(2026, 8, 19)
+    start, _ = demo_trip_dates(today)
+    groups = [{"id": "g1", "user_id": "demo-user"}]
+    transactions = [
+        {"id": "flight", "item": "ANA flights to Osaka", "date": (start - timedelta(days=35)).isoformat(), "source": "card"},
+        {"id": "hotel", "item": "Namba hotel", "date": start.isoformat(), "source": "card"},
+        {"id": "netflix", "item": "Netflix", "date": (start + timedelta(days=2)).isoformat(), "source": "giro"},
+        {"id": "gym-home", "item": "Gym membership", "date": (start - timedelta(days=60)).isoformat(), "source": "giro"},
+    ]
+
+    overrides = build_travel_overrides(groups, transactions, today)
+    by_tx = {o["transaction_id"]: o["mode"] for o in overrides}
+
+    assert by_tx["flight"] == "include"  # booked before departure
+    assert by_tx["netflix"] == "exclude"  # auto-debited mid-trip, not holiday spend
+    assert "hotel" not in by_tx  # plain date derivation already covers it
+    assert "gym-home" not in by_tx  # outside the trip and staying outside
+    assert all(o["group_id"] == "g1" for o in overrides)
+
+
+def test_build_travel_overrides_is_empty_without_a_group():
+    from datetime import date
+
+    from backend.demo_seed import build_travel_overrides
+
+    assert build_travel_overrides([], [{"id": "t1"}], date(2026, 8, 19)) == []

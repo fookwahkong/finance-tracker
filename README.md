@@ -73,6 +73,10 @@ row-level security, reseeds to a fresh baseline every night, and caps AI calls a
   bill/income (subscription) tracking.
 - 📊 **Charts & analytics** — net-worth card, monthly income/expense bars, and
   category-level spending breakdowns (Recharts).
+- ✈️ **Travel groups** — define a trip by date range and every transaction in
+  those dates is grouped into it automatically, with a trip overview and a
+  per-day breakdown by category. Membership is derived, so the Travel and
+  Spending tabs can never drift apart.
 - 🤝 **Split-expense claims** — record shared expenses, track what's owed, and
   settle automatically when reimbursed.
 - 🧠 **AI financial insights** — structured parsing of free text and bank-statement
@@ -155,8 +159,9 @@ uvicorn backend.main:app --reload
 cd frontend && npm install && npm run dev
 ```
 
-**Database:** apply `db/schema.sql` then `db/002_multi_tenant.sql` (adds per-user
-ownership + row-level security) in the Supabase SQL editor.
+**Database:** apply `db/schema.sql`, then `db/002_multi_tenant.sql` (adds per-user
+ownership + row-level security), then the numbered migrations in `db/` in order
+(through `db/008_travel_groups.sql`) in the Supabase SQL editor.
 **Deploy:** run `vercel deploy` — `vercel.json` builds the frontend, routes
 `/api/*` to the serverless function, and registers the daily email-ingest and
 nightly demo-reset crons.

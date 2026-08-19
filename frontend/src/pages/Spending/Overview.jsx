@@ -4,9 +4,9 @@ import {
   createTransaction, updateTransaction, deleteTransaction, getFxRate,
 } from "../../api/client";
 import { createClaim, linkCredit, settleClaim, reopenClaim, deleteClaim } from "../../api/claims";
-import { money, signed, sgd, currentMonth, monthLabel, colorFor, donutGradient } from "../../lib/format";
+import { money, signed, sgd, currentMonth, colorFor, donutGradient } from "../../lib/format";
 import { emojiFor } from "../../lib/categories";
-import { yearsInData } from "../../lib/aggregate";
+import { monthPeriod, yearsInData } from "../../lib/aggregate";
 import { applyClaimAdjustments, receivedTotal, variance, allocatedByCredit, claimCreatePayload, linksForClaims, participantBalance, participantsForClaim } from "../../lib/claims";
 import ClaimSplitDialog from "./ClaimSplitDialog";
 import ClaimRepaymentDialog from "./ClaimRepaymentDialog";
@@ -27,10 +27,8 @@ const CURRENCIES = [
   { value: "CNY", label: "CNY (¥)" },
 ];
 
-const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
 const EMPTY_FORM = {
-  date: new Date().toISOString().slice(0, 10),
+  date: "",
   item: "",
   amount: "",
   category: "",
@@ -38,13 +36,35 @@ const EMPTY_FORM = {
   currency: "SGD",
 };
 
-export default function Overview({ transactions, categories, claims = [], claimLinks = [], onChanged, reloadClaims }) {
-  const [year, setYear] = useState(currentMonth().slice(0, 4));
-  const [monthNum, setMonthNum] = useState(currentMonth().slice(5, 7));
-  const month = `${year}-${monthNum}`;
+// Renders one period's spending: the category breakdowns, the donut, and the
+// transaction list. The period is a plain {start, end, label, slug} range, so
+// the same component serves a calendar month (Spending) and a trip's date
+// range (Travel) — see docs/design/travel-tab.md. `periodSelector` is the slot
+// where each host renders its own way of choosing that period.
+export default function Overview({
+  transactions,
+  categories,
+  claims = [],
+  claimLinks = [],
+  onChanged,
+  reloadClaims,
+  period,
+  // Travel overrides this: a trip's membership is its date range PLUS the
+  // include/exclude overrides that pull in a pre-booked flight or push out
+  // mid-trip rent, which a plain range check cannot express.
+  isInPeriod = null,
+  periodSelector = null,
+  defaultDate = null,
+  emptyMessage = "No transactions in this month.",
+  extraRowActions = null,
+}) {
+  // Falling back to the current month keeps the component usable on its own,
+  // which is also its historical behaviour.
+  const activePeriod = useMemo(() => period || monthPeriod(currentMonth()), [period]);
+  const formDate = () => defaultDate || new Date().toISOString().slice(0, 10);
 
   const [catFilter, setCatFilter] = useState("all");
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(() => ({ ...EMPTY_FORM, date: formDate() }));
   const [cnySgdRate, setCnySgdRate] = useState(null);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -72,12 +92,17 @@ export default function Overview({ transactions, categories, claims = [], claimL
 
   const years = useMemo(() => yearsInData(transactions), [transactions]);
 
-  // Transactions for the selected month (backend returns date-desc overall).
+  // Transactions inside the selected period (backend returns date-desc
+  // overall). ISO dates compare correctly as strings, so an inclusive range
+  // check is all a period needs — the same property the old
+  // `slice(0, 7) === month` filter relied on.
+  const inPeriod = isInPeriod || ((t) => {
+    const date = String(t.date || "").slice(0, 10);
+    return date >= activePeriod.start && date <= activePeriod.end;
+  });
   const monthTx = useMemo(
-    //slide the first 7 chars to get "2026-07"
-    //keep pnly transaction whose date falls in the currently selected year/month
-    () => transactions.filter((t) => String(t.date || "").slice(0, 7) === month),
-    [transactions, month],
+    () => transactions.filter(inPeriod),
+    [transactions, activePeriod, isInPeriod],
   );
 
   const creditAllocations = useMemo(
@@ -108,8 +133,8 @@ export default function Overview({ transactions, categories, claims = [], claimL
     [transactions, claims, claimLinks],
   );
   const adjustedMonthTx = useMemo(
-    () => adjustedTransactions.filter((t) => String(t.date || "").slice(0, 7) === month),
-    [adjustedTransactions, month],
+    () => adjustedTransactions.filter(inPeriod),
+    [adjustedTransactions, activePeriod, isInPeriod],
   );
 
   useEffect(() => {
@@ -183,13 +208,13 @@ export default function Overview({ transactions, categories, claims = [], claimL
   }
 
   function resetForm() {
-    setForm({ ...EMPTY_FORM, date: new Date().toISOString().slice(0, 10) });
+    setForm({ ...EMPTY_FORM, date: formDate() });
     setAdding(false);
     setEditingId(null);
     setSubmitError("");
   }
   function openAdd() {
-    setForm({ ...EMPTY_FORM, date: new Date().toISOString().slice(0, 10) });
+    setForm({ ...EMPTY_FORM, date: formDate() });
     setEditingId(null);
     setSubmitError("");
     setAdding(true);
@@ -338,41 +363,14 @@ export default function Overview({ transactions, categories, claims = [], claimL
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `spending-${month}.csv`;
+    a.download = `spending-${activePeriod.slug}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
   return (
     <>
-      {/* Month selector */}
-      <div className="card" style={{ padding: "16px 20px" }}>
-        <div className="month-btns">
-          <select
-            className="select"
-            style={{ width: "auto", marginLeft: 8 }}
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-          >
-            {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
-          </select>
-
-          {MONTH_ABBR.map((m, i) => {
-            const mm = String(i + 1).padStart(2, "0");
-            return (
-              <button
-                key={mm}
-                type="button"
-                className={`month-btn${mm === monthNum ? " is-active" : ""}`}
-                onClick={() => setMonthNum(mm)}
-              >
-                {m}
-              </button>
-            );
-          })}
-
-        </div>
-      </div>
+      {periodSelector}
 
       {/* Toolbar */}
       <div className="card" style={{ padding: "16px 20px" }}>
@@ -474,7 +472,7 @@ export default function Overview({ transactions, categories, claims = [], claimL
       )}
       {monthTx.length === 0 ? (
         <section className="card">
-          <div className="empty">No transactions in this month.</div>
+          <div className="empty">{emptyMessage}</div>
         </section>
       ) : (
         <>
@@ -547,7 +545,7 @@ export default function Overview({ transactions, categories, claims = [], claimL
           <section className="card">
             <div className="card-head">
               <div className="card-title">Transactions by Date</div>
-              <span className="pill" style={{ marginLeft: "auto" }}>{monthLabel(month)} · {catFilter === "all" ? "All categories" : catFilter}</span>
+              <span className="pill" style={{ marginLeft: "auto" }}>{activePeriod.label} · {catFilter === "all" ? "All categories" : catFilter}</span>
             </div>
             {groups.length === 0 ? (
               <div className="empty">No transactions. Add one with “+ New transaction”.</div>
@@ -634,6 +632,9 @@ export default function Overview({ transactions, categories, claims = [], claimL
                                 {t.amount < 0 && !claimByDebit[t.id] && (
                                   <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); openShareDialog(t); }}>Mark as shared</div>
                                 )}
+                                {extraRowActions?.(t)?.map((action) => (
+                                  <div key={action.label} className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); action.onClick(t); }}>{action.label}</div>
+                                ))}
                                 <div className="dd-item" onClick={(e) => { e.stopPropagation(); setMenuFor(null); handleDelete(t.id); }}>✕ Delete</div>
                               </div>
                             )}

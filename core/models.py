@@ -110,6 +110,25 @@ class WatchlistAdd(BaseModel):
     ticker: str
 
 
+class TravelGroupCreate(BaseModel):
+    name: str
+    destination: Optional[str] = None
+    start_date: Date
+    end_date: Date
+
+
+class TravelGroupUpdate(BaseModel):
+    name: Optional[str] = None
+    destination: Optional[str] = None
+    start_date: Optional[Date] = None
+    end_date: Optional[Date] = None
+
+
+class TravelOverrideUpsert(BaseModel):
+    transaction_id: str
+    mode: Literal["include", "exclude"]
+
+
 class AgentChatRequest(BaseModel):
     message: str
     history: list[dict] = Field(default_factory=list)
