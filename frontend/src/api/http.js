@@ -12,6 +12,11 @@ export function normalizeError(error) {
     message,
     requestId,
     status: response?.status ?? null,
+    // Call sites read `err.response.data.detail` to show the server's own
+    // message. Dropping `response` here silently replaced every real error
+    // ("Amount cannot be zero.", an FX 502) with each catch block's generic
+    // "check the API connection" fallback, which is a lie about the cause.
+    response,
     original: error,
   };
 }

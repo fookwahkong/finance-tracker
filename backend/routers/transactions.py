@@ -31,12 +31,26 @@ def list_transactions(month: Optional[str] = None, db: Client = Depends(get_db))
 _CURRENCY_FIELDS = {"amount", "foreign_amount", "currency"}
 
 
+def _fx_unavailable(currency: str, exc: Exception) -> HTTPException:
+    """Validation only raises RuntimeError from the FX lookup a non-SGD amount
+    needs, so it means the rate provider is down — an upstream failure, not a
+    bad request. Say which half broke; a bare 502 is indistinguishable from a
+    database problem to whoever is looking at the app."""
+    return HTTPException(
+        status_code=502,
+        detail=(
+            f"Could not convert {currency} to SGD: the exchange-rate provider is "
+            f"unavailable. Try again shortly, or enter the amount in SGD. ({exc})"
+        ),
+    )
+
+
 @router.post("", status_code=201)
 def create_transaction(tx: TransactionCreate, db: Client = Depends(get_db)):
     try:
         validated = validate_transaction(tx.model_dump(), _known_categories(db))
     except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+        raise _fx_unavailable(tx.currency, exc) from exc
     payload = validated.model_dump()
     payload["date"] = payload["date"].isoformat()
     result = db.table("transactions").insert(payload).execute()
@@ -53,7 +67,7 @@ def update_transaction(tx_id: str, tx: TransactionUpdate, db: Client = Depends(g
     try:
         validated = validate_transaction(merged, _known_categories(db))
     except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+        raise _fx_unavailable(merged.get("currency") or "SGD", exc) from exc
     payload_keys = set(provided)
     # amount is derived from foreign_amount + currency, so changing any one of
     # the three must write back all three or the recomputed amount is lost.

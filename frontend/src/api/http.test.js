@@ -34,6 +34,32 @@ describe("normalizeError", () => {
     expect(norm.requestId).toBe(null);
     expect(norm.message).toBe("Network Error");
   });
+
+  it("keeps `response` so call sites reading err.response.data.detail see the real cause", () => {
+    const axiosError = {
+      response: { status: 502, data: { detail: "exchange-rate provider unavailable" }, headers: {} },
+      message: "Request failed with status code 502",
+    };
+    const norm = normalizeError(axiosError);
+    // Every catch block in the app reads this path before falling back to a
+    // generic "check the API connection" string. Dropping it turned every
+    // real backend error into that fallback, which named the wrong cause.
+    expect(norm.response.data.detail).toBe("exchange-rate provider unavailable");
+  });
+});
+
+describe("http error interceptor", () => {
+  it("rejects with an error a call site can read the server detail from", async () => {
+    const rejected = http.interceptors.response.handlers[0].rejected;
+    const err = await rejected({
+      response: { status: 422, data: { detail: "Amount cannot be zero." }, headers: {} },
+      message: "Request failed with status code 422",
+    }).catch((e) => e);
+
+    expect(err.response?.data?.detail).toBe("Amount cannot be zero.");
+    expect(err.message).toBe("Amount cannot be zero.");
+    expect(err.status).toBe(422);
+  });
 });
 
 describe("http auth interceptor", () => {
