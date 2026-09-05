@@ -116,3 +116,70 @@ def test_miss_returning_none_response_is_treated_as_miss(monkeypatch):
     result = cache.get_or_fetch("AAPL:ticker", lambda: {"ok": True}, 3600)
     assert result == {"ok": True}
     assert s["AAPL:ticker"]["data"] == {"ok": True}
+
+
+# ── Degradation: the cache is an optimisation, never a dependency ──────────
+
+
+class BrokenTable(FakeTable):
+    def execute(self):
+        raise RuntimeError("investment_cache is unreachable")
+
+
+class BrokenSupabase:
+    def table(self, name):
+        return BrokenTable({})
+
+
+def test_unreachable_cache_table_still_returns_live_data(monkeypatch):
+    monkeypatch.setattr(cache, "supabase", BrokenSupabase())
+
+    # Neither the read nor the write can reach Supabase; the caller still gets
+    # its answer. This is the CNY-transaction path: a broken cache table must
+    # not stop a transaction from being recorded.
+    assert cache.get_or_fetch("fx:CNY:SGD", lambda: {"rate": 0.19}, 86400) == {"rate": 0.19}
+
+
+def test_peek_treats_an_unreachable_cache_as_a_miss(monkeypatch):
+    monkeypatch.setattr(cache, "supabase", BrokenSupabase())
+
+    assert cache.peek("AAPL:bullbear", 3600) is None
+
+
+def test_stale_entry_is_served_when_the_upstream_fetch_fails(store):
+    old = datetime.now(timezone.utc) - timedelta(seconds=90000)
+    store["fx:CNY:SGD"] = {"data": {"rate": 0.19}, "fetched_at": old.isoformat()}
+
+    def down():
+        raise RuntimeError("FX request failed: timeout")
+
+    # A day-old exchange rate converts a transaction perfectly well; refusing
+    # to record it because a free upstream API blipped is the worse outcome.
+    assert cache.get_or_fetch("fx:CNY:SGD", down, 86400) == {"rate": 0.19}
+
+
+def test_fetch_failure_with_no_cached_entry_still_raises(store):
+    def down():
+        raise RuntimeError("FX request failed: timeout")
+
+    with pytest.raises(RuntimeError):
+        cache.get_or_fetch("fx:CNY:SGD", down, 86400)
+
+
+def test_cache_write_failure_does_not_fail_the_caller(monkeypatch):
+    class WriteOnlyBroken(FakeTable):
+        def execute(self):
+            if self._upsert is not None:
+                raise RuntimeError("insert denied")
+            return super().execute()
+
+    class Supa:
+        def __init__(self):
+            self.store = {}
+
+        def table(self, name):
+            return WriteOnlyBroken(self.store)
+
+    monkeypatch.setattr(cache, "supabase", Supa())
+
+    assert cache.get_or_fetch("fx:CNY:SGD", lambda: {"rate": 0.19}, 86400) == {"rate": 0.19}
